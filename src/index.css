@@ -1,0 +1,74 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "IBM Plex Sans Thai", ui-sans-serif, system-ui, sans-serif;
+
+  --color-brand-50: #f0f7fb;
+  --color-brand-100: #dcecf5;
+  --color-brand-600: #0f6a99;
+  --color-brand-700: #0c5a83;
+  --color-brand-800: #0c4a6e;
+  --color-brand-900: #0a3a56;
+
+  /* Risk tiers (CLAUDE.md §8) on the dataviz status scale, stepped in lightness so the order
+     survives colour-blindness (deutan ΔE 11.3). Always paired with a Thai label.
+     "normal" is neutral slate on purpose: it is not "safe". */
+  --color-tier-normal: #64748b;
+  --color-tier-watch: #fab219;
+  --color-tier-warning: #ec835a;
+  --color-tier-danger: #d03b3b;
+  --color-tier-unknown: #a1a1aa;
+
+  --color-emergency: #b91c1c;
+}
+
+:root {
+  color-scheme: light;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: #f6f8fa;
+  color: #0f172a;
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.num {
+  font-variant-numeric: tabular-nums;
+}
+
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* Leaflet: our tooltips for station codes */
+.leaflet-tooltip.station-code {
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  box-shadow: none;
+  color: #0f172a;
+  font: 600 11px/1.2 var(--font-sans);
+  padding: 1px 5px;
+}
+.leaflet-tooltip.station-code::before {
+  display: none;
+}
+.leaflet-container {
+  font-family: var(--font-sans);
+}
+
+@keyframes flash-new {
+  0% { background-color: #fde68a; }
+  100% { background-color: transparent; }
+}
+.flash-new {
+  animation: flash-new 2.5s ease-out 3;
+}
