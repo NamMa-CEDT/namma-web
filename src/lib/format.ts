@@ -12,12 +12,14 @@ const timeFmt = new Intl.DateTimeFormat("th-TH", {
   hour12: false,
 });
 
-// Day + month only, so the Buddhist-calendar year never shows up.
 const dayFmt = new Intl.DateTimeFormat("th-TH", {
   timeZone: TZ,
   day: "numeric",
   month: "short",
 });
+
+// Buddhist-era year, two digits ("69"): during a flood that lasts days, a reading needs its date.
+const yearFmt = new Intl.DateTimeFormat("th-TH-u-ca-buddhist", { timeZone: TZ, year: "numeric" });
 
 function fixed(n: number, digits: number): string {
   return n.toLocaleString("en-US", { minimumFractionDigits: digits, maximumFractionDigits: digits });
@@ -38,13 +40,13 @@ export function trendDirection(cmPerHr: number | null | undefined): TrendDirecti
   return cmPerHr > 0 ? "up" : "down";
 }
 
-/** cm/hr → "ขึ้น 2.5 ซม./ชม." / "ลง 1.0 ซม./ชม." / "ทรงตัว". */
+/** cm/hr → "สูงขึ้น 2.5 ซม./ชม." / "ลดลง 1.0 ซม./ชม." / "ทรงตัว" (words, never a sign). */
 export function formatTrend(cmPerHr: number | null | undefined): string {
   const dir = trendDirection(cmPerHr);
   if (dir === "unknown") return copy.unknown;
   if (dir === "flat") return "ทรงตัว";
   const v = fixed(Math.abs(cmPerHr as number), 1);
-  return dir === "up" ? `ขึ้น ${v} ซม./ชม.` : `ลง ${v} ซม./ชม.`;
+  return dir === "up" ? `สูงขึ้น ${v} ซม./ชม.` : `ลดลง ${v} ซม./ชม.`;
 }
 
 /** Hours until bank at the current trend. Null when not applicable. */
@@ -77,11 +79,20 @@ export function formatTime(ts: string | null | undefined): string {
   return `${timeFmt.format(new Date(ts))} น.`;
 }
 
-/** "16 ต.ค. 14:20 น." in Bangkok time. */
+/** "14:20 น. 16 ต.ค. 69" in Bangkok time, Buddhist-era year (design system: every reading has a date). */
 export function formatDateTime(ts: string | null | undefined): string {
   if (!ts) return copy.unknown;
   const d = new Date(ts);
-  return `${dayFmt.format(d)} ${timeFmt.format(d)} น.`;
+  const year = yearFmt.format(d).replace(/\D/g, "").slice(-2);
+  return `${timeFmt.format(d)} น. ${dayFmt.format(d)} ${year}`;
+}
+
+/** The Thai way: "อ.บางบาล จ.พระนครศรีอยุธยา" (Bangkok has เขต and no จ.). */
+export function formatPlace(amphoe: string | null | undefined, province: string | null | undefined): string {
+  const bkk = province === "กรุงเทพมหานคร" || province === "กรุงเทพฯ";
+  return [amphoe && `${bkk ? "เขต" : "อ."}${amphoe}`, province && (bkk ? province : `จ.${province}`)]
+    .filter(Boolean)
+    .join(" ");
 }
 
 /** "5 นาทีที่แล้ว" / "2 ชม.ที่แล้ว" / "3 วันที่แล้ว". */

@@ -4,24 +4,26 @@ import { useNearest, useStations } from "../../api/queries";
 import type { LatLon, StationSummary } from "../../api/types";
 import { LocateIcon } from "../../components/icons";
 import { ErrorState, Loading } from "../../components/States";
-import { TierBadge, TierDot } from "../../components/TierBadge";
-import { copy } from "../../copy";
+import { TierBadge, TierShape } from "../../components/TierBadge";
+import { agencyName, copy } from "../../copy";
 import { formatBankGap, formatDistance } from "../../lib/format";
 import { getCurrentPosition } from "../../lib/geolocation";
 import { stationTier, TIER_ORDER, tierInfo } from "../../lib/tiers";
 import { CorridorStrip } from "./CorridorStrip";
-import { StationSheet } from "./StationSheet";
+import { StationName, StationSheet } from "./StationSheet";
 
 const StationMap = lazy(() => import("./StationMap"));
 
+/** Every tier as word + shape; tiers are NamMa's estimate, so the legend says so. */
 function Legend() {
   return (
-    <div className="rounded-xl bg-white/95 px-3 py-2 text-xs shadow-md">
-      <div className="mb-1 font-semibold text-slate-700">{copy.map.legend}</div>
-      <ul className="space-y-0.5">
+    <div className="rounded-sm border border-line bg-surface-raised px-3 py-2 shadow-float">
+      <div className="text-caption font-semibold text-ink">{copy.map.legend}</div>
+      <div className="mb-1 text-caption text-ink-muted">{copy.map.estimated}</div>
+      <ul className="m-0 grid list-none gap-0.5 p-0">
         {TIER_ORDER.map((k) => (
-          <li key={k} className="flex items-center gap-1.5 text-slate-700">
-            <TierDot tier={k} />
+          <li key={k} className="flex items-center gap-2 text-caption text-ink">
+            <TierShape tier={k} />
             {tierInfo(k).label}
           </li>
         ))}
@@ -33,28 +35,30 @@ function Legend() {
 function NearPanel({ point, onSelect }: { point: LatLon; onSelect: (id: number) => void }) {
   const near = useNearest(point, 3);
   return (
-    <section className="border-b border-slate-200 px-4 py-3">
-      <h2 className="text-sm font-semibold text-slate-700">{copy.map.nearYou}</h2>
+    <section className="border-b border-line px-4 py-3">
+      <h2 className="m-0 text-heading font-semibold">{copy.map.nearYou}</h2>
       {near.isPending ? (
         <Loading />
       ) : near.isError ? (
         <ErrorState error={near.error} onRetry={() => near.refetch()} />
       ) : (
-        <ul className="mt-2 space-y-1">
+        <ul className="m-0 mt-1 list-none p-0">
           {near.data.map((s) => (
-            <li key={s.id}>
+            <li key={s.id} className="border-b border-line last:border-b-0">
               <button
                 type="button"
                 onClick={() => onSelect(s.id)}
-                className="flex w-full items-center justify-between gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-left text-sm hover:bg-slate-50"
+                className="flex min-h-14 w-full items-center justify-between gap-3 py-2 text-left hover:bg-surface-sunken"
               >
                 <span className="min-w-0">
-                  <span className="font-semibold">{s.oldcode}</span> {s.name_th}
-                  <span className="block text-xs text-slate-500">
+                  <span className="block text-body font-semibold">
+                    <StationName name={s.name_th} code={s.oldcode} />
+                  </span>
+                  <span className="num block text-caption text-ink-muted">
                     ห่าง {formatDistance(s.distance_km)} · {formatBankGap(s.latest?.diff_wl_bank)}
                   </span>
                 </span>
-                <TierBadge tier={stationTier(s)} size="sm" />
+                <TierBadge tier={stationTier(s)} soft />
               </button>
             </li>
           ))}
@@ -134,13 +138,13 @@ export default function MapPage() {
             type="button"
             onClick={locate}
             disabled={locating}
-            className="pointer-events-auto flex items-center gap-1.5 rounded-full bg-white px-3 py-2 text-sm font-semibold text-brand-800 shadow-md disabled:opacity-60"
+            className="nm-btn nm-btn--secondary nm-btn--sm pointer-events-auto shadow-float"
           >
-            <LocateIcon />
+            <LocateIcon className="text-[20px] text-river" />
             {locating ? copy.map.locating : copy.map.myLocation}
           </button>
           {(notice || picking || tilesFailed) && (
-            <p className="pointer-events-auto max-w-xs rounded-lg bg-slate-900/85 px-3 py-2 text-xs text-white">
+            <p className="pointer-events-auto m-0 max-w-xs rounded-sm border border-line bg-surface-raised px-3 py-2 text-caption text-ink shadow-float">
               {tilesFailed ? copy.map.tilesFailed : (notice ?? copy.map.pickHint)}
             </p>
           )}
@@ -150,35 +154,38 @@ export default function MapPage() {
         </div>
       </div>
 
-      <aside className="min-h-0 flex-1 overflow-y-auto border-t border-slate-200 bg-white lg:w-[400px] lg:flex-none lg:border-t-0 lg:border-r">
+      <aside className="min-h-0 flex-1 overflow-y-auto border-t border-line bg-surface lg:w-[420px] lg:flex-none lg:border-t-0 lg:border-r">
         {selected ? (
           <StationSheet id={selected.id} onClose={() => select(null)} onSelect={select} />
         ) : (
           <>
-            <header className="border-b border-slate-200 px-4 py-3">
-              <h1 className="text-lg font-semibold">{copy.map.title}</h1>
-              <p className="text-sm text-slate-600">{copy.map.subtitle}</p>
-              <label className="mt-2 flex items-center gap-2 text-sm text-slate-700">
+            <header className="border-b border-line px-4 py-4">
+              <h1 className="m-0 text-title font-semibold">{copy.map.title}</h1>
+              <p className="m-0 text-body text-ink-muted">{copy.map.subtitle}</p>
+              <label className="mt-2 flex min-h-11 items-center gap-3 text-body">
                 <input
                   type="checkbox"
                   checked={showHii}
                   onChange={(e) => setShowHii(e.target.checked)}
-                  className="size-4 accent-brand-700"
+                  className="size-5 accent-river"
                 />
                 {copy.map.showHii}
               </label>
-              <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 sm:hidden">
+              <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 sm:hidden">
                 {TIER_ORDER.map((k) => (
-                  <span key={k} className="flex items-center gap-1 text-xs text-slate-600">
-                    <TierDot tier={k} />
+                  <span key={k} className="flex items-center gap-1.5 text-caption">
+                    <TierShape tier={k} />
                     {tierInfo(k).label}
                   </span>
                 ))}
+                <span className="text-caption text-ink-muted">· {copy.map.estimated}</span>
               </div>
             </header>
             {point && <NearPanel point={point} onSelect={select} />}
             <CorridorStrip stations={visible} onSelect={select} />
-            <p className="px-4 pb-4 text-xs text-slate-500">{copy.footer.dataCredit}</p>
+            <p className="m-0 px-4 pb-4 text-caption text-ink-muted">
+              {copy.footer.dataCredit} · {agencyName("RID")}
+            </p>
           </>
         )}
       </aside>

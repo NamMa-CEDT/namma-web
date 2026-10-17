@@ -4,12 +4,13 @@ import { ApiError } from "../../api/client";
 import { useTickets } from "../../api/queries";
 import type { TicketStatus, TicketSummary } from "../../api/types";
 import { canDemoLogin, loginDemo, logout, useSession } from "../../auth/session";
-import { UsersIcon, ShieldIcon } from "../../components/icons";
+import { ShieldIcon, UsersIcon } from "../../components/icons";
 import { useNow } from "../../components/Stale";
 import { EmptyState, ErrorState, Loading } from "../../components/States";
 import { copy } from "../../copy";
-import { formatAge } from "../../lib/format";
+import { formatAge, formatDateTime } from "../../lib/format";
 import { URGENCY_RANK } from "../../lib/tiers";
+import { LineIcon } from "../../components/icons";
 import { Chips, StatusBadge, UrgencyBadge } from "./badges";
 import { TicketDrawer } from "./TicketDrawer";
 
@@ -42,6 +43,19 @@ function useMediaQuery(query: string): boolean {
   return matches;
 }
 
+/** The responder dashboard runs in the dark theme for long shifts (DS Surfaces). */
+function useDarkTheme() {
+  useEffect(() => {
+    const root = document.documentElement;
+    const prev = root.dataset.theme;
+    root.dataset.theme = "dark";
+    return () => {
+      if (prev) root.dataset.theme = prev;
+      else delete root.dataset.theme;
+    };
+  }, []);
+}
+
 /** Ids that appeared since the last poll (not on first load or after a filter change). */
 function useNewIds(list: TicketSummary[] | undefined, filter: FilterKey): Set<number> {
   const seen = useRef<{ filter: FilterKey; ids: Set<number> } | null>(null);
@@ -61,11 +75,11 @@ function useNewIds(list: TicketSummary[] | undefined, filter: FilterKey): Set<nu
 function LoginGate({ forbidden }: { forbidden: boolean }) {
   const [busy, setBusy] = useState(false);
   return (
-    <div className="flex h-full items-center justify-center p-6">
-      <div className="max-w-sm rounded-2xl border border-slate-200 bg-white p-6 text-center shadow-sm">
-        <ShieldIcon className="mx-auto text-3xl text-brand-700" />
-        <h1 className="mt-2 text-lg font-semibold">{copy.dashboard.loginTitle}</h1>
-        <p className="mt-1 text-sm text-slate-600">{forbidden ? copy.dashboard.forbidden : copy.dashboard.loginBody}</p>
+    <div className="flex h-full items-center justify-center p-4">
+      <div className="grid w-full max-w-sm gap-3 rounded-md border border-line bg-surface-raised p-6 text-center">
+        <ShieldIcon className="mx-auto text-[32px] text-river" />
+        <h1 className="m-0 text-title font-semibold">{copy.dashboard.loginTitle}</h1>
+        <p className="m-0 text-body text-ink-muted">{forbidden ? copy.dashboard.forbidden : copy.dashboard.loginBody}</p>
         {canDemoLogin ? (
           <button
             type="button"
@@ -78,20 +92,17 @@ function LoginGate({ forbidden }: { forbidden: boolean }) {
                 setBusy(false);
               }
             }}
-            className="mt-4 w-full rounded-lg bg-brand-700 px-4 py-2.5 font-semibold text-white hover:bg-brand-800 disabled:opacity-60"
+            className="nm-btn nm-btn--primary nm-btn--block"
           >
             {copy.dashboard.loginDemo}
           </button>
         ) : (
           <>
-            <button
-              type="button"
-              disabled
-              className="mt-4 w-full rounded-lg bg-[#06c755] px-4 py-2.5 font-semibold text-white opacity-60"
-            >
+            <button type="button" disabled className="nm-btn nm-btn--line nm-btn--block" aria-disabled="true">
+              <LineIcon className="text-[22px]" />
               {copy.dashboard.loginLine}
             </button>
-            <p className="mt-2 text-xs text-slate-500">{copy.dashboard.loginNotReady}</p>
+            <p className="m-0 text-caption text-ink-muted">{copy.dashboard.loginNotReady}</p>
           </>
         )}
       </div>
@@ -99,6 +110,7 @@ function LoginGate({ forbidden }: { forbidden: boolean }) {
   );
 }
 
+/** DS TicketRow: the person's own words first, urgency as stripe + word + shape. */
 function TicketRow({
   t,
   selected,
@@ -112,35 +124,32 @@ function TicketRow({
   now: number;
   onSelect: () => void;
 }) {
+  const level = t.urgency === "critical" ? "nm-ticket--urgent" : t.urgency === "high" ? "nm-ticket--high" : "";
   return (
     <li>
-      <button
-        type="button"
-        onClick={onSelect}
-        aria-current={selected || undefined}
-        className={`w-full border-b border-slate-100 px-4 py-3 text-left ${
-          selected ? "bg-brand-50" : "hover:bg-slate-50"
-        } ${isNew ? "flash-new" : ""}`}
-      >
-        <div className="flex items-center gap-2">
-          <UrgencyBadge urgency={t.urgency} />
-          <span className="min-w-0 flex-1 truncate text-sm font-semibold">{t.place_label ?? copy.dashboard.noLocation}</span>
-          <span className="shrink-0 text-xs text-slate-500">{formatAge(t.created_at, now)}</span>
-        </div>
-        <div className="mt-1.5 flex flex-wrap items-center gap-2">
-          <span className="text-xs text-slate-500">#{t.id}</span>
-          <StatusBadge status={t.status} />
-          <span className="flex items-center gap-1 text-xs text-slate-600">
-            <UsersIcon />
-            {copy.dashboard.people(t.people_count)}
+      <button type="button" onClick={onSelect} aria-current={selected || undefined} className={`nm-ticket ${level}`}>
+        <span className="nm-ticket__stripe" aria-hidden="true" />
+        <span className="nm-ticket__main">
+          <span className="flex flex-wrap items-center gap-2">
+            <UrgencyBadge urgency={t.urgency} />
+            <span className="min-w-0 truncate text-label font-semibold">{t.place_label ?? copy.dashboard.noLocation}</span>
           </span>
-          {isNew && <span className="rounded bg-amber-300 px-1.5 text-xs font-semibold text-amber-950">ใหม่</span>}
-        </div>
-        {t.vulnerable.length > 0 && (
-          <div className="mt-1.5">
-            <Chips items={t.vulnerable} kind="vulnerable" />
-          </div>
-        )}
+          <span className="nm-ticket__meta">
+            <span className="nm-ticket__id">#{t.id}</span>
+            <span className="inline-flex items-center gap-1">
+              <UsersIcon className="text-[16px]" />
+              {copy.dashboard.people(t.people_count)}
+            </span>
+            {isNew && <span className="font-semibold text-river">{copy.dashboard.newTag}</span>}
+          </span>
+          {t.vulnerable.length > 0 && <Chips items={t.vulnerable} kind="vulnerable" />}
+        </span>
+        <span className="nm-ticket__side">
+          <span className="num text-caption text-ink-muted" title={formatDateTime(t.created_at)}>
+            {formatAge(t.created_at, now)}
+          </span>
+          <StatusBadge status={t.status} />
+        </span>
       </button>
     </li>
   );
@@ -186,10 +195,10 @@ function Dashboard() {
 
   return (
     <div className="flex h-full">
-      <section className="flex w-full min-w-0 flex-col border-r border-slate-200 bg-white lg:w-[440px] lg:flex-none">
-        <header className="border-b border-slate-200 px-4 pt-3">
-          <h1 className="text-lg font-semibold">{copy.dashboard.title}</h1>
-          <p className="mt-1 rounded-md bg-amber-50 px-2 py-1 text-xs text-amber-900">{copy.dashboard.banner}</p>
+      <section className="flex w-full min-w-0 flex-col border-r border-line bg-surface-raised lg:w-[460px] lg:flex-none">
+        <header className="border-b border-line px-4 pt-4">
+          <h1 className="m-0 text-title font-semibold">{copy.dashboard.title}</h1>
+          <p className="m-0 mt-1 rounded-sm bg-surface-sunken px-3 py-1.5 text-caption text-ink-muted">{copy.dashboard.banner}</p>
           <div className="-mx-1 mt-2 flex gap-1 overflow-x-auto" role="tablist">
             {(Object.keys(FILTERS) as FilterKey[]).map((k) => (
               <button
@@ -198,8 +207,8 @@ function Dashboard() {
                 role="tab"
                 aria-selected={filter === k}
                 onClick={() => setFilter(k)}
-                className={`shrink-0 border-b-2 px-3 py-2 text-sm font-semibold ${
-                  filter === k ? "border-brand-700 text-brand-800" : "border-transparent text-slate-500 hover:text-slate-700"
+                className={`min-h-11 shrink-0 border-b-2 px-3 text-label font-semibold ${
+                  filter === k ? "border-river text-river" : "border-transparent text-ink-muted hover:text-ink"
                 }`}
               >
                 {copy.dashboard.filters[k]}
@@ -215,7 +224,7 @@ function Dashboard() {
           ) : sorted.length === 0 ? (
             <EmptyState>{copy.dashboard.empty}</EmptyState>
           ) : (
-            <ul>
+            <ul className="m-0 list-none p-0">
               {sorted.map((t) => (
                 <TicketRow
                   key={t.id}
@@ -240,7 +249,7 @@ function Dashboard() {
       )}
 
       {selectedId != null && (
-        <div className="fixed inset-0 z-[1100] bg-white lg:absolute lg:inset-y-0 lg:right-0 lg:left-auto lg:w-[420px] lg:border-l lg:border-slate-200 lg:shadow-xl">
+        <div className="fixed inset-0 z-[1100] bg-surface-raised lg:absolute lg:inset-y-0 lg:right-0 lg:left-auto lg:w-[440px] lg:border-l lg:border-line lg:shadow-float">
           <TicketDrawer id={selectedId} onClose={() => select(null)} />
         </div>
       )}
@@ -253,9 +262,10 @@ function Dashboard() {
               select(toast);
               setToast(null);
             }}
-            className="w-full rounded-xl bg-slate-900 px-4 py-3 text-left text-sm text-white shadow-lg"
+            className="min-h-12 w-full rounded-md border border-line-strong bg-surface-raised px-4 py-3 text-left text-body text-ink shadow-float"
           >
-            <span className="font-semibold">{copy.dashboard.newTicket}</span> #{toast} · แตะเพื่อดู
+            <span className="font-semibold">{copy.dashboard.newTicket}</span> <span className="nm-code">#{toast}</span> ·{" "}
+            {copy.dashboard.tapToView}
           </button>
         </div>
       )}
@@ -264,6 +274,7 @@ function Dashboard() {
 }
 
 export default function DashboardPage() {
+  useDarkTheme();
   const session = useSession();
   if (!session) return <LoginGate forbidden={false} />;
   if (session.role !== "responder") return <LoginGate forbidden />;

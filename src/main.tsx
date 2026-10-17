@@ -1,5 +1,6 @@
-import "@fontsource/ibm-plex-sans-thai/400.css";
-import "@fontsource/ibm-plex-sans-thai/600.css";
+import "@fontsource/ibm-plex-sans-thai-looped/400.css";
+import "@fontsource/ibm-plex-sans-thai-looped/600.css";
+import "@fontsource/ibm-plex-mono/500.css";
 import "./index.css";
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";

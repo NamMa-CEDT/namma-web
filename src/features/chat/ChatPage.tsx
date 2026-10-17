@@ -5,7 +5,8 @@ import { LocateIcon, SendIcon } from "../../components/icons";
 import { copy } from "../../copy";
 import { looksLikeEmergency } from "../../lib/danger";
 import { getCurrentPosition } from "../../lib/geolocation";
-import { EmergencyCard, QuickReplies, SourceChip, TypingBubble } from "./parts";
+import { HotlineNotice } from "../../components/HotlineNotice";
+import { EmergencyCard, QuickReplies, Sources, TypingBubble } from "./parts";
 
 type Item =
   | { id: string; role: "user"; text: string; request: Omit<ChatRequest, "session_id">; failed?: boolean }
@@ -125,28 +126,21 @@ export default function ChatPage() {
 
   return (
     <div className="mx-auto flex h-full max-w-2xl flex-col">
-      <div className="flex items-center justify-between px-4 pt-3 pb-1">
-        <h1 className="text-base font-semibold text-slate-800">{copy.chat.title}</h1>
+      <div className="flex items-center justify-between gap-3 px-4 pt-4 pb-1">
+        <h1 className="m-0 text-heading font-semibold">{copy.chat.title}</h1>
         {items.length > 0 && (
-          <button type="button" onClick={reset} className="text-sm text-brand-700 hover:underline">
+          <button type="button" onClick={reset} className="min-h-11 text-label font-semibold text-river underline-offset-3 hover:underline">
             {copy.chat.newChat}
           </button>
         )}
       </div>
 
-      <div className="min-h-0 flex-1 space-y-3 overflow-y-auto px-4 py-3" aria-live="polite">
-        <div className="max-w-[85%] rounded-2xl rounded-tl-sm bg-white px-4 py-3 text-[15px] leading-relaxed shadow-sm">
-          {copy.chat.intro}
-        </div>
+      <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto px-4 py-3" aria-live="polite">
+        <div className="nm-bubble nm-bubble--bot">{copy.chat.intro}</div>
         {items.length === 0 && (
           <div className="flex flex-col items-start gap-2">
             {copy.chat.starters.map((s) => (
-              <button
-                key={s}
-                type="button"
-                onClick={() => sendText(s)}
-                className="rounded-2xl border border-brand-600 bg-white px-3 py-2 text-left text-sm text-brand-700 hover:bg-brand-50"
-              >
+              <button key={s} type="button" onClick={() => sendText(s)} className="nm-chip rounded-md">
                 {s}
               </button>
             ))}
@@ -156,20 +150,18 @@ export default function ChatPage() {
         {items.map((item, i) =>
           item.role === "user" ? (
             <div key={item.id} className="flex flex-col items-end gap-1">
-              <div className="max-w-[85%] rounded-2xl rounded-tr-sm bg-brand-700 px-4 py-2.5 text-[15px] whitespace-pre-line text-white">
-                {item.text}
-              </div>
+              <div className="nm-bubble nm-bubble--user whitespace-pre-line">{item.text}</div>
               {item.failed && (
-                <div className="flex items-center gap-2 text-xs text-red-700">
+                <p className="nm-field-error m-0 flex items-center gap-2">
                   {copy.chat.failed}
                   <button
                     type="button"
                     onClick={() => void send(item.request, item.text, item.id)}
-                    className="font-semibold underline"
+                    className="min-h-11 font-semibold text-river underline"
                   >
                     {copy.chat.retry}
                   </button>
-                </div>
+                </p>
               )}
               {item.failed && looksLikeEmergency(item.text) && (
                 <div className="w-full">
@@ -184,19 +176,17 @@ export default function ChatPage() {
                   <EmergencyCard />
                 </div>
               )}
-              <div className="max-w-[92%] rounded-2xl rounded-tl-sm bg-white px-4 py-3 text-[15px] leading-relaxed whitespace-pre-line shadow-sm">
-                {item.response.reply}
-              </div>
+              <div className="nm-bubble nm-bubble--bot whitespace-pre-line">{item.response.reply}</div>
               {item.response.ticket_id != null && (
-                <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-900">
+                <p className="m-0 rounded-sm bg-surface-sunken px-3 py-1.5 text-caption">
                   {copy.chat.ticketCreated(item.response.ticket_id)}
-                </span>
+                </p>
               )}
-              {item.response.sources.length > 0 && (
-                <div className="flex max-w-full flex-wrap gap-1.5">
-                  {item.response.sources.map((s, i) => (
-                    <SourceChip key={i} source={s} />
-                  ))}
+              <Sources sources={item.response.sources} />
+              {/* Every risk answer ends with the hotline (DS); rescue replies already led with it. */}
+              {isRiskAnswer(item.response) && !item.response.emergency && (
+                <div className="w-full max-w-[34rem]">
+                  <HotlineNotice />
                 </div>
               )}
             </div>
@@ -207,21 +197,21 @@ export default function ChatPage() {
       </div>
 
       <QuickReplies items={quickReplies} disabled={pending} onPick={pick} />
-      {notice && <p className="px-4 pb-1 text-xs text-slate-600">{notice}</p>}
+      {notice && <p className="m-0 px-4 pb-1 text-caption text-ink-muted">{notice}</p>}
 
-      <form onSubmit={onSubmit} className="flex items-end gap-2 border-t border-slate-200 bg-white px-3 py-2">
+      <form onSubmit={onSubmit} className="flex items-center gap-2 border-t border-line bg-surface-raised px-3 py-2">
         <button
           type="button"
           onClick={() => void sendLocation()}
           disabled={pending}
           aria-label={copy.chat.shareLocation}
           title={copy.chat.shareLocation}
-          className="rounded-full p-2.5 text-xl text-brand-700 hover:bg-brand-50 disabled:opacity-50"
+          className="nm-btn nm-btn--secondary size-[52px] shrink-0 p-0 text-river"
         >
-          <LocateIcon />
+          <LocateIcon className="text-[22px]" />
         </button>
         <label className="sr-only" htmlFor="chat-input">
-          {copy.chat.placeholder}
+          {copy.chat.inputLabel}
         </label>
         <input
           id="chat-input"
@@ -230,17 +220,22 @@ export default function ChatPage() {
           placeholder={copy.chat.placeholder}
           autoComplete="off"
           enterKeyHint="send"
-          className="min-w-0 flex-1 rounded-full border border-slate-300 bg-slate-50 px-4 py-2.5 text-[16px] outline-none focus:border-brand-600 focus:bg-white"
+          className="nm-input min-w-0 flex-1"
         />
         <button
           type="submit"
           disabled={pending || !text.trim()}
           aria-label={copy.chat.send}
-          className="rounded-full bg-brand-700 p-2.5 text-xl text-white hover:bg-brand-800 disabled:opacity-40"
+          className="nm-btn nm-btn--primary size-[52px] shrink-0 p-0"
         >
-          <SendIcon />
+          <SendIcon className="text-[22px]" />
         </button>
       </form>
     </div>
   );
+}
+
+/** A reply that talks about river risk (it cites a station). */
+function isRiskAnswer(r: ChatResponse): boolean {
+  return r.sources.some((s) => s.type === "station");
 }

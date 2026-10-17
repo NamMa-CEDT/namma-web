@@ -1,74 +1,704 @@
 @import "tailwindcss";
+/* Colours come only from the NamMa design system (styles/tokens.json → tokens.css).
+   Tailwind's own palette is switched off there, so `bg-slate-100` etc. no longer exist. */
+@import "./styles/tokens.css";
 
 @theme {
-  --font-sans: "IBM Plex Sans Thai", ui-sans-serif, system-ui, sans-serif;
+  --font-*: initial;
+  --font-sans: "IBM Plex Sans Thai Looped", "Noto Sans Thai Looped", "Noto Sans Thai", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", "IBM Plex Sans Thai Looped", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
 
-  --color-brand-50: #f0f7fb;
-  --color-brand-100: #dcecf5;
-  --color-brand-600: #0f6a99;
-  --color-brand-700: #0c5a83;
-  --color-brand-800: #0c4a6e;
-  --color-brand-900: #0a3a56;
+  /* Type scale (design system "type" groups). Nothing below 14px: Thai reads smaller than Latin. */
+  --text-*: initial;
+  --text-caption: 14px;
+  --text-caption--line-height: 22px;
+  --text-body: 16px;
+  --text-body--line-height: 27px;
+  --text-label: 16px;
+  --text-label--line-height: 24px;
+  --text-body-lg: 18px;
+  --text-body-lg--line-height: 30px;
+  --text-heading: 19px;
+  --text-heading--line-height: 30px;
+  --text-title: 24px;
+  --text-title--line-height: 36px;
+  --text-reading-lg: 30px;
+  --text-reading-lg--line-height: 40px;
 
-  /* Risk tiers (CLAUDE.md §8) on the dataviz status scale, stepped in lightness so the order
-     survives colour-blindness (deutan ΔE 11.3). Always paired with a Thai label.
-     "normal" is neutral slate on purpose: it is not "safe". */
-  --color-tier-normal: #64748b;
-  --color-tier-watch: #fab219;
-  --color-tier-warning: #ec835a;
-  --color-tier-danger: #d03b3b;
-  --color-tier-unknown: #a1a1aa;
+  --radius-*: initial;
+  --radius-sm: 4px;
+  --radius-md: 10px;
+  --radius-pill: 999px;
+  --radius-full: 9999px;
 
-  --color-emergency: #b91c1c;
+  /* Flat by default; shadow-raised is only for floating panels (map controls, toasts, popovers). */
+  --shadow-*: initial;
+  --shadow-float: var(--shadow-raised);
 }
 
 :root {
-  color-scheme: light;
+  --font-body: var(--font-sans);
 }
 
-html,
-body,
-#root {
-  height: 100%;
+/* Layered so Tailwind utilities (layout, spacing) can adjust any design-system component. */
+@layer base {
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+
+  body {
+    margin: 0;
+    background: var(--surface);
+    color: var(--ink);
+    font: 400 16px/27px var(--font-body);
+    -webkit-font-smoothing: antialiased;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* No letter-spacing on Thai, ever. */
+  * {
+    letter-spacing: normal;
+  }
+
+  :where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+    outline: 2px solid var(--focus);
+    outline-offset: 2px;
+  }
+
+  .num,
+  .nm-num {
+    font-variant-numeric: tabular-nums;
+  }
+
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
 }
 
-body {
-  margin: 0;
-  background: #f6f8fa;
-  color: #0f172a;
-  -webkit-font-smoothing: antialiased;
-  -webkit-tap-highlight-color: transparent;
+/* ---------------------------------------------------------------- design system components (nm-) */
+@layer components {
+
+  .nm-code {
+    font: 500 14px/22px var(--font-mono);
+    color: var(--river);
+  }
+
+  /* Shapes: every tier shows a word AND one of these. */
+  .nm-shape {
+    display: inline-block;
+    flex: none;
+    width: 10px;
+    height: 10px;
+    background: currentColor;
+    box-sizing: border-box;
+  }
+  .nm-shape--normal {
+    border-radius: 50%;
+  }
+  .nm-shape--watch {
+    background: none;
+    border: 2px solid currentColor;
+    border-radius: 50%;
+  }
+  .nm-shape--warning {
+    clip-path: polygon(50% 0, 100% 100%, 0 100%);
+    width: 11px;
+    height: 11px;
+  }
+  .nm-shape--danger {
+    width: 9px;
+    height: 9px;
+    transform: rotate(45deg);
+  }
+  /* Not a design-system tier: a station with no risk row. Dashed ring, never "normal". */
+  .nm-shape--unknown {
+    background: none;
+    border: 1.5px dashed currentColor;
+    border-radius: 50%;
+  }
+
+  /* House icon: marks anything that belongs to the household */
+  .nm-house {
+    display: inline-block;
+    flex: none;
+    width: 14px;
+    height: 14px;
+    background: currentColor;
+    clip-path: polygon(50% 0, 100% 46%, 86% 46%, 86% 100%, 14% 100%, 14% 46%, 0 46%);
+  }
+
+  /* Button */
+  .nm-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 48px;
+    padding: 10px 24px;
+    box-sizing: border-box;
+    border-radius: var(--radius-md);
+    font: 600 16px/24px var(--font-body);
+    text-align: center;
+    cursor: pointer;
+    text-decoration: none;
+    border: 1px solid transparent;
+  }
+  .nm-btn:hover {
+    box-shadow: inset 0 0 0 999px rgba(0, 0, 0, 0.08);
+  }
+  .nm-btn--primary,
+  .nm-btn--primary:hover,
+  .nm-btn--primary:visited {
+    background: var(--river);
+    color: var(--on-river);
+  }
+  .nm-btn--secondary,
+  .nm-btn--secondary:hover,
+  .nm-btn--secondary:visited {
+    background: var(--surface-raised);
+    color: var(--ink);
+    border-color: var(--line-strong);
+  }
+  .nm-btn--danger,
+  .nm-btn--danger:hover,
+  .nm-btn--danger:visited {
+    background: var(--tier-danger);
+    color: var(--on-tier-danger);
+  }
+  .nm-btn--call,
+  .nm-btn--call:hover,
+  .nm-btn--call:visited {
+    background: var(--surface-raised);
+    color: var(--tier-danger-ink);
+    border: 2px solid var(--tier-danger-ink);
+  }
+  .nm-btn--line,
+  .nm-btn--line:hover,
+  .nm-btn--line:visited {
+    background: var(--line-green);
+    color: var(--on-line-green);
+    font-size: 18px;
+    font-weight: 700;
+  }
+  .nm-btn--block {
+    display: flex;
+    width: 100%;
+  }
+  .nm-btn--sm {
+    min-height: 44px;
+    padding: 8px 16px;
+  }
+  .nm-btn:disabled,
+  .nm-btn[aria-disabled="true"] {
+    background: var(--surface-sunken);
+    color: var(--ink-muted);
+    border-color: var(--line);
+    box-shadow: none;
+    cursor: not-allowed;
+  }
+
+  /* Input */
+  .nm-input {
+    min-height: 52px;
+    width: 100%;
+    box-sizing: border-box;
+    padding: 0 16px;
+    border: 1px solid var(--line-strong);
+    border-radius: var(--radius-md);
+    background: var(--surface-raised);
+    color: var(--ink);
+    font: 400 18px/28px var(--font-body);
+  }
+  .nm-input::placeholder {
+    color: var(--ink-muted);
+  }
+  .nm-input[aria-invalid="true"] {
+    border: 2px solid var(--tier-danger-ink);
+  }
+  .nm-field-error {
+    font: 400 14px/22px var(--font-body);
+    color: var(--tier-danger-ink);
+  }
+
+  /* Risk badge: word + shape, never colour alone */
+  .nm-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 2px 8px;
+    border-radius: var(--radius-sm);
+    font: 600 15px/24px var(--font-body);
+    white-space: nowrap;
+  }
+  .nm-badge::before {
+    content: "";
+    display: inline-block;
+    flex: none;
+    width: 10px;
+    height: 10px;
+    background: currentColor;
+    box-sizing: border-box;
+  }
+  .nm-badge--normal::before {
+    border-radius: 50%;
+  }
+  .nm-badge--watch::before {
+    background: none;
+    border: 2px solid currentColor;
+    border-radius: 50%;
+  }
+  .nm-badge--warning::before {
+    clip-path: polygon(50% 0, 100% 100%, 0 100%);
+    width: 11px;
+    height: 11px;
+  }
+  .nm-badge--danger::before {
+    width: 9px;
+    height: 9px;
+    transform: rotate(45deg);
+  }
+  .nm-badge--unknown::before {
+    background: none;
+    border: 1.5px dashed currentColor;
+    border-radius: 50%;
+  }
+  .nm-badge--normal {
+    background: var(--tier-normal);
+    color: var(--on-tier-normal);
+  }
+  .nm-badge--watch {
+    background: var(--tier-watch);
+    color: var(--on-tier-watch);
+    box-shadow: inset 0 0 0 1px var(--tier-watch-ink);
+  }
+  .nm-badge--warning {
+    background: var(--tier-warning);
+    color: var(--on-tier-warning);
+  }
+  .nm-badge--danger {
+    background: var(--tier-danger);
+    color: var(--on-tier-danger);
+  }
+  .nm-badge--unknown {
+    background: var(--surface-sunken);
+    color: var(--ink-muted);
+  }
+  .nm-badge--soft.nm-badge--normal {
+    background: var(--tier-normal-soft);
+    color: var(--tier-normal-ink);
+  }
+  .nm-badge--soft.nm-badge--watch {
+    background: var(--tier-watch-soft);
+    color: var(--tier-watch-ink);
+    box-shadow: none;
+  }
+  .nm-badge--soft.nm-badge--warning {
+    background: var(--tier-warning-soft);
+    color: var(--tier-warning-ink);
+  }
+  .nm-badge--soft.nm-badge--danger {
+    background: var(--tier-danger-soft);
+    color: var(--tier-danger-ink);
+  }
+
+  /* Gauge: a staff gauge laid on its side. Positions are 0–100 (% of track). */
+  .nm-gauge {
+    position: relative;
+    height: 28px;
+    border-radius: var(--radius-sm);
+    background: var(--surface-sunken);
+    overflow: hidden;
+  }
+  .nm-gauge__water {
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: calc(var(--level-pos) * 1%);
+    background: var(--water);
+  }
+  .nm-gauge__ticks {
+    position: absolute;
+    inset: auto 0 0 0;
+    height: 8px;
+    background: repeating-linear-gradient(90deg, var(--ink-muted) 0 1px, transparent 1px 10%);
+    opacity: 0.55;
+  }
+  .nm-gauge__bank {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: calc(var(--bank-pos) * 1%);
+    width: 3px;
+    margin-left: -1px;
+    background: var(--bank);
+    box-shadow: 0 0 0 1px var(--surface-raised);
+  }
+  .nm-gauge--over .nm-gauge__water {
+    background: var(--tier-danger);
+  }
+  .nm-gauge-legend {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+    margin-top: 4px;
+    font: 400 14px/22px var(--font-body);
+    color: var(--ink-muted);
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Station card */
+  .nm-station {
+    background: var(--surface-raised);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-md);
+    padding: 16px;
+    display: grid;
+    gap: 12px;
+    min-width: 0;
+  }
+  .nm-station__head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  .nm-station__name {
+    margin: 0;
+    font: 600 19px/30px var(--font-body);
+  }
+  .nm-station__meta {
+    font: 400 14px/22px var(--font-body);
+    color: var(--ink-muted);
+  }
+  .nm-station__gap {
+    font: 600 30px/40px var(--font-body);
+    font-variant-numeric: tabular-nums;
+  }
+  .nm-station__gap--over {
+    color: var(--tier-danger-ink);
+  }
+  .nm-station__why {
+    font: 400 16px/26px var(--font-body);
+  }
+  .nm-station__facts {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 12px;
+    margin: 0;
+  }
+  .nm-station__facts dt {
+    font: 400 14px/22px var(--font-body);
+    color: var(--ink-muted);
+  }
+  .nm-station__facts dd {
+    margin: 0;
+    font: 600 16px/24px var(--font-body);
+    font-variant-numeric: tabular-nums;
+  }
+  .nm-source {
+    margin: 0;
+    padding-top: 12px;
+    border-top: 1px solid var(--line);
+    font: 400 14px/22px var(--font-body);
+    color: var(--ink-muted);
+  }
+  .nm-source a {
+    color: var(--river);
+  }
+
+  /* Stale data: shown when ThaiWater has not updated */
+  .nm-stale {
+    display: flex;
+    gap: 8px;
+    align-items: flex-start;
+    padding: 8px 12px;
+    border-radius: var(--radius-sm);
+    background: var(--tier-watch-soft);
+    color: var(--tier-watch-ink);
+    font: 400 14px/22px var(--font-body);
+  }
+
+  /* Household: navy + house icon on a soft wave ground */
+  .nm-place {
+    display: grid;
+    gap: 8px;
+    padding: 12px 12px 26px;
+    border-radius: var(--radius-sm);
+    background-color: var(--home-soft);
+    background-image:
+      radial-gradient(circle at 50% 100%, transparent 6px, var(--home-wave) 6px 8px, transparent 8px),
+      radial-gradient(circle at 50% 100%, transparent 6px, var(--home-wave) 6px 8px, transparent 8px);
+    background-size:
+      20px 10px,
+      20px 10px;
+    background-position:
+      0 calc(100% - 4px),
+      10px calc(100% + 2px);
+    background-repeat: repeat-x;
+  }
+  .nm-place__label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font: 600 17px/26px var(--font-body);
+    color: var(--home);
+  }
+  .nm-place__where {
+    font: 400 14px/22px var(--font-body);
+    color: var(--ink-muted);
+  }
+
+  /* Quick replies: mirror LINE quick-reply chips (labels ≤ 20 characters) */
+  .nm-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 44px;
+    padding: 8px 16px;
+    box-sizing: border-box;
+    border-radius: var(--radius-pill);
+    border: 1px solid var(--line-strong);
+    background: var(--surface-raised);
+    color: var(--river);
+    font: 600 16px/24px var(--font-body);
+    cursor: pointer;
+    text-align: left;
+  }
+  .nm-chip:disabled {
+    color: var(--ink-muted);
+    cursor: not-allowed;
+  }
+  .nm-chip--urgent {
+    background: var(--tier-danger-soft);
+    color: var(--tier-danger-ink);
+    border-color: var(--tier-danger-ink);
+  }
+  .nm-chip--memory {
+    color: var(--home);
+    background: var(--home-soft);
+    border-color: transparent;
+    cursor: default;
+    font-weight: 400;
+  }
+
+  /* Chat bubbles */
+  .nm-bubble {
+    max-width: 34ch;
+    padding: 12px 16px;
+    border-radius: var(--radius-md);
+    font: 400 18px/30px var(--font-body);
+  }
+  .nm-bubble--bot {
+    background: var(--surface-raised);
+    border: 1px solid var(--line);
+    border-top-left-radius: var(--radius-sm);
+  }
+  .nm-bubble--user {
+    background: var(--river-soft);
+    margin-left: auto;
+    border-top-right-radius: var(--radius-sm);
+  }
+
+  /* Hotline notice: required on every risk answer and alert; first in every rescue reply */
+  .nm-hotline {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 16px;
+    padding: 12px 16px;
+    border-radius: var(--radius-sm);
+    background: var(--surface-sunken);
+    font: 400 16px/26px var(--font-body);
+    color: var(--ink);
+  }
+  .nm-hotline__num,
+  .nm-hotline__num:hover,
+  .nm-hotline__num:visited {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    font: 600 22px/28px var(--font-body);
+    color: var(--tier-danger-ink);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    font-variant-numeric: tabular-nums;
+  }
+  .nm-hotline__note {
+    flex-basis: 100%;
+    font: 400 15px/24px var(--font-body);
+    color: var(--ink-muted);
+  }
+
+  /* Rescue ticket row (responder dashboard) */
+  .nm-ticket {
+    display: grid;
+    grid-template-columns: 6px minmax(0, 1fr) auto;
+    gap: 12px;
+    align-items: start;
+    width: 100%;
+    padding: 12px 16px 12px 0;
+    background: var(--surface-raised);
+    border: 0;
+    border-bottom: 1px solid var(--line);
+    color: var(--ink);
+    text-align: left;
+    text-decoration: none;
+    cursor: pointer;
+  }
+  .nm-ticket:hover {
+    background: var(--surface-sunken);
+  }
+  .nm-ticket[aria-current="true"] {
+    background: var(--river-soft);
+  }
+  .nm-ticket__stripe {
+    align-self: stretch;
+    background: var(--tier-normal);
+  }
+  .nm-ticket--urgent .nm-ticket__stripe {
+    background: var(--tier-danger);
+  }
+  .nm-ticket--high .nm-ticket__stripe {
+    background: var(--tier-warning);
+  }
+  .nm-ticket__main {
+    display: grid;
+    gap: 4px;
+    min-width: 0;
+  }
+  .nm-ticket__quote {
+    margin: 0;
+    font: 400 17px/28px var(--font-body);
+  }
+  .nm-ticket__meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 12px;
+    font: 400 14px/22px var(--font-body);
+    color: var(--ink-muted);
+  }
+  .nm-ticket__id {
+    font: 500 14px/22px var(--font-mono);
+    color: var(--ink-muted);
+  }
+  .nm-ticket__tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+  .nm-tag {
+    padding: 0 8px;
+    border-radius: var(--radius-sm);
+    font: 600 14px/26px var(--font-body);
+    background: var(--surface-sunken);
+    color: var(--ink);
+  }
+  .nm-tag--vulnerable {
+    background: var(--tier-danger-soft);
+    color: var(--tier-danger-ink);
+  }
+  .nm-ticket__side {
+    display: grid;
+    justify-items: end;
+    gap: 4px;
+  }
+  .nm-status {
+    font: 600 14px/22px var(--font-body);
+    color: var(--ink-muted);
+  }
+  .nm-status--open {
+    color: var(--river);
+  }
 }
 
-.num {
-  font-variant-numeric: tabular-nums;
-}
+/* Leaflet's own CSS is unlayered, so these overrides and the pins stay unlayered too. */
+/* ---------------------------------------------------------------- map (Leaflet) */
 
-.pb-safe {
-  padding-bottom: env(safe-area-inset-bottom);
+.leaflet-container {
+  font-family: var(--font-body);
+  background: var(--surface-sunken);
 }
-
-/* Leaflet: our tooltips for station codes */
+.leaflet-tooltip {
+  background: var(--surface-raised);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-raised);
+  color: var(--ink);
+  font: 400 14px/22px var(--font-body);
+}
 .leaflet-tooltip.station-code {
-  background: rgba(255, 255, 255, 0.92);
-  border: 1px solid #cbd5e1;
-  border-radius: 6px;
+  background: var(--surface-raised);
+  border: 1px solid var(--line-strong);
   box-shadow: none;
-  color: #0f172a;
-  font: 600 11px/1.2 var(--font-sans);
-  padding: 1px 5px;
+  color: var(--ink);
+  font: 500 14px/20px var(--font-mono);
+  padding: 0 5px;
 }
 .leaflet-tooltip.station-code::before {
   display: none;
 }
-.leaflet-container {
-  font-family: var(--font-sans);
+.leaflet-bar a {
+  background: var(--surface-raised);
+  color: var(--ink);
+  border-color: var(--line);
 }
 
-@keyframes flash-new {
-  0% { background-color: #fde68a; }
-  100% { background-color: transparent; }
+/* Map pins: the tier shape itself, so the map reads without colour (DS: shape on every map pin). */
+.nm-pin {
+  display: block;
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+  background: var(--pin-fill);
+  border: 2px solid var(--surface-raised);
+  cursor: pointer;
 }
-.flash-new {
-  animation: flash-new 2.5s ease-out 3;
+.nm-pin--normal {
+  --pin-fill: var(--tier-normal);
+  border-radius: 50%;
+}
+.nm-pin--watch {
+  --pin-fill: var(--surface-raised);
+  border: 4px solid var(--tier-watch);
+  border-radius: 50%;
+  outline: 1px solid var(--tier-watch-ink);
+}
+.nm-pin--danger {
+  --pin-fill: var(--tier-danger);
+  transform: rotate(45deg) scale(0.82);
+  border-radius: 2px;
+}
+.nm-pin--unknown {
+  --pin-fill: var(--surface-raised);
+  border: 2px dashed var(--ink-muted);
+  border-radius: 50%;
+}
+/* A triangle can't carry a border; an outline triangle sits behind it. */
+.nm-pin--warning {
+  --pin-fill: var(--tier-warning);
+  border: 0;
+  clip-path: polygon(50% 0, 100% 100%, 0 100%);
+  filter: drop-shadow(0 0 1px var(--surface-raised)) drop-shadow(0 0 1px var(--surface-raised));
+}
+.nm-pin--selected {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+.nm-pin--warning.nm-pin--selected {
+  outline: none;
+  filter: drop-shadow(0 0 2px var(--focus)) drop-shadow(0 0 2px var(--focus));
+}
+.nm-pin--here {
+  --pin-fill: var(--river);
+  border: 3px solid var(--surface-raised);
+  border-radius: 50%;
+  outline: 2px solid var(--river);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition: none !important;
+    animation: none !important;
+  }
 }

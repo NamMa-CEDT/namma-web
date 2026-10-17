@@ -23,13 +23,22 @@ export const copy = {
     unofficial: "น้ำมาไม่ใช่หน่วยงานราชการ",
     emergency: "เหตุฉุกเฉินโทร",
     followOfficial: "ปฏิบัติตามประกาศอพยพของทางการเสมอ",
-    dataCredit: "ข้อมูลระดับน้ำ: สถาบันสารสนเทศทรัพยากรน้ำ (สสน.)",
+    dataCredit: "ข้อมูลระดับน้ำ: ThaiWater โดยสถาบันสารสนเทศทรัพยากรน้ำ (สสน.)",
     callButton: "โทร 1784",
   },
 
+  hotline: {
+    ddpm: "สายด่วน ปภ.",
+    line: "LINE",
+    medical: "เจ็บป่วยฉุกเฉิน",
+    medicalNumber: "1669",
+    note: "น้ำมาไม่ใช่หน่วยงานราชการ ข้อมูลระดับน้ำจาก ThaiWater โดยสถาบันสารสนเทศทรัพยากรน้ำ (สสน.) ระดับเสี่ยงประเมินโดยน้ำมา โปรดปฏิบัติตามประกาศของทางการ",
+  },
+
   stale: {
-    banner: (age: string) => `ข้อมูลล่าสุดเมื่อ ${age} อาจไม่เป็นปัจจุบัน`,
-    badge: "ข้อมูลเก่า",
+    // DS nm-stale: keep the old time visible.
+    banner: (when: string) => `ข้อมูลล่าสุดเมื่อ ${when} ยังไม่มีข้อมูลใหม่จาก ThaiWater`,
+    station: (when: string) => `ข้อมูลล่าสุดเมื่อ ${when} สถานีนี้ยังไม่มีข้อมูลใหม่`,
   },
 
   unknown: "ไม่ทราบ",
@@ -45,7 +54,8 @@ export const copy = {
   map: {
     title: "ระดับน้ำลุ่มเจ้าพระยา",
     subtitle: "นครสวรรค์ → ชัยนาท → อยุธยา → กรุงเทพฯ",
-    legend: "ระดับความเสี่ยงที่สถานี",
+    legend: "ระดับเสี่ยงที่สถานี",
+    estimated: "ประเมินโดยน้ำมา",
     corridor: "สถานีตามลำน้ำ (ต้นน้ำ → ปลายน้ำ)",
     branches: "แม่น้ำสาขา",
     myLocation: "ตำแหน่งของฉัน",
@@ -59,6 +69,7 @@ export const copy = {
     tilesFailed: "โหลดแผนที่ไม่ได้ ดูรายการสถานีด้านล่างแทน",
     close: "ปิด",
     back: "กลับไปรายการสถานี",
+    corridorHint: "แตะสถานีเพื่อดูรายละเอียด",
   },
 
   station: {
@@ -66,13 +77,16 @@ export const copy = {
     bank: "ตลิ่ง",
     gapToBank: "เทียบกับตลิ่ง",
     trend: "แนวโน้ม 3 ชม.",
+    level: "ระดับน้ำ",
+    bankLevel: "ระดับตลิ่ง",
     hoursToBank: "ถึงตลิ่งในอีก",
     discharge: "ปริมาณน้ำไหลผ่าน",
     upstream: "สถานีต้นน้ำ",
     downstream: "สถานีปลายน้ำ",
     observedAt: "เวลาที่วัด",
-    source: (agency: string | null) =>
-      `แหล่งข้อมูล: ${agencyName(agency)} ผ่าน ThaiWater (สสน.)`,
+    sourceLead: "ที่มา:",
+    estimated: "ระดับเสี่ยงประเมินโดยน้ำมา",
+    thaiwater: "ThaiWater (สสน.)",
     stationNotHouse:
       "ตัวเลขนี้คือระดับน้ำในแม่น้ำที่จุดสถานีวัด ไม่ใช่ระดับน้ำที่บ้าน ใช้ประกอบการตัดสินใจร่วมกับประกาศของทางการ",
     chartTitle: "ระดับน้ำ 72 ชั่วโมงล่าสุด",
@@ -84,10 +98,17 @@ export const copy = {
   dashboard: {
     title: "คำขอความช่วยเหลือ",
     banner: "สำหรับเจ้าหน้าที่กู้ภัยเท่านั้น ข้อมูลส่วนบุคคลใช้เพื่อการช่วยเหลือเท่านั้น",
+    newTag: "ใหม่",
+    openInMaps: "เปิดใน Google Maps",
+    location: "ตำแหน่ง",
+    people_: "ผู้ประสบภัย",
+    assignee: "ผู้รับผิดชอบ",
+    cancel: "ยกเลิกคำขอ",
+    tapToView: "แตะเพื่อดู",
     filters: {
       active: "ยังไม่ปิด",
-      open: "ใหม่",
-      in_progress: "กำลังช่วยเหลือ",
+      open: "รอรับเรื่อง",
+      in_progress: "กำลังดำเนินการ",
       closed: "ปิดแล้ว",
     },
     empty: "ไม่มีคำขอในหมวดนี้",
@@ -114,15 +135,15 @@ export const copy = {
   },
 
   urgency: {
-    critical: "วิกฤต",
-    high: "เร่งด่วน",
+    critical: "ด่วนมาก",
+    high: "ด่วน",
     normal: "ปกติ",
   },
 
   status: {
-    open: "ใหม่",
+    open: "รอรับเรื่อง",
     acknowledged: "รับเรื่องแล้ว",
-    in_progress: "กำลังช่วยเหลือ",
+    in_progress: "กำลังเดินทาง",
     resolved: "ช่วยเหลือแล้ว",
     cancelled: "ยกเลิก",
   },
@@ -152,8 +173,9 @@ export const copy = {
   chat: {
     title: "ถามเรื่องน้ำท่วม",
     intro:
-      "สวัสดี ถามเรื่องระดับน้ำใกล้บ้านได้เลย เช่น \"บ้านแม่อยู่บางบาล อยุธยา น้ำจะถึงไหม\" คำตอบอ้างอิงสถานีวัดน้ำจริง",
-    placeholder: "พิมพ์คำถาม…",
+      "สวัสดีค่ะ ถามเรื่องระดับน้ำใกล้บ้านได้เลยค่ะ เช่น “บ้านแม่อยู่บางบาล อยุธยา น้ำจะถึงไหม” เราตอบจากสถานีวัดน้ำจริง และบอกที่มาทุกครั้งค่ะ",
+    inputLabel: "พิมพ์คำถาม",
+    placeholder: "เช่น บ้านแม่อยู่บางบาล",
     send: "ส่ง",
     shareLocation: "ส่งตำแหน่ง",
     locating: "กำลังหาตำแหน่ง…",
@@ -161,18 +183,16 @@ export const copy = {
     typing: "กำลังตอบ…",
     failed: "ส่งไม่สำเร็จ",
     retry: "ลองอีกครั้ง",
-    sentLocation: "📍 ส่งตำแหน่งแล้ว",
+    sentLocation: "ส่งตำแหน่งปัจจุบันแล้ว",
     ticketCreated: (id: number) => `ส่งเรื่องขอความช่วยเหลือแล้ว เลขที่ #${id}`,
-    emergencyTitle: "ถ้าอยู่ในอันตรายตอนนี้",
-    emergencyBody: "โทรสายด่วน ปภ. 1784 ได้ตลอด 24 ชม. หรือแจ้งผ่าน LINE @1784DDPM",
-    emergencyCall: "โทร 1784",
-    emergencyLine: "LINE @1784DDPM",
+    emergencyTitle: "ถ้าอยู่ในอันตรายตอนนี้ โทรขอความช่วยเหลือก่อนค่ะ",
     starters: [
       "บ้านแม่อยู่บางบาล อยุธยา น้ำจะถึงไหม",
       "ระดับน้ำที่บ้านป้อมตอนนี้เป็นยังไง",
       "ศูนย์พักพิงใกล้บางบาลมีที่ไหนบ้าง",
     ],
-    newChat: "เริ่มใหม่",
+    newChat: "เริ่มคุยใหม่",
+    sourcesLabel: "ที่มา",
   },
 
   errors: {
@@ -201,9 +221,9 @@ export function agencyName(agency: string | null): string {
     case "RID":
       return "กรมชลประทาน";
     case "HII":
-      return "สสน.";
+      return "สถาบันสารสนเทศทรัพยากรน้ำ (สสน.)";
     case "EGAT":
-      return "กฟผ.";
+      return "การไฟฟ้าฝ่ายผลิตแห่งประเทศไทย (กฟผ.)";
     case null:
     case undefined:
       return "ไม่ระบุหน่วยงาน";

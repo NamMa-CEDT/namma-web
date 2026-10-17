@@ -15,11 +15,10 @@ import {
 import type { Reading } from "../../api/types";
 import { copy } from "../../copy";
 import { formatBankGap, formatDateTime, formatLevel } from "../../lib/format";
+import { useTokens } from "../../lib/useTokens";
 
-const SERIES = "#2a78d6";
-const BANK = "#d03b3b";
-const GRID = "#e2e8f0";
-const MUTED = "#64748b";
+// Design-system tokens: water fills the level line, the bank line is `bank` (ink), grid is `line`.
+const TOKENS = ["water", "bank", "line", "line-strong", "ink", "ink-muted", "surface-raised"] as const;
 
 interface Point {
   t: number;
@@ -47,21 +46,22 @@ function TooltipBody({ active, payload }: { active?: boolean; payload?: { payloa
   const p = payload?.[0]?.payload;
   if (!active || !p || p.level == null) return null;
   return (
-    <div className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs shadow-md">
+    <div className="rounded-sm border border-line bg-surface-raised px-3 py-2 shadow-float">
       <div className="flex items-center gap-2">
-        <span aria-hidden="true" className="inline-block h-0.5 w-3 rounded" style={{ background: SERIES }} />
-        <span className="text-sm font-semibold text-slate-900">{formatLevel(p.level)}</span>
+        <span aria-hidden="true" className="inline-block h-0.5 w-3 rounded-sm bg-water" />
+        <span className="num text-label font-semibold text-ink">{formatLevel(p.level)}</span>
       </div>
-      <div className="mt-0.5 text-slate-500">{formatDateTime(new Date(p.t).toISOString())}</div>
+      <div className="num text-caption text-ink-muted">{formatDateTime(new Date(p.t).toISOString())}</div>
     </div>
   );
 }
 
 export default function LevelChart({ readings, bank }: { readings: Reading[]; bank: number | null }) {
   const data = useMemo(() => withGaps(readings), [readings]);
+  const c = useTokens(TOKENS);
   const last = [...data].reverse().find((p) => p.level != null) ?? null;
 
-  if (!last) return <p className="py-6 text-center text-sm text-slate-500">{copy.station.chartEmpty}</p>;
+  if (!last) return <p className="m-0 py-6 text-center text-body text-ink-muted">{copy.station.chartEmpty}</p>;
 
   const levels = data.flatMap((p) => (p.level == null ? [] : [p.level]));
   const lo = Math.min(...levels, bank ?? Infinity);
@@ -81,21 +81,21 @@ export default function LevelChart({ readings, bank }: { readings: Reading[]; ba
       <div className="h-56 w-full">
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={data} margin={{ top: 16, right: 56, bottom: 0, left: 0 }}>
-            <CartesianGrid vertical={false} stroke={GRID} />
+            <CartesianGrid vertical={false} stroke={c.line} />
             <XAxis
               dataKey="t"
               type="number"
               domain={[start, end]}
               ticks={dayTicks}
               tickFormatter={(t: number) => tickFmt.format(t)}
-              tick={{ fontSize: 11, fill: MUTED }}
+              tick={{ fontSize: 14, fill: c["ink-muted"] }}
               tickLine={false}
-              axisLine={{ stroke: "#cbd5e1" }}
+              axisLine={{ stroke: c["line-strong"] }}
             />
             <YAxis
               domain={domain}
-              width={40}
-              tick={{ fontSize: 11, fill: MUTED }}
+              width={44}
+              tick={{ fontSize: 14, fill: c["ink-muted"] }}
               tickFormatter={(v: number) => v.toFixed(1)}
               tickLine={false}
               axisLine={false}
@@ -103,29 +103,29 @@ export default function LevelChart({ readings, bank }: { readings: Reading[]; ba
             {bank != null && (
               <ReferenceLine
                 y={bank}
-                stroke={BANK}
-                strokeWidth={1.5}
+                stroke={c.bank}
+                strokeWidth={2}
                 strokeDasharray="5 4"
                 label={{
                   value: `${copy.station.chartBankLine} ${bank.toFixed(2)}`,
                   position: "insideTopLeft",
-                  fill: "#7f1d1d",
-                  fontSize: 11,
+                  fill: c.ink,
+                  fontSize: 14,
                 }}
               />
             )}
             <Tooltip
               content={<TooltipBody />}
-              cursor={{ stroke: "#94a3b8", strokeWidth: 1 }}
+              cursor={{ stroke: c["ink-muted"], strokeWidth: 1 }}
               isAnimationActive={false}
             />
             <Line
               type="monotone"
               dataKey="level"
-              stroke={SERIES}
-              strokeWidth={2}
+              stroke={c.water}
+              strokeWidth={2.5}
               dot={false}
-              activeDot={{ r: 5, fill: SERIES, stroke: "#ffffff", strokeWidth: 2 }}
+              activeDot={{ r: 5, fill: c.water, stroke: c["surface-raised"], strokeWidth: 2 }}
               connectNulls={false}
               isAnimationActive={false}
             />
@@ -133,24 +133,24 @@ export default function LevelChart({ readings, bank }: { readings: Reading[]; ba
               x={last.t}
               y={last.level!}
               r={4}
-              fill={SERIES}
-              stroke="#ffffff"
+              fill={c.water}
+              stroke={c["surface-raised"]}
               strokeWidth={2}
-              label={{ value: last.level!.toFixed(2), position: "right", fill: "#0f172a", fontSize: 12, fontWeight: 600 }}
+              label={{ value: last.level!.toFixed(2), position: "right", fill: c.ink, fontSize: 14, fontWeight: 600 }}
             />
           </LineChart>
         </ResponsiveContainer>
       </div>
-      <p className="mt-1 text-xs text-slate-500">หน่วย: {copy.station.msl} (เมตรเหนือระดับทะเลปานกลาง)</p>
+      <p className="m-0 mt-1 text-caption text-ink-muted">หน่วย: {copy.station.msl} (เมตรเหนือระดับทะเลปานกลาง)</p>
 
-      <details className="mt-2 text-sm">
-        <summary className="cursor-pointer text-brand-700">{copy.map.tableView}</summary>
-        <table className="num mt-2 w-full text-left text-xs">
-          <thead className="text-slate-500">
+      <details className="mt-2 text-body">
+        <summary className="min-h-11 cursor-pointer content-center font-semibold text-river">{copy.map.tableView}</summary>
+        <table className="num mt-2 w-full border-collapse text-left text-caption">
+          <thead className="bg-surface-sunken text-ink-muted">
             <tr>
-              <th className="py-1 font-semibold">เวลา</th>
-              <th className="py-1 font-semibold">ระดับ ({copy.station.msl})</th>
-              <th className="py-1 font-semibold">{copy.station.gapToBank}</th>
+              <th className="px-2 py-1 font-semibold">เวลา</th>
+              <th className="px-2 py-1 font-semibold">ระดับ ({copy.station.msl})</th>
+              <th className="px-2 py-1 font-semibold">{copy.station.gapToBank}</th>
             </tr>
           </thead>
           <tbody>
@@ -158,10 +158,10 @@ export default function LevelChart({ readings, bank }: { readings: Reading[]; ba
               .slice(-24)
               .reverse()
               .map((r) => (
-                <tr key={r.ts} className="border-t border-slate-100">
-                  <td className="py-1">{hourFmt.format(new Date(r.ts))} น. {tickFmt.format(new Date(r.ts))}</td>
-                  <td className="py-1">{r.level_msl.toFixed(2)}</td>
-                  <td className="py-1">{formatBankGap(r.diff_wl_bank)}</td>
+                <tr key={r.ts} className="border-t border-line">
+                  <td className="px-2 py-1">{hourFmt.format(new Date(r.ts))} น. {tickFmt.format(new Date(r.ts))}</td>
+                  <td className="px-2 py-1">{r.level_msl.toFixed(2)}</td>
+                  <td className="px-2 py-1">{formatBankGap(r.diff_wl_bank)}</td>
                 </tr>
               ))}
           </tbody>

@@ -1,10 +1,11 @@
 import "leaflet/dist/leaflet.css";
 
 import { useEffect } from "react";
-import { CircleMarker, MapContainer, TileLayer, Tooltip, useMap } from "react-leaflet";
+import { MapContainer, Marker, TileLayer, Tooltip, useMap } from "react-leaflet";
 import type { TicketSummary } from "../../api/types";
 import { copy } from "../../copy";
-import { URGENCY_PIN } from "./badges";
+import { PIN_SIZE, pinIcon } from "../../lib/pins";
+import { URGENCY_RANK, URGENCY_TIER } from "../../lib/tiers";
 
 function Fit({ points, selected }: { points: [number, number][]; selected: [number, number] | null }) {
   const map = useMap();
@@ -54,24 +55,25 @@ export default function TicketMap({
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
       />
       <Fit points={points} selected={interactive && sel ? [sel.lat!, sel.lon!] : null} />
-      {located.map((t) => (
-        <CircleMarker
-          key={t.id}
-          center={[t.lat!, t.lon!]}
-          radius={t.id === selectedId ? 11 : t.urgency === "critical" ? 9 : 7}
-          pathOptions={{
-            color: t.id === selectedId ? "#0c4a6e" : "#ffffff",
-            weight: t.id === selectedId ? 4 : 2,
-            fillColor: URGENCY_PIN[t.urgency],
-            fillOpacity: 1,
-          }}
-          eventHandlers={onSelect ? { click: () => onSelect(t.id) } : undefined}
-        >
-          <Tooltip direction="top" offset={[0, -6]}>
-            #{t.id} {copy.urgency[t.urgency]} · {t.place_label ?? copy.dashboard.noLocation}
-          </Tooltip>
-        </CircleMarker>
-      ))}
+      {located.map((t) => {
+        const tier = URGENCY_TIER[t.urgency];
+        const selected = t.id === selectedId;
+        const size = PIN_SIZE[tier] + (selected ? 4 : 0);
+        return (
+          <Marker
+            key={t.id}
+            position={[t.lat!, t.lon!]}
+            icon={pinIcon(tier, size, selected)}
+            title={`#${t.id} ${copy.urgency[t.urgency]}`}
+            zIndexOffset={(3 - URGENCY_RANK[t.urgency]) * 100 + (selected ? 1000 : 0)}
+            eventHandlers={onSelect ? { click: () => onSelect(t.id) } : undefined}
+          >
+            <Tooltip direction="top" offset={[0, -size / 2 - 4]}>
+              <span className="font-mono">#{t.id}</span> {copy.urgency[t.urgency]} · {t.place_label ?? copy.dashboard.noLocation}
+            </Tooltip>
+          </Marker>
+        );
+      })}
     </MapContainer>
   );
 }

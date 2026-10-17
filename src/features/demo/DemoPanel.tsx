@@ -42,36 +42,36 @@ export default function DemoPanel() {
   return (
     <div className="fixed right-3 bottom-28 z-[1300] sm:bottom-14">
       {open ? (
-        <div className="w-72 rounded-2xl border border-slate-300 bg-white p-4 text-sm shadow-xl">
+        <div className="w-80 rounded-md border border-line-strong bg-surface-raised p-4 text-body text-ink shadow-float">
           <div className="flex items-center justify-between">
-            <h2 className="font-semibold">{copy.demo.title}</h2>
-            <button type="button" onClick={() => setOpen(false)} className="text-slate-500">
+            <h2 className="m-0 text-heading font-semibold">{copy.demo.title}</h2>
+            <button type="button" onClick={() => setOpen(false)} className="min-h-11 px-2 text-label font-semibold text-river">
               {copy.map.close}
             </button>
           </div>
 
-          <p className="mt-3 text-xs font-semibold text-slate-500">
+          <p className="m-0 mt-3 text-caption font-semibold text-ink-muted">
             {copy.demo.role}: {session ? `${session.display_name} (${session.role})` : "ไม่ได้เข้าสู่ระบบ"}
           </p>
-          <div className="mt-1 flex gap-1">
-            <button type="button" className="rounded border px-2 py-1" onClick={() => loginDemo("responder").then(refresh)}>
+          <div className="mt-1 flex flex-wrap gap-1">
+            <button type="button" className="nm-btn nm-btn--secondary nm-btn--sm px-3" onClick={() => loginDemo("responder").then(refresh)}>
               responder
             </button>
-            <button type="button" className="rounded border px-2 py-1" onClick={() => loginDemo("user").then(refresh)}>
+            <button type="button" className="nm-btn nm-btn--secondary nm-btn--sm px-3" onClick={() => loginDemo("user").then(refresh)}>
               user
             </button>
-            <button type="button" className="rounded border px-2 py-1" onClick={() => (logout(), refresh())}>
+            <button type="button" className="nm-btn nm-btn--secondary nm-btn--sm px-3" onClick={() => (logout(), refresh())}>
               logout
             </button>
           </div>
 
-          <p className="mt-3 text-xs font-semibold text-slate-500">{copy.demo.raiseTier}</p>
-          <div className="mt-1 flex gap-1">
+          <p className="m-0 mt-3 text-caption font-semibold text-ink-muted">{copy.demo.raiseTier}</p>
+          <div className="mt-1 flex flex-wrap gap-1">
             <select
               aria-label={copy.demo.station}
               value={stationId}
               onChange={(e) => setStationId(Number(e.target.value))}
-              className="min-w-0 flex-1 rounded border px-1 py-1"
+              className="min-h-11 min-w-0 flex-1 rounded-sm border border-line-strong bg-surface-raised px-2 text-ink"
             >
               {(stations.data ?? []).map((s) => (
                 <option key={s.id} value={s.id}>
@@ -83,7 +83,7 @@ export default function DemoPanel() {
               aria-label={copy.demo.tier}
               value={tier}
               onChange={(e) => setTier(e.target.value as RiskTier)}
-              className="rounded border px-1 py-1"
+              className="min-h-11 rounded-sm border border-line-strong bg-surface-raised px-2 text-ink"
             >
               {TIERS.map((t) => (
                 <option key={t} value={t}>
@@ -92,10 +92,10 @@ export default function DemoPanel() {
               ))}
             </select>
           </div>
-          <div className="mt-1 flex gap-1">
+          <div className="mt-1 flex flex-wrap gap-1">
             <button
               type="button"
-              className="rounded bg-brand-700 px-2 py-1 font-semibold text-white"
+              className="nm-btn nm-btn--primary nm-btn--sm px-3"
               onClick={() => {
                 updateState((s) => {
                   s.tierOverrides[String(stationId)] = tier;
@@ -107,7 +107,7 @@ export default function DemoPanel() {
             </button>
             <button
               type="button"
-              className="rounded border px-2 py-1"
+              className="nm-btn nm-btn--secondary nm-btn--sm px-3"
               onClick={() => {
                 updateState((s) => {
                   s.tierOverrides = {};
@@ -121,7 +121,7 @@ export default function DemoPanel() {
 
           <button
             type="button"
-            className="mt-3 w-full rounded border px-2 py-1.5"
+            className="nm-btn nm-btn--secondary nm-btn--block mt-3"
             onClick={() => {
               const sample = SAMPLE_TICKETS[Math.floor(Math.random() * SAMPLE_TICKETS.length)];
               updateState((s) =>
@@ -145,7 +145,7 @@ export default function DemoPanel() {
           </button>
           <button
             type="button"
-            className="mt-2 w-full rounded border border-red-300 px-2 py-1.5 text-red-700"
+            className="nm-btn nm-btn--secondary nm-btn--block mt-2"
             onClick={() => {
               resetState();
               sessionStorage.removeItem("namma.chat.items");
@@ -159,7 +159,7 @@ export default function DemoPanel() {
         <button
           type="button"
           onClick={() => setOpen(true)}
-          className="rounded-full bg-slate-900 px-3 py-2 text-xs font-semibold text-white shadow-lg"
+          className="nm-btn nm-btn--secondary nm-btn--sm shadow-float"
         >
           {copy.demo.title}
           {overrides > 0 && ` · จำลอง ${overrides}`}

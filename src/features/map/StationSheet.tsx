@@ -1,59 +1,94 @@
-import { lazy, Suspense, type ReactNode } from "react";
+import { lazy, Suspense } from "react";
 import { useReadings, useStation } from "../../api/queries";
-import type { StationLink } from "../../api/types";
+import type { StationDetail, StationLink } from "../../api/types";
 import { ChevronLeftIcon } from "../../components/icons";
-import { StaleBadge } from "../../components/Stale";
+import { StaleNotice } from "../../components/Stale";
 import { ErrorState, Loading } from "../../components/States";
 import { TierBadge } from "../../components/TierBadge";
-import { copy } from "../../copy";
+import { agencyName, copy } from "../../copy";
 import {
-  formatAge,
   formatBankGap,
   formatDateTime,
   formatDischarge,
   formatHoursToBank,
   formatLevel,
+  formatPlace,
   formatTrend,
 } from "../../lib/format";
-import { stationTier, tierInfo } from "../../lib/tiers";
+import { stationTier, tierReason } from "../../lib/tiers";
 
 const LevelChart = lazy(() => import("./LevelChart"));
 
-function Tile({ label, value, sub }: { label: string; value: ReactNode; sub?: ReactNode }) {
+/** "บ้านป้อม (C.35)": place name first, code second (DS content rules). */
+export function StationName({ name, code }: { name: string | null; code: string | null }) {
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-3">
-      <div className="text-xs text-slate-500">{label}</div>
-      <div className="mt-0.5 text-lg leading-tight font-semibold text-slate-900">{value}</div>
-      {sub && <div className="mt-0.5 text-xs text-slate-500">{sub}</div>}
-    </div>
+    <>
+      {name ?? copy.unknown} {code && <span className="nm-code">({code})</span>}
+    </>
   );
 }
 
 function Links({ title, links, onSelect }: { title: string; links: StationLink[]; onSelect: (id: number) => void }) {
   if (!links.length) return null;
   return (
-    <div>
-      <h3 className="text-xs font-semibold text-slate-500">{title}</h3>
-      <ul className="mt-1 space-y-1">
+    <section className="grid gap-1">
+      <h3 className="m-0 text-caption font-semibold text-ink-muted">{title}</h3>
+      <ul className="m-0 list-none p-0">
         {links.map(({ station: s, approx_travel_hours }) => (
-          <li key={s.id}>
+          <li key={s.id} className="border-b border-line last:border-b-0">
             <button
               type="button"
               onClick={() => onSelect(s.id)}
-              className="flex w-full items-center justify-between gap-2 rounded-lg border border-slate-200 px-3 py-2 text-left text-sm hover:bg-slate-50"
+              className="flex min-h-14 w-full items-center justify-between gap-3 py-2 text-left hover:bg-surface-sunken"
             >
-              <span className="min-w-0 truncate">
-                <span className="font-semibold">{s.oldcode}</span> {s.name_th}
-                <span className="block text-xs text-slate-500">
+              <span className="min-w-0">
+                <span className="block text-body font-semibold">
+                  <StationName name={s.name_th} code={s.oldcode} />
+                </span>
+                <span className="num block text-caption text-ink-muted">
                   {formatBankGap(s.latest?.diff_wl_bank)}
-                  {approx_travel_hours != null && ` · น้ำเดินทางมาถึงประมาณ ${Math.round(approx_travel_hours)} ชม.`}
+                  {approx_travel_hours != null && ` · น้ำเดินทางมาถึงในราว ${Math.round(approx_travel_hours)} ชม.`}
                 </span>
               </span>
-              <TierBadge tier={stationTier(s)} size="sm" />
+              <TierBadge tier={stationTier(s)} soft />
             </button>
           </li>
         ))}
       </ul>
+    </section>
+  );
+}
+
+/** DS gauge: a staff gauge on its side. No house marker: we don't know the house's height. */
+function Gauge({ s }: { s: StationDetail }) {
+  const level = s.latest?.level_msl;
+  const bank = s.min_bank;
+  if (level == null || bank == null) return null;
+  // Track from 3 m below the bank to 1 m above it, widened to fit the reading.
+  const lo = Math.min(bank - 3, level - 0.5);
+  const hi = Math.max(bank + 1, level + 0.5);
+  const pos = (v: number) => ((v - lo) / (hi - lo)) * 100;
+  const over = level > bank;
+  return (
+    <div>
+      <div
+        role="img"
+        aria-label={`${copy.station.level} ${formatLevel(level)} ${copy.station.bankLevel} ${formatLevel(bank)}`}
+        className={`nm-gauge ${over ? "nm-gauge--over" : ""}`}
+        style={{ "--level-pos": pos(level), "--bank-pos": pos(bank) } as React.CSSProperties}
+      >
+        <div className="nm-gauge__water" />
+        <div className="nm-gauge__ticks" />
+        <div className="nm-gauge__bank" />
+      </div>
+      <div className="nm-gauge-legend">
+        <span>
+          {copy.station.level} {formatLevel(level)}
+        </span>
+        <span>
+          {copy.station.bankLevel} {formatLevel(bank)}
+        </span>
+      </div>
     </div>
   );
 }
@@ -75,62 +110,79 @@ export function StationSheet({
 
   const s = station.data;
   const tier = stationTier(s);
-  const t = tierInfo(tier);
+  const gap = s.latest?.diff_wl_bank;
   const hours = formatHoursToBank(s.risk?.hours_to_bank);
   const discharge = formatDischarge(s.latest?.discharge);
+  const upstreamOver = s.upstream.some((l) => stationTier(l.station) === "danger");
+  const reason = tierReason(tier, s.risk?.hours_to_bank, upstreamOver);
 
   return (
-    <article className="px-4 pt-2 pb-6">
+    <article className="grid gap-4 px-4 pt-2 pb-6">
       <button
         type="button"
         onClick={onClose}
-        className="-ml-1 flex items-center gap-1 rounded-lg px-1 py-1 text-sm text-brand-700 hover:bg-brand-50"
+        className="-ml-2 flex min-h-11 w-fit items-center gap-1 rounded-md px-2 text-label font-semibold text-river hover:bg-river-soft"
       >
-        <ChevronLeftIcon />
+        <ChevronLeftIcon className="text-[20px]" />
         {copy.map.back}
       </button>
 
-      <header className="mt-2">
-        <div className="flex flex-wrap items-center gap-2">
-          <h2 className="text-xl font-semibold">
-            {s.oldcode} {s.name_th}
-          </h2>
+      <section className="nm-station">
+        <div className="nm-station__head">
+          <div className="min-w-0">
+            <h2 className="nm-station__name">
+              <StationName name={s.name_th} code={s.oldcode} />
+            </h2>
+            <div className="nm-station__meta">
+              {[s.river, formatPlace(s.amphoe, s.province)].filter(Boolean).join(" · ")}
+            </div>
+          </div>
           <TierBadge tier={tier} />
         </div>
-        <p className="mt-0.5 text-sm text-slate-600">
-          {[s.river, s.amphoe && `อ.${s.amphoe}`, s.province].filter(Boolean).join(" · ")}
+
+        <StaleNotice ts={s.latest?.ts} agency={s.agency} />
+
+        <div className={`nm-station__gap ${gap != null && gap > 0 ? "nm-station__gap--over" : ""}`}>
+          {formatBankGap(gap)}
+        </div>
+        <p className="nm-station__why m-0">
+          {formatTrend(s.risk?.trend_cm_per_hr)}
+          {reason && ` · ${reason}`}
         </p>
-        <p className="mt-1 text-sm text-slate-700">{t.description}</p>
-      </header>
 
-      <div className="mt-3 grid grid-cols-2 gap-2">
-        <Tile label={copy.station.levelAtStation} value={formatLevel(s.latest?.level_msl)} sub={s.min_bank != null && `${copy.station.bank} ${s.min_bank.toFixed(2)}`} />
-        <Tile label={copy.station.gapToBank} value={formatBankGap(s.latest?.diff_wl_bank)} />
-        <Tile label={copy.station.trend} value={formatTrend(s.risk?.trend_cm_per_hr)} />
-        {hours ? (
-          <Tile label={copy.station.hoursToBank} value={hours} sub="ถ้าแนวโน้มยังเท่าเดิม" />
-        ) : discharge ? (
-          <Tile label={copy.station.discharge} value={discharge} />
-        ) : (
-          <Tile label={copy.station.observedAt} value={formatDateTime(s.latest?.ts)} />
-        )}
-      </div>
+        <Gauge s={s} />
 
-      <p className="mt-2 flex flex-wrap items-center gap-2 text-xs text-slate-500">
-        <span>
-          {copy.station.observedAt} {formatDateTime(s.latest?.ts)} ({formatAge(s.latest?.ts)})
-        </span>
-        <StaleBadge ts={s.latest?.ts} agency={s.agency} />
-      </p>
+        <dl className="nm-station__facts">
+          <div>
+            <dt>{copy.station.levelAtStation}</dt>
+            <dd>{formatLevel(s.latest?.level_msl)}</dd>
+          </div>
+          {hours && (
+            <div>
+              <dt>{copy.station.hoursToBank}</dt>
+              <dd>{hours}</dd>
+            </div>
+          )}
+          {discharge && (
+            <div>
+              <dt>{copy.station.discharge}</dt>
+              <dd>{discharge}</dd>
+            </div>
+          )}
+        </dl>
 
-      <div className="mt-3 space-y-3">
-        <Links title={copy.station.upstream} links={s.upstream} onSelect={onSelect} />
-        <Links title={copy.station.downstream} links={s.downstream} onSelect={onSelect} />
-      </div>
+        <p className="nm-source">
+          {copy.station.sourceLead} สถานี{s.name_th} ({s.oldcode}) {agencyName(s.agency)} ผ่าน {copy.station.thaiwater} ·{" "}
+          <span className="num">{formatDateTime(s.latest?.ts)}</span> · {copy.station.estimated}
+        </p>
+      </section>
 
-      <section className="mt-4">
-        <h3 className="text-sm font-semibold text-slate-700">{copy.station.chartTitle}</h3>
-        <div className={`mt-2 transition-opacity ${readings.isFetching && readings.data ? "opacity-60" : ""}`}>
+      <Links title={copy.station.upstream} links={s.upstream} onSelect={onSelect} />
+      <Links title={copy.station.downstream} links={s.downstream} onSelect={onSelect} />
+
+      <section className="grid gap-2">
+        <h3 className="m-0 text-heading font-semibold">{copy.station.chartTitle}</h3>
+        <div className={readings.isFetching && readings.data ? "opacity-60" : ""}>
           {readings.isPending ? (
             <Loading />
           ) : readings.isError ? (
@@ -143,8 +195,7 @@ export function StationSheet({
         </div>
       </section>
 
-      <p className="mt-4 rounded-lg bg-slate-100 p-3 text-xs leading-relaxed text-slate-700">{copy.station.stationNotHouse}</p>
-      <p className="mt-2 text-xs text-slate-500">{copy.station.source(s.agency)}</p>
+      <p className="m-0 rounded-sm bg-surface-sunken p-3 text-body">{copy.station.stationNotHouse}</p>
     </article>
   );
 }

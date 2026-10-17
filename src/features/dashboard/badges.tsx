@@ -1,58 +1,37 @@
 import type { Need, TicketStatus, Urgency, Vulnerable } from "../../api/types";
 import { copy } from "../../copy";
+import { URGENCY_TIER } from "../../lib/tiers";
 
-// Urgency reuses the status scale (critical = tier danger, high = tier warning) with label text.
-const URGENCY_STYLE: Record<Urgency, { background: string; color: string } | null> = {
-  critical: { background: "#d03b3b", color: "#ffffff" },
-  high: { background: "#ec835a", color: "#0f172a" },
-  normal: null,
-};
-
-export const URGENCY_PIN: Record<Urgency, string> = { critical: "#d03b3b", high: "#ec835a", normal: "#64748b" };
-
-export function UrgencyBadge({ urgency }: { urgency: Urgency }) {
-  const style = URGENCY_STYLE[urgency];
+/** Urgency as word + shape on the tier colours (DS TicketRow): ด่วนมาก ◆, ด่วน ▲, ปกติ ●. */
+export function UrgencyBadge({ urgency, soft = false }: { urgency: Urgency; soft?: boolean }) {
   return (
-    <span
-      className={`inline-flex shrink-0 items-center rounded-full px-2 py-0.5 text-xs font-semibold ${
-        style ? "" : "bg-slate-100 text-slate-700"
-      }`}
-      style={style ?? undefined}
-    >
+    <span className={`nm-badge nm-badge--${URGENCY_TIER[urgency]} ${soft ? "nm-badge--soft" : ""} shrink-0`}>
       {copy.urgency[urgency]}
     </span>
   );
 }
 
-const STATUS_STYLE: Record<TicketStatus, string> = {
-  open: "bg-sky-100 text-sky-900",
-  acknowledged: "bg-indigo-100 text-indigo-900",
-  in_progress: "bg-violet-100 text-violet-900",
-  resolved: "bg-slate-100 text-slate-600",
-  cancelled: "bg-slate-100 text-slate-500 line-through",
-};
-
+/** DS nm-status: plain words, not colour. Waiting tickets stand out in river blue. */
 export function StatusBadge({ status }: { status: TicketStatus }) {
   return (
-    <span className={`inline-flex shrink-0 rounded-full px-2 py-0.5 text-xs font-semibold ${STATUS_STYLE[status]}`}>
+    <span
+      className={`nm-status shrink-0 ${status === "open" ? "nm-status--open" : ""} ${
+        status === "cancelled" ? "line-through" : ""
+      }`}
+    >
       {copy.status[status]}
     </span>
   );
 }
 
 export function Chips({ items, kind }: { items: (Vulnerable | Need)[]; kind: "vulnerable" | "needs" }) {
-  if (!items.length) return <span className="text-xs text-slate-400">ไม่ระบุ</span>;
+  if (!items.length) return <span className="text-caption text-ink-muted">ไม่ระบุ</span>;
   const label = (x: Vulnerable | Need) =>
     kind === "vulnerable" ? copy.vulnerable[x as Vulnerable] : copy.needs[x as Need];
   return (
-    <span className="flex flex-wrap gap-1">
+    <span className="nm-ticket__tags">
       {items.map((x) => (
-        <span
-          key={x}
-          className={`rounded-md px-1.5 py-0.5 text-xs ${
-            kind === "vulnerable" ? "bg-rose-50 text-rose-900 ring-1 ring-rose-200" : "bg-slate-100 text-slate-700"
-          }`}
-        >
+        <span key={x} className={`nm-tag ${kind === "vulnerable" ? "nm-tag--vulnerable" : ""}`}>
           {label(x)}
         </span>
       ))}

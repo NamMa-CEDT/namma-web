@@ -2,13 +2,12 @@ import "leaflet/dist/leaflet.css";
 
 import type { LatLngBoundsExpression } from "leaflet";
 import { useEffect, useMemo, useState } from "react";
-import { CircleMarker, MapContainer, TileLayer, Tooltip, useMap, useMapEvents } from "react-leaflet";
+import { MapContainer, Marker, TileLayer, Tooltip, useMap, useMapEvents } from "react-leaflet";
 import type { LatLon, StationSummary } from "../../api/types";
 import { copy } from "../../copy";
+import { PIN_SIZE, pinIcon } from "../../lib/pins";
 import { stationTier, tierInfo } from "../../lib/tiers";
 
-// Marker size grows with tier: a second channel next to colour (and the label/legend).
-const RADIUS: Record<string, number> = { danger: 11, warning: 10, watch: 9, normal: 7, unknown: 6 };
 const LABEL_ALL_ZOOM = 10;
 
 interface Props {
@@ -97,50 +96,43 @@ export default function StationMap({ stations, selectedId, point, picking, onSel
         const tier = stationTier(s);
         const t = tierInfo(tier);
         const isSelected = s.id === selectedId;
-        const small = s.agency === "HII";
+        const size = PIN_SIZE[tier] - (s.agency === "HII" ? 4 : 0) + (isSelected ? 4 : 0);
         const permanent = s.agency === "RID" && (zoom >= LABEL_ALL_ZOOM || s.role === "main" || s.id === 2611);
+        const side = s.role === "branch" ? -1 : 1;
         return (
-          <CircleMarker
+          <Marker
             key={s.id}
-            center={[s.lat, s.lon]}
-            radius={RADIUS[tier] - (small ? 2 : 0) + (isSelected ? 2 : 0)}
-            pathOptions={{
-              color: isSelected ? "#0c4a6e" : "#ffffff",
-              weight: isSelected ? 4 : 2,
-              fillColor: t.color,
-              fillOpacity: 1,
-              dashArray: tier === "unknown" ? "3 3" : undefined,
-            }}
+            position={[s.lat, s.lon]}
+            icon={pinIcon(tier, size, isSelected)}
+            title={`${s.name_th ?? ""} ${s.oldcode ?? ""} · ${t.label}`}
+            alt={`${s.name_th ?? ""} ${t.label}`}
+            zIndexOffset={t.rank * 100 + (isSelected ? 1000 : 0)}
             eventHandlers={{ click: () => onSelect(s.id) }}
           >
             <Tooltip
               permanent={permanent}
-              direction={s.role === "branch" ? "left" : "right"}
-              offset={s.role === "branch" ? [-10, 0] : [10, 0]}
+              direction={side < 0 ? "left" : "right"}
+              offset={[side * (size / 2 + 4), 0]}
               className={permanent ? "station-code" : undefined}
             >
               {permanent ? (
                 s.oldcode
               ) : (
                 <span>
-                  <b>{s.oldcode}</b> {s.name_th} · {t.label}
+                  <b>{s.name_th}</b> ({s.oldcode}) · {t.label}
                 </span>
               )}
             </Tooltip>
-          </CircleMarker>
+          </Marker>
         );
       })}
 
       {point && (
-        <CircleMarker
-          center={[point.lat, point.lon]}
-          radius={8}
-          pathOptions={{ color: "#ffffff", weight: 3, fillColor: "#2a78d6", fillOpacity: 1 }}
-        >
-          <Tooltip direction="top" offset={[0, -8]}>
+        <Marker position={[point.lat, point.lon]} icon={pinIcon("here", 18)} zIndexOffset={2000}>
+          <Tooltip direction="top" offset={[0, -12]}>
             {copy.map.pickedPoint}
           </Tooltip>
-        </CircleMarker>
+        </Marker>
       )}
     </MapContainer>
   );

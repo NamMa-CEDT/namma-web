@@ -1,6 +1,8 @@
 import {
   formatAge,
   formatBankGap,
+  formatDateTime,
+  formatPlace,
   formatDistance,
   formatHoursToBank,
   formatTime,
@@ -23,8 +25,8 @@ describe("formatBankGap", () => {
 
 describe("formatTrend", () => {
   it("reads direction with a dead band", () => {
-    expect(formatTrend(2.34)).toBe("ขึ้น 2.3 ซม./ชม.");
-    expect(formatTrend(-0.67)).toBe("ลง 0.7 ซม./ชม.");
+    expect(formatTrend(2.34)).toBe("สูงขึ้น 2.3 ซม./ชม.");
+    expect(formatTrend(-0.67)).toBe("ลดลง 0.7 ซม./ชม.");
     expect(formatTrend(0.2)).toBe("ทรงตัว");
     expect(formatTrend(null)).toBe("ไม่ทราบ");
     expect(trendDirection(undefined)).toBe("unknown");
@@ -48,6 +50,9 @@ describe("time", () => {
     expect(formatTime("2026-10-16T13:00:00+07:00")).toBe("13:00 น.");
     expect(formatTime("2026-10-16T06:00:00Z")).toBe("13:00 น.");
   });
+  it("gives every reading a date with a Buddhist-era year", () => {
+    expect(formatDateTime("2026-10-16T11:00:00Z")).toBe("18:00 น. 16 ต.ค. 69");
+  });
   it("formats ages", () => {
     const now = Date.parse("2026-10-16T14:00:00+07:00");
     expect(formatAge("2026-10-16T13:55:00+07:00", now)).toBe("5 นาทีที่แล้ว");
@@ -67,5 +72,13 @@ describe("formatDistance", () => {
     expect(formatDistance(6.31)).toBe("6.3 กม.");
     expect(formatDistance(23.4)).toBe("23 กม.");
     expect(formatDistance(null)).toBeNull();
+  });
+});
+
+describe("formatPlace", () => {
+  it("writes places the Thai way", () => {
+    expect(formatPlace("บางบาล", "พระนครศรีอยุธยา")).toBe("อ.บางบาล จ.พระนครศรีอยุธยา");
+    expect(formatPlace("บางพลัด", "กรุงเทพมหานคร")).toBe("เขตบางพลัด กรุงเทพมหานคร");
+    expect(formatPlace(null, "ชัยนาท")).toBe("จ.ชัยนาท");
   });
 });

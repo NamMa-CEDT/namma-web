@@ -1,71 +1,69 @@
 import { Link } from "react-router";
 import type { QuickReply, Source } from "../../api/types";
-import { LineIcon, LocateIcon, MapIcon, PhoneIcon, PinIcon } from "../../components/icons";
-import { copy, DDPM } from "../../copy";
+import { HotlineNotice } from "../../components/HotlineNotice";
+import { LocateIcon, PinIcon } from "../../components/icons";
+import { copy } from "../../copy";
+import { looksLikeEmergency } from "../../lib/danger";
 import { formatDistance, formatTime } from "../../lib/format";
 
+/** Rescue reply: the hotline comes first, before any questions (DS HotlineNotice, CLAUDE.md §6). */
 export function EmergencyCard() {
   return (
-    <div role="alert" className="rounded-2xl border-2 border-emergency bg-red-50 p-4">
-      <p className="font-semibold text-red-900">{copy.chat.emergencyTitle}</p>
-      <p className="mt-0.5 text-sm text-red-900">{copy.chat.emergencyBody}</p>
-      <div className="mt-3 flex flex-wrap gap-2">
-        <a
-          href={DDPM.telHref}
-          className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-emergency px-4 py-3 text-base font-semibold text-white shadow"
-        >
-          <PhoneIcon />
-          {copy.chat.emergencyCall}
-        </a>
-        <a
-          href={DDPM.lineHref}
-          target="_blank"
-          rel="noreferrer"
-          className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-red-200 bg-white px-4 py-3 text-sm font-semibold text-red-900"
-        >
-          <LineIcon className="text-[#06c755]" />
-          {copy.chat.emergencyLine}
-        </a>
-      </div>
+    <div role="alert" className="grid gap-2">
+      <p className="m-0 text-heading font-semibold text-tier-danger-ink">{copy.chat.emergencyTitle}</p>
+      <HotlineNotice rescue />
     </div>
   );
 }
 
-export function SourceChip({ source }: { source: Source }) {
-  const base = "inline-flex max-w-full items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs";
+/** Every risk answer names its source: place first, code second, distance and reading time. */
+export function Sources({ sources }: { sources: Source[] }) {
+  if (!sources.length) return null;
+  return (
+    <ul className="m-0 grid w-full max-w-[34rem] list-none gap-1.5 p-0" aria-label={copy.chat.sourcesLabel}>
+      {sources.map((s, i) => (
+        <li key={i}>
+          <SourceItem source={s} />
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+function SourceItem({ source }: { source: Source }) {
   if (source.type === "station") {
     const bits = [formatDistance(source.distance_km), source.observed_at && formatTime(source.observed_at)].filter(Boolean);
     return (
       <Link
         to={`/map?station=${source.station_id}`}
-        className={`${base} border-sky-200 bg-sky-50 text-sky-900 hover:bg-sky-100`}
+        className="inline-flex min-h-11 items-center gap-2 text-caption text-ink-muted no-underline"
       >
-        <MapIcon className="shrink-0" />
-        <span className="truncate">
-          สถานี <b>{source.code}</b> {source.name_th}
-          {bits.length > 0 && ` · ${bits.join(" · ")}`}
+        <span>{copy.station.sourceLead}</span>
+        <span className="font-semibold text-river underline underline-offset-3">
+          สถานี{source.name_th} {source.code && <span className="nm-code">({source.code})</span>}
         </span>
+        {bits.length > 0 && <span className="num">· {bits.join(" · ")}</span>}
       </Link>
     );
   }
   if (source.type === "shelter") {
+    // Chosen for this household (accepts patients/pets): household ground, no waves.
     return (
-      <span className={`${base} border-emerald-200 bg-emerald-50 text-emerald-900`}>
-        <PinIcon className="shrink-0" />
-        <span className="truncate">
-          {source.name}
-          {source.distance_km != null && ` · ${formatDistance(source.distance_km)}`}
-        </span>
+      <span className="inline-flex items-center gap-2 rounded-sm bg-home-soft px-3 py-1.5 text-caption text-ink">
+        <PinIcon className="shrink-0 text-[18px] text-home" />
+        <b className="font-semibold text-home">{source.name}</b>
+        {source.distance_km != null && <span className="num">· {formatDistance(source.distance_km)}</span>}
       </span>
     );
   }
   return (
-    <span className={`${base} border-slate-200 bg-slate-50 text-slate-700`}>
-      <span className="truncate">GISTDA · {source.summary}</span>
+    <span className="text-caption text-ink-muted">
+      {copy.station.sourceLead} GISTDA (สทอภ.) · {source.summary}
     </span>
   );
 }
 
+/** DS QuickReply chips: they mirror LINE quick replies. The one emergency reply is `--urgent`. */
 export function QuickReplies({
   items,
   disabled,
@@ -84,9 +82,9 @@ export function QuickReplies({
           type="button"
           disabled={disabled}
           onClick={() => onPick(q)}
-          className="flex shrink-0 items-center gap-1 rounded-full border border-brand-600 bg-white px-3 py-1.5 text-sm font-semibold text-brand-700 hover:bg-brand-50 disabled:opacity-50"
+          className={`nm-chip shrink-0 ${looksLikeEmergency(q.label) ? "nm-chip--urgent" : ""}`}
         >
-          {q.type === "location" && <LocateIcon />}
+          {q.type === "location" && <LocateIcon className="text-[20px]" />}
           {q.label}
         </button>
       ))}
@@ -96,12 +94,14 @@ export function QuickReplies({
 
 export function TypingBubble() {
   return (
-    <div className="flex items-center gap-2 text-sm text-slate-500" role="status">
-      <span className="flex gap-1 rounded-2xl rounded-tl-sm bg-white px-4 py-3 shadow-sm">
-        {[0, 150, 300].map((d) => (
-          <span key={d} className="size-1.5 animate-bounce rounded-full bg-slate-400" style={{ animationDelay: `${d}ms` }} />
-        ))}
-      </span>
+    <div role="status" className="nm-bubble nm-bubble--bot flex w-fit gap-1.5 py-4">
+      {[0, 150, 300].map((d) => (
+        <span
+          key={d}
+          className="size-2 animate-bounce rounded-full bg-ink-muted motion-reduce:animate-none"
+          style={{ animationDelay: `${d}ms` }}
+        />
+      ))}
       <span className="sr-only">{copy.chat.typing}</span>
     </div>
   );

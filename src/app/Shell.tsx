@@ -30,11 +30,12 @@ function useDemoMode(): boolean {
 export function Shell() {
   const demo = useDemoMode();
   return (
-    <div className="flex h-dvh flex-col">
-      <header className="z-[1000] flex items-center gap-3 bg-brand-800 px-4 py-2 text-white shadow-sm">
-        <NavLink to="/chat" className="flex items-baseline gap-1.5">
-          <span className="text-lg font-semibold">{copy.appName}</span>
-          <span className="text-xs text-brand-100/80">{copy.appNameEn}</span>
+    <div className="flex h-dvh flex-col bg-surface text-ink">
+      <header className="z-[1000] flex min-h-16 items-center gap-3 border-b border-line bg-surface-raised px-4">
+        {/* No logo yet: the name in the body face at 600 (DS Iconography). */}
+        <NavLink to="/chat" className="flex items-baseline gap-2 text-ink no-underline">
+          <span className="text-title font-semibold">{copy.appName}</span>
+          <span className="text-caption text-ink-muted">{copy.appNameEn}</span>
         </NavLink>
         <nav className="ml-4 hidden gap-1 sm:flex" aria-label="หลัก">
           {NAV.map(({ to, label, Icon }) => (
@@ -42,21 +43,18 @@ export function Shell() {
               key={to}
               to={to}
               className={({ isActive }) =>
-                `flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-semibold ${
-                  isActive ? "bg-white/15 text-white" : "text-brand-100 hover:bg-white/10"
+                `flex min-h-11 items-center gap-2 rounded-md px-3 text-label font-semibold no-underline ${
+                  isActive ? "bg-river-soft text-river" : "text-ink-muted hover:bg-surface-sunken hover:text-ink"
                 }`
               }
             >
-              <Icon />
+              <Icon className="text-[20px]" />
               {label}
             </NavLink>
           ))}
         </nav>
-        <a
-          href={DDPM.telHref}
-          className="ml-auto flex items-center gap-1.5 rounded-full bg-emergency px-3 py-1.5 text-sm font-semibold text-white shadow"
-        >
-          <PhoneIcon />
+        <a href={DDPM.telHref} className="nm-btn nm-btn--call nm-btn--sm ml-auto">
+          <PhoneIcon className="text-[20px]" />
           {copy.footer.callButton}
         </a>
       </header>
@@ -71,44 +69,44 @@ export function Shell() {
         </ErrorBoundary>
       </main>
 
-      <footer className="border-t border-slate-200 bg-white px-4 py-1.5 text-xs text-slate-600">
-        <p className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
-          <span className="font-semibold text-slate-700">{copy.footer.unofficial}</span>
+      <footer className="border-t border-line bg-surface-raised px-4 py-1.5 text-caption text-ink-muted">
+        <p className="m-0 flex flex-wrap items-center gap-x-2">
+          <span className="font-semibold text-ink">{copy.footer.unofficial}</span>
           <span aria-hidden="true">·</span>
           <span>
             {copy.footer.emergency}{" "}
-            <a href={DDPM.telHref} className="font-semibold text-emergency underline">
+            <a href={DDPM.telHref} className="font-semibold text-tier-danger-ink underline">
               {DDPM.hotline}
             </a>
           </span>
           <span aria-hidden="true">·</span>
-          <a href={DDPM.lineHref} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 underline">
-            <LineIcon className="text-[#06c755]" />
+          <a href={DDPM.lineHref} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-ink underline">
+            <LineIcon />
             {DDPM.lineId}
           </a>
-          <span className="hidden sm:inline" aria-hidden="true">
+          <span className="hidden lg:inline" aria-hidden="true">
             ·
           </span>
-          <span className="hidden sm:inline">{copy.footer.followOfficial}</span>
-          <span className="hidden sm:inline" aria-hidden="true">
+          <span className="hidden lg:inline">{copy.footer.followOfficial}</span>
+          <span className="hidden lg:inline" aria-hidden="true">
             ·
           </span>
-          <span className="hidden sm:inline">{copy.footer.dataCredit}</span>
+          <span className="hidden lg:inline">{copy.footer.dataCredit}</span>
         </p>
       </footer>
 
-      <nav className="pb-safe grid grid-cols-3 border-t border-slate-200 bg-white sm:hidden" aria-label="หลัก">
+      <nav className="pb-safe grid grid-cols-3 border-t border-line bg-surface-raised sm:hidden" aria-label="หลัก">
         {NAV.map(({ to, label, Icon }) => (
           <NavLink
             key={to}
             to={to}
             className={({ isActive }) =>
-              `flex flex-col items-center gap-0.5 py-2 text-xs font-semibold ${
-                isActive ? "text-brand-700" : "text-slate-500"
+              `flex min-h-14 flex-col items-center justify-center gap-0.5 text-caption font-semibold no-underline ${
+                isActive ? "text-river" : "text-ink-muted"
               }`
             }
           >
-            <Icon className="text-xl" />
+            <Icon className="text-[22px]" />
             {label}
           </NavLink>
         ))}
