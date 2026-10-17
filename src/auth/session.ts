@@ -35,9 +35,11 @@ export function useSession(): StoredSession | null {
   );
 }
 
-export const canDemoLogin = API_MODE === "mock";
+// Mock mode always; against the real backend only with VITE_DEMO_LOGIN=1 (the backend must also run
+// DEMO_MODE=1). Remove both before the app is public: demo login has no password.
+export const canDemoLogin = API_MODE === "mock" || import.meta.env.VITE_DEMO_LOGIN === "1";
 
-/** Mock mode only: log in as a demo user or responder. */
+/** Demo login as a demo user or responder (see canDemoLogin). */
 export async function loginDemo(role: Role): Promise<void> {
   const res = await api.login(`demo:${role}`);
   set({ token: res.session_token, ...res.user });
