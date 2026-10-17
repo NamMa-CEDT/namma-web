@@ -1,0 +1,11 @@
+{
+  "_note": "SYNTHETIC demo data. Names, locations and capacities are invented placeholders until the hand-curated shelters CSV (CLAUDE.md 4.5) exists. Do not present as real shelters.",
+  "shelters": [
+    { "id": 1, "name": "ศูนย์พักพิงชั่วคราว อ.บางบาล (ข้อมูลตัวอย่าง)", "lat": 14.389, "lon": 100.47, "capacity": 300, "accepts_patients": true, "accepts_pets": false, "phone": null },
+    { "id": 2, "name": "ศูนย์พักพิงชั่วคราว อ.เสนา (ข้อมูลตัวอย่าง)", "lat": 14.325, "lon": 100.404, "capacity": 200, "accepts_patients": false, "accepts_pets": true, "phone": null },
+    { "id": 3, "name": "ศูนย์พักพิงชั่วคราว อ.พระนครศรีอยุธยา (ข้อมูลตัวอย่าง)", "lat": 14.353, "lon": 100.585, "capacity": 500, "accepts_patients": true, "accepts_pets": true, "phone": null },
+    { "id": 4, "name": "ศูนย์พักพิงชั่วคราว อ.บางปะหัน (ข้อมูลตัวอย่าง)", "lat": 14.463, "lon": 100.548, "capacity": 150, "accepts_patients": false, "accepts_pets": false, "phone": null },
+    { "id": 5, "name": "ศูนย์พักพิงชั่วคราว อ.บางปะอิน (ข้อมูลตัวอย่าง)", "lat": 14.233, "lon": 100.578, "capacity": 250, "accepts_patients": true, "accepts_pets": false, "phone": null },
+    { "id": 6, "name": "ศูนย์พักพิงชั่วคราว อ.เมืองอ่างทอง (ข้อมูลตัวอย่าง)", "lat": 14.585, "lon": 100.455, "capacity": 300, "accepts_patients": false, "accepts_pets": true, "phone": null }
+  ]
+}

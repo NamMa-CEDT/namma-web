@@ -1,0 +1,71 @@
+{
+  "_note": "SYNTHETIC rescue requests for the mock dashboard. No real people. Phone numbers are deliberately invalid. minutes_ago is turned into created_at when the mock store is seeded.",
+  "tickets": [
+    {
+      "minutes_ago": 12,
+      "raw_text": "น้ำเข้าบ้านสูงเกือบเอวแล้ว แม่ติดเตียงต้องใช้เครื่องออกซิเจน ไฟเริ่มดับ ช่วยด้วย",
+      "place_label": "ต.บางหลวงโดด อ.บางบาล",
+      "lat": 14.409, "lon": 100.452,
+      "people_count": 3,
+      "vulnerable": ["elderly", "bedridden"],
+      "needs": ["evacuation", "oxygen", "power"],
+      "urgency": "critical", "status": "open", "channel": "line",
+      "contact_phone": "000-000-0001"
+    },
+    {
+      "minutes_ago": 50,
+      "raw_text": "ภรรยาท้อง 8 เดือน เริ่มเจ็บท้อง น้ำล้อมรอบบ้าน ออกไปไหนไม่ได้",
+      "place_label": "ต.บางบาล อ.บางบาล",
+      "lat": 14.366, "lon": 100.49,
+      "people_count": 2,
+      "vulnerable": ["pregnant"],
+      "needs": ["medical", "boat"],
+      "urgency": "critical", "status": "in_progress", "channel": "line",
+      "contact_phone": "000-000-0002", "assignee": "ทีมเรือ อบต. (ตัวอย่าง)"
+    },
+    {
+      "minutes_ago": 35,
+      "raw_text": "ติดอยู่ชั้นสอง มีเด็กเล็ก 2 คน น้ำดื่มใกล้หมด",
+      "place_label": "ต.หัวรอ อ.พระนครศรีอยุธยา",
+      "lat": 14.366, "lon": 100.574,
+      "people_count": 4,
+      "vulnerable": ["child"],
+      "needs": ["food_water", "boat"],
+      "urgency": "high", "status": "acknowledged", "channel": "web",
+      "contact_phone": null
+    },
+    {
+      "minutes_ago": 70,
+      "raw_text": "พ่ออายุ 80 เดินไม่สะดวก น้ำขึ้นเร็วมาก อยากอพยพ ต้องการเรือ",
+      "place_label": "อ.เสนา",
+      "lat": 14.322, "lon": 100.41,
+      "people_count": 2,
+      "vulnerable": ["elderly", "disabled"],
+      "needs": ["evacuation", "boat"],
+      "urgency": "high", "status": "in_progress", "channel": "line",
+      "contact_phone": "000-000-0004", "assignee": "มูลนิธิกู้ภัย (ตัวอย่าง)"
+    },
+    {
+      "minutes_ago": 25,
+      "raw_text": "น้ำท่วมชั้นล่าง ยังอยู่ได้ แต่ยาความดันของยายหมดแล้ว",
+      "place_label": "อ.บางปะอิน",
+      "lat": 14.24, "lon": 100.57,
+      "people_count": 3,
+      "vulnerable": ["elderly"],
+      "needs": ["medication"],
+      "urgency": "normal", "status": "open", "channel": "line",
+      "contact_phone": null
+    },
+    {
+      "minutes_ago": 300,
+      "raw_text": "ขอถุงยังชีพ บ้านมี 5 คน กับสุนัข 3 ตัว",
+      "place_label": "อ.เมืองอ่างทอง",
+      "lat": 14.59, "lon": 100.46,
+      "people_count": 5,
+      "vulnerable": ["pet"],
+      "needs": ["food_water"],
+      "urgency": "normal", "status": "resolved", "channel": "line",
+      "contact_phone": null
+    }
+  ]
+}
