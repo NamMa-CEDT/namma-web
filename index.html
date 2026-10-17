@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>น้ำมา NamMa</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header>
+  <b>🌊 น้ำมา</b> <span class="muted">ผู้ช่วยเรื่องน้ำท่วม (ไม่เป็นทางการ)</span>
+  <nav><a href="index.html">แชท + แผนที่</a> · <a href="dashboard.html">ทีมช่วยเหลือ</a></nav>
+</header>
+<div class="banner">☎️ อันตรายตอนนี้ โทร <b>1784</b> (ปภ.) · LINE <b>@1784DDPM</b> · ทำตามคำสั่งอพยพของทางการเสมอ</div>
+<main class="split">
+  <section class="chat">
+    <div id="log"></div>
+    <div id="quick"></div>
+    <form id="f">
+      <input id="t" autocomplete="off" placeholder="เช่น บ้านแม่อยู่บางบาล อยุธยา น้ำจะถึงไหม">
+      <button type="button" id="loc" title="แชร์ตำแหน่ง">📍</button>
+      <button>ส่ง</button>
+    </form>
+  </section>
+  <section id="map"></section>
+</main>
+<footer class="muted">ข้อมูลระดับน้ำ: ThaiWater โดย สสน. (HII) · ศูนย์พักพิงเป็นข้อมูลตัวอย่างสำหรับเดโม</footer>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+const key = (() => { try { let k = localStorage.getItem("namma_key"); if (!k) { k = crypto.randomUUID(); localStorage.setItem("namma_key", k); } return k; } catch { return crypto.randomUUID(); } })();
+const log = document.getElementById("log"), quick = document.getElementById("quick");
+let lastId = 0;
+
+function bubble(role, text, channel) {
+  const d = document.createElement("div");
+  d.className = "msg " + role + (channel === "alert" ? " alert" : "");
+  d.textContent = text;
+  log.appendChild(d); log.scrollTop = log.scrollHeight;
+}
+function setQuick(items) {
+  quick.innerHTML = "";
+  for (const q of items || []) {
+    const b = document.createElement("button");
+    b.textContent = q.label;
+    b.onclick = () => q.kind === "location" ? shareLocation() : send({ text: q.text });
+    quick.appendChild(b);
+  }
+}
+async function send(payload) {
+  if (payload.text) bubble("user", payload.text);
+  else bubble("user", "📍 แชร์ตำแหน่ง");
+  setQuick([]);
+  const r = await fetch("/api/chat", { method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ user_key: key, ...payload }) });
+  const j = await r.json();
+  bubble("assistant", j.text || "เกิดข้อผิดพลาด ลองใหม่อีกครั้ง");
+  setQuick(j.quick);
+  await poll(true);
+}
+function shareLocation() {
+  if (!navigator.geolocation) return bubble("assistant", "เบราว์เซอร์นี้แชร์ตำแหน่งไม่ได้");
+  navigator.geolocation.getCurrentPosition(p => send({ lat: p.coords.latitude, lon: p.coords.longitude }),
+    () => bubble("assistant", "ไม่ได้รับตำแหน่ง ลองพิมพ์ชื่อตำบล/อำเภอแทนได้ค่ะ"));
+}
+// Alerts arrive as messages (channel = 'alert'); history loads on first poll.
+async function poll(silent) {
+  const showAll = !silent && lastId === 0;
+  const r = await fetch(`/api/messages?user_key=${key}&after_id=${lastId}`);
+  if (!r.ok) return;
+  for (const m of await r.json()) {
+    if (showAll || m.channel === "alert") bubble(m.role, m.content, m.channel);
+    lastId = Math.max(lastId, m.id);
+  }
+}
+document.getElementById("f").onsubmit = e => { e.preventDefault(); const t = document.getElementById("t"); if (t.value.trim()) { send({ text: t.value.trim() }); t.value = ""; } };
+document.getElementById("loc").onclick = shareLocation;
+poll(false).then(() => { if (!lastId) { bubble("assistant", "สวัสดีค่ะ บอกชื่อพื้นที่ หรือแชร์ตำแหน่ง แล้วน้ำมาจะดูสถานีวัดน้ำใกล้ที่สุดให้"); setQuick([{label:"แชร์ตำแหน่ง",kind:"location"},{label:"บ้านอยู่บางบาล อยุธยา",text:"บ้านแม่อยู่บางบาล อยุธยา น้ำจะถึงไหม"}]); } });
+setInterval(() => poll(true), 15000);
+
+// Map: every station with a current risk row, coloured by tier.
+const COLOR = { normal: "#2e9e5b", watch: "#d4a017", warning: "#e07020", danger: "#d03030" };
+const TH = { normal: "ปกติ", watch: "เฝ้าระวัง", warning: "เตือนภัย", danger: "อันตราย" };
+const map = L.map("map").setView([14.6, 100.45], 8);
+L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { attribution: "© OpenStreetMap" }).addTo(map);
+fetch("/api/stations").then(r => r.json()).then(rows => {
+  for (const s of rows) {
+    const gap = s.diff_wl_bank == null ? "-" : (s.diff_wl_bank >= 0 ? "สูงกว่าตลิ่ง " : "ต่ำกว่าตลิ่ง ") + Math.abs(s.diff_wl_bank).toFixed(2) + " ม.";
+    L.circleMarker([s.lat, s.lon], { radius: s.risk_tier === "normal" ? 4 : 7, color: COLOR[s.risk_tier], fillOpacity: .8, weight: 1 })
+      .bindPopup(`<b>${s.oldcode} ${s.name_th}</b><br>${s.river || ""} ${s.province || ""}<br>ระดับ ${s.level?.toFixed(2)} ม.รทก. · ${gap}<br>แนวโน้ม ${s.trend_cm_per_hr ?? "-"} ซม./ชม.<br><b>${TH[s.risk_tier]}</b> · ${s.agency || ""} · ${s.reading_ts?.slice(0,16).replace("T"," ") || ""}`)
+      .addTo(map);
+  }
+});
+</script>
+</body>
+</html>
