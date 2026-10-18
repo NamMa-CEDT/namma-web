@@ -6,6 +6,7 @@ export interface StoredSession {
   display_name: string;
   role: "user" | "responder";
   picture_url: string | null;
+  identities?: { line: boolean; google: string | null };
 }
 
 export function readStoredSession(): StoredSession | null {

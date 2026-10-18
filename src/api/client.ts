@@ -6,6 +6,7 @@ import type {
   ChatResponse,
   Envelope,
   LoginResponse,
+  Provider,
   NearbyStation,
   Profile,
   RescueTicket,
@@ -107,7 +108,14 @@ export const api = {
   patchTicket: (id: number, patch: TicketPatch) =>
     request<RescueTicket>("PATCH", `/api/tickets/${id}`, { body: patch }),
   chat: (req: ChatRequest) => request<ChatResponse>("POST", "/api/chat", { body: req }),
-  login: (id_token: string) => request<LoginResponse>("POST", "/api/auth/line", { body: { id_token } }),
+  /** chat_session: the anonymous web chat to fold into the account on sign-in. */
+  login: (id_token: string, chat_session?: string, provider: Provider = "line") =>
+    request<LoginResponse>("POST", `/api/auth/${provider}`, { body: { id_token, chat_session } }),
+  link: (provider: Provider, id_token: string) =>
+    request<SessionUser>("POST", `/api/auth/link/${provider}`, { body: { id_token } }),
+  unlink: (provider: Provider) => request<SessionUser>("DELETE", `/api/auth/link/${provider}`),
+  logout: () => request<{ signed_out: boolean }>("POST", "/api/auth/logout"),
+  deleteMe: () => request<{ deleted: boolean }>("DELETE", "/api/me"),
   me: () => request<SessionUser>("GET", "/api/me"),
   // The anonymous web chat is identified by its session_id (the signed-in user by the bearer token).
   profile: (chatSession: string) =>

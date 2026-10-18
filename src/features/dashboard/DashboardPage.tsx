@@ -189,7 +189,7 @@ function Dashboard() {
 
   const authStatus = tickets.error instanceof ApiError ? tickets.error.status : null;
   useEffect(() => {
-    if (authStatus === 401) logout(); // session expired: back to the login gate
+    if (authStatus === 401) void logout(); // session expired: back to the login gate
   }, [authStatus]);
   if (authStatus === 401 || authStatus === 403) return <LoginGate forbidden={authStatus === 403} />;
 

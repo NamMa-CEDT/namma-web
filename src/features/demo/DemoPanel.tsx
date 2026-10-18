@@ -60,7 +60,7 @@ export default function DemoPanel() {
             <button type="button" className="nm-btn nm-btn--secondary nm-btn--sm px-3" onClick={() => loginDemo("user").then(refresh)}>
               user
             </button>
-            <button type="button" className="nm-btn nm-btn--secondary nm-btn--sm px-3" onClick={() => (logout(), refresh())}>
+            <button type="button" className="nm-btn nm-btn--secondary nm-btn--sm px-3" onClick={() => void logout().then(refresh)}>
               logout
             </button>
           </div>

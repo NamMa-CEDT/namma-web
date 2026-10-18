@@ -266,20 +266,85 @@ route("DELETE", "/api/profile/facts/:kind", (ctx) => {
 
 // --- auth ---------------------------------------------------------------------
 
-route("POST", "/api/auth/line", ({ body }) => {
-  const idToken = (body as { id_token?: string })?.id_token ?? "";
-  const role = idToken === "demo:responder" ? "responder" : idToken === "demo:user" ? "user" : null;
-  if (!role) return fail(401, "invalid_token", "mock mode accepts demo:user or demo:responder");
-  const user: SessionUser = {
-    display_name: role === "responder" ? "เจ้าหน้าที่ทดลอง" : "ผู้ใช้ทดลอง",
-    role,
-    picture_url: null,
-  };
-  const token = `mock-${role}-${Math.random().toString(36).slice(2)}`;
+// Demo tokens, as on the backend: demo:user, demo:responder, demo:user:<name> (LINE), demo:google:<name>.
+// The mock keeps one account per demo id; its memory is the chat's (the mock has no account store).
+function mockLogin(idToken: string, provider: "line" | "google"): Result {
+  const parts = idToken.split(":");
+  const nameOk = (n: string | undefined) => !!n && /^[a-z0-9_-]{1,40}$/.test(n);
+  let user: SessionUser;
+  if (provider === "google") {
+    if (parts[0] !== "demo" || parts[1] !== "google" || parts.length !== 3 || !nameOk(parts[2])) {
+      return fail(401, "invalid_token", "mock mode accepts demo:google:<name>");
+    }
+    user = { display_name: parts[2], role: "user", picture_url: null, identities: { line: false, google: `${parts[2]}@demo.namma` } };
+  } else {
+    const role = parts[1] === "responder" ? "responder" : parts[1] === "user" ? "user" : null;
+    if (parts[0] !== "demo" || !role || parts.length > 3 || (parts.length === 3 && !nameOk(parts[2]))) {
+      return fail(401, "invalid_token", "mock mode accepts demo:user, demo:responder or demo:user:<name>");
+    }
+    const name = parts[2] ?? (role === "responder" ? "เจ้าหน้าที่ทดลอง" : "ผู้ใช้ทดลอง");
+    user = { display_name: name, role, picture_url: null, identities: { line: true, google: null } };
+  }
+  const token = `mock-${user.role}-${Math.random().toString(36).slice(2)}`;
   updateState((s) => {
     s.sessions[token] = user;
   });
-  return { data: { session_token: token, user } };
+  return { data: { session_token: token, user, merged_chat: false } };
+}
+
+route("POST", "/api/auth/line", ({ body }) => mockLogin((body as { id_token?: string })?.id_token ?? "", "line"));
+route("POST", "/api/auth/google", ({ body }) => mockLogin((body as { id_token?: string })?.id_token ?? "", "google"));
+
+route("POST", "/api/auth/link/:provider", (ctx) => {
+  const provider = ctx.params.provider;
+  if (provider !== "line" && provider !== "google") return fail(404, "not_found", `unknown provider: ${provider}`);
+  let out: Result = fail(401, "unauthorized", "login required");
+  updateState((s) => {
+    const user = ctx.token ? s.sessions[ctx.token] : undefined;
+    if (!user) return;
+    const ids = (user.identities ??= { line: false, google: null });
+    const idToken = (ctx.body as { id_token?: string })?.id_token ?? "";
+    if (provider === "google") {
+      const name = idToken.split(":")[2];
+      if (!idToken.startsWith("demo:google:") || !name) return void (out = fail(401, "invalid_token", "demo:google:<name>"));
+      if (ids.google && ids.google !== `${name}@demo.namma`) return void (out = fail(409, "conflict", "already linked"));
+      ids.google = `${name}@demo.namma`;
+    } else {
+      ids.line = true;
+    }
+    out = { data: user };
+  });
+  return out;
+});
+
+route("DELETE", "/api/auth/link/:provider", (ctx) => {
+  let out: Result = fail(401, "unauthorized", "login required");
+  updateState((s) => {
+    const user = ctx.token ? s.sessions[ctx.token] : undefined;
+    if (!user) return;
+    const ids = (user.identities ??= { line: false, google: null });
+    const other = ctx.params.provider === "line" ? !!ids.google : ids.line;
+    if (!other) return void (out = fail(409, "conflict", "this is the account's only way to sign in"));
+    if (ctx.params.provider === "line") ids.line = false;
+    else ids.google = null;
+    out = { data: user };
+  });
+  return out;
+});
+
+route("POST", "/api/auth/logout", (ctx) => {
+  updateState((s) => {
+    if (ctx.token) delete s.sessions[ctx.token];
+  });
+  return { data: { signed_out: true } };
+});
+
+route("DELETE", "/api/me", (ctx) => {
+  if (!userFor(ctx.token, loadState())) return fail(401, "unauthorized", "login required");
+  updateState((s) => {
+    if (ctx.token) delete s.sessions[ctx.token];
+  });
+  return { data: { deleted: true } };
 });
 
 route("GET", "/api/me", ({ token }) => {

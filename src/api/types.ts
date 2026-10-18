@@ -289,9 +289,15 @@ export interface SessionUser {
   display_name: string;
   role: Role;
   picture_url: string | null;
+  /** Ways to sign in to this account: LINE (also gets LINE alerts) and Google (its email). */
+  identities?: { line: boolean; google: string | null };
 }
 
 export interface LoginResponse {
   session_token: string;
   user: SessionUser;
+  /** The anonymous web chat (chat_session) was folded into the account. */
+  merged_chat?: boolean;
 }
+
+export type Provider = "line" | "google";
