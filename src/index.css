@@ -262,13 +262,15 @@
 
 /* ── Web layout ─────────────────────────────────────────────── */
 
-/* Mark + wordmark: a staff gauge (three blocks, one waterline) before "NamMa น้ำมา" */
+/* Mark + wordmark: the logo mark before "NamMa น้ำมา" */
 .nm-wordmark { display: inline-flex; align-items: center; gap: 10px; color: var(--ink); text-decoration: none; }
 .nm-wordmark__en { font: 600 22px/32px var(--font-body); }
 .nm-wordmark__th { font: 600 17px/26px var(--font-body); color: var(--river); }
-.nm-mark { position: relative; display: inline-block; flex: none; width: 16px; height: 26px; border-left: 2px solid currentColor; box-sizing: border-box; }
-.nm-mark::before { content: ""; position: absolute; left: 0; top: 0; width: 9px; height: 18px; background: repeating-linear-gradient(to bottom, currentColor 0 4px, transparent 4px 7px); }
-.nm-mark::after { content: ""; position: absolute; left: -2px; right: -2px; bottom: 3px; height: 3px; background: var(--water); }
+/* The mark (บ้านบนคลื่น): a house resting on a water wave. Light: ink house, water wave; dark: the dark-theme pair.
+   Files: assets/Logos/ (namma-mark.svg, -dark, -mono, LINE profile picture, app icon). */
+.nm-mark { display: inline-block; flex: none; width: 32px; height: 32px; background: center / contain no-repeat url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cpath d='M 34 10.2 L 55 25.4 V 27.2 H 49.3 V 40.8 C 46.5 41.8 43 42.2 39.9 41.7 C 33 40.7 27 32.6 19.8 32.9 L 19.1 32.95 V 27.2 H 13 V 25.4 Z' fill='%230b1a2e' stroke='%230b1a2e' stroke-width='1.6' stroke-linejoin='round'/%3E%3Cpath d='M 4 43.7 C 8 38.7 13 35.2 19.8 34.9 C 27 34.6 33 42.7 39.9 43.7 C 46 44.6 53 41.7 60 38.7 C 58 47.2 50 53.8 39.9 53.8 C 31 53.8 25 47.7 18 45 C 13 43.2 8 43.2 4 43.7 Z' fill='%232b7ccc'/%3E%3C/svg%3E"); }
+[data-theme="dark"] .nm-mark { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cpath d='M 34 10.2 L 55 25.4 V 27.2 H 49.3 V 40.8 C 46.5 41.8 43 42.2 39.9 41.7 C 33 40.7 27 32.6 19.8 32.9 L 19.1 32.95 V 27.2 H 13 V 25.4 Z' fill='%23e3ecf8' stroke='%23e3ecf8' stroke-width='1.6' stroke-linejoin='round'/%3E%3Cpath d='M 4 43.7 C 8 38.7 13 35.2 19.8 34.9 C 27 34.6 33 42.7 39.9 43.7 C 46 44.6 53 41.7 60 38.7 C 58 47.2 50 53.8 39.9 53.8 C 31 53.8 25 47.7 18 45 C 13 43.2 8 43.2 4 43.7 Z' fill='%233a88d8'/%3E%3C/svg%3E"); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .nm-mark { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cpath d='M 34 10.2 L 55 25.4 V 27.2 H 49.3 V 40.8 C 46.5 41.8 43 42.2 39.9 41.7 C 33 40.7 27 32.6 19.8 32.9 L 19.1 32.95 V 27.2 H 13 V 25.4 Z' fill='%23e3ecf8' stroke='%23e3ecf8' stroke-width='1.6' stroke-linejoin='round'/%3E%3Cpath d='M 4 43.7 C 8 38.7 13 35.2 19.8 34.9 C 27 34.6 33 42.7 39.9 43.7 C 46 44.6 53 41.7 60 38.7 C 58 47.2 50 53.8 39.9 53.8 C 31 53.8 25 47.7 18 45 C 13 43.2 8 43.2 4 43.7 Z' fill='%233a88d8'/%3E%3C/svg%3E"); } }
 
 /* The bank line: one per page. Above it people ask; below it is what the river and NamMa know. */
 .nm-above { background: var(--surface); }
