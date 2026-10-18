@@ -7,6 +7,7 @@ import type {
   Envelope,
   LoginResponse,
   NearbyStation,
+  Profile,
   RescueTicket,
   SessionUser,
   Shelter,
@@ -16,6 +17,7 @@ import type {
   TicketPatch,
   TicketStatus,
   TicketSummary,
+  FactKind,
 } from "./types";
 
 export type Transport = (req: Request) => Promise<Response>;
@@ -52,12 +54,16 @@ export class ApiError extends Error {
 
 type Query = Record<string, string | number | boolean | null | undefined>;
 
-async function request<T>(method: string, path: string, opts: { query?: Query; body?: unknown } = {}): Promise<T> {
+async function request<T>(
+  method: string,
+  path: string,
+  opts: { query?: Query; body?: unknown; headers?: Record<string, string> } = {},
+): Promise<T> {
   const url = new URL(BASE + path, window.location.origin);
   for (const [k, v] of Object.entries(opts.query ?? {})) {
     if (v != null) url.searchParams.set(k, String(v));
   }
-  const headers: Record<string, string> = { Accept: "application/json" };
+  const headers: Record<string, string> = { Accept: "application/json", ...opts.headers };
   const token = getToken();
   if (token) headers.Authorization = `Bearer ${token}`;
   if (opts.body !== undefined) headers["Content-Type"] = "application/json";
@@ -103,4 +109,11 @@ export const api = {
   chat: (req: ChatRequest) => request<ChatResponse>("POST", "/api/chat", { body: req }),
   login: (id_token: string) => request<LoginResponse>("POST", "/api/auth/line", { body: { id_token } }),
   me: () => request<SessionUser>("GET", "/api/me"),
+  // The anonymous web chat is identified by its session_id (the signed-in user by the bearer token).
+  profile: (chatSession: string) =>
+    request<Profile>("GET", "/api/profile", { headers: { "X-Chat-Session": chatSession } }),
+  deletePlace: (chatSession: string, id: number) =>
+    request<Profile>("DELETE", `/api/profile/places/${id}`, { headers: { "X-Chat-Session": chatSession } }),
+  deleteFacts: (chatSession: string, kind: FactKind | "all") =>
+    request<Profile>("DELETE", `/api/profile/facts/${kind}`, { headers: { "X-Chat-Session": chatSession } }),
 };

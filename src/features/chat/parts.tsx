@@ -2,7 +2,7 @@ import { Link } from "react-router";
 import type { QuickReply, Source } from "../../api/types";
 import { HotlineNotice } from "../../components/HotlineNotice";
 import { LocateIcon, PinIcon } from "../../components/icons";
-import { copy } from "../../copy";
+import { copy, type Starter } from "../../copy";
 import { looksLikeEmergency } from "../../lib/danger";
 import { formatDistance, formatTime } from "../../lib/format";
 
@@ -20,7 +20,7 @@ export function EmergencyCard() {
 export function Sources({ sources }: { sources: Source[] }) {
   if (!sources.length) return null;
   return (
-    <ul className="m-0 grid w-full max-w-[34rem] list-none gap-1.5 p-0" aria-label={copy.chat.sourcesLabel}>
+    <ul className="m-0 grid w-full max-w-[40rem] list-none gap-1.5 p-0" aria-label={copy.chat.sourcesLabel}>
       {sources.map((s, i) => (
         <li key={i}>
           <SourceItem source={s} />
@@ -75,7 +75,7 @@ export function QuickReplies({
 }) {
   if (!items.length) return null;
   return (
-    <div className="flex gap-2 overflow-x-auto px-4 pb-2" aria-label="ตัวเลือกตอบกลับ">
+    <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-2 sm:mx-0 sm:flex-wrap sm:px-0" aria-label="ตัวเลือกตอบกลับ">
       {items.map((q) => (
         <button
           key={`${q.type}:${q.label}`}
@@ -94,7 +94,7 @@ export function QuickReplies({
 
 export function TypingBubble() {
   return (
-    <div role="status" className="nm-bubble nm-bubble--bot flex w-fit gap-1.5 py-4">
+    <div role="status" className="flex w-fit gap-1.5 py-3">
       {[0, 150, 300].map((d) => (
         <span
           key={d}
@@ -103,6 +103,19 @@ export function TypingBubble() {
         />
       ))}
       <span className="sr-only">{copy.chat.typing}</span>
+    </div>
+  );
+}
+
+/** DS starter chips under an empty composer. The danger starter is `--urgent` and goes straight to triage. */
+export function StarterChips({ onPick, center = false }: { onPick: (s: Starter) => void; center?: boolean }) {
+  return (
+    <div className={`nm-row ${center ? "justify-center" : ""}`}>
+      {copy.chat.starters.map((s) => (
+        <button key={s.label} type="button" onClick={() => onPick(s)} className={`nm-chip ${s.urgent ? "nm-chip--urgent" : ""}`}>
+          {s.label}
+        </button>
+      ))}
     </div>
   );
 }

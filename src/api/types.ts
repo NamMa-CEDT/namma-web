@@ -183,6 +183,21 @@ export type Source =
       name_th: string | null;
       distance_km: number | null;
       observed_at: string | null;
+      /** The reading the reply used, for the StationCard. Optional: older backends send only the fields above. */
+      river?: string | null;
+      agency?: string | null;
+      amphoe?: string | null;
+      province?: string | null;
+      level_msl?: number | null;
+      /** Signed: + over bank, − below. */
+      diff_wl_bank?: number | null;
+      bank_msl?: number | null;
+      /** 3 h trend. */
+      trend_cm_per_hr?: number | null;
+      hours_to_bank?: number | null;
+      risk_tier?: RiskTier | null;
+      /** Codes of upstream stations already over bank. */
+      upstream_over?: string[];
     }
   | {
       type: "gistda";
@@ -223,6 +238,47 @@ export interface ChatResponse {
   /** True when the user signalled danger. The UI then shows the DDPM 1784 card first. */
   emergency: boolean;
   ticket_id: number | null;
+}
+
+// --- profile ----------------------------------------------------------------
+
+export interface SavedPlace {
+  id: number;
+  /** Exactly as the user said it: "บ้านแม่". */
+  label: string;
+  lat: number;
+  lon: number;
+  /** Geocoded from a place name, not a GPS share. */
+  approx: boolean;
+  /** "อ.บางบาล จ.พระนครศรีอยุธยา" */
+  where: string | null;
+  nearest: {
+    station_id: number;
+    code: string | null;
+    name_th: string | null;
+    distance_km: number;
+    risk_tier: RiskTier | null;
+    diff_wl_bank: number | null;
+    observed_at: string | null;
+  } | null;
+}
+
+export type FactKind = "household" | "needs" | "house" | "assets" | "history";
+
+export interface Fact {
+  kind: FactKind;
+  text: string;
+  /** Health or vulnerability: saved only with consent (PDPA). */
+  sensitive: boolean;
+}
+
+export interface Profile {
+  places: SavedPlace[];
+  facts: Fact[];
+  /** Latest sensitive_memory decision; ts null = never asked. */
+  consent: { granted: boolean; ts: string | null };
+  pending_consent: boolean;
+  line_linked: boolean;
 }
 
 // --- auth -------------------------------------------------------------------

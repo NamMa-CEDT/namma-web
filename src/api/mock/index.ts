@@ -2,8 +2,9 @@
 // Works without service workers (LIFF browser, plain-http LAN on a phone, static demo builds).
 // Each route mirrors one endpoint in docs/api.md.
 import type { Transport } from "../client";
-import type { RescueTicket, SessionUser, TicketPatch, TicketStatus, TicketSummary } from "../types";
-import { respond, type PendingTriage } from "./chatScript";
+import type { Fact, Profile, RescueTicket, SessionUser, TicketPatch, TicketStatus, TicketSummary } from "../types";
+import { copy } from "../../copy";
+import { respond, type ChatSessionState, type PendingTriage } from "./chatScript";
 import * as data from "./data";
 import { toBangkokIso } from "./geo";
 import { chatState, loadState, updateState, type MockState } from "./store";
@@ -13,6 +14,7 @@ interface Ctx {
   query: URLSearchParams;
   body: unknown;
   token: string | null;
+  headers: Headers;
 }
 
 type Result = { status?: number; data?: unknown; error?: { code: string; message: string } };
@@ -186,6 +188,82 @@ export function insertTicket(s: MockState, t: PendingTriage, channel: "line" | "
   return id;
 }
 
+// --- profile ------------------------------------------------------------------
+
+function profileOf(c: ChatSessionState | undefined, s: MockState, lineLinked: boolean): Profile {
+  if (!c) return { places: [], facts: [], consent: { granted: false, ts: null }, pending_consent: false, line_linked: lineLinked };
+  // Household facts are sensitive: shown (and kept) only with consent, as on the backend.
+  const facts: Fact[] = c.consent
+    ? c.household.map((v): Fact => ({ kind: "household", text: copy.vulnerable[v], sensitive: true }))
+    : [];
+  return {
+    places: (c.places ?? []).map((p) => {
+      const n = data.nearestStations(p.lat, p.lon, 1, s.tierOverrides)[0];
+      return {
+        ...p,
+        nearest: n
+          ? {
+              station_id: n.id,
+              code: n.oldcode,
+              name_th: n.name_th,
+              distance_km: n.distance_km,
+              risk_tier: n.risk?.tier ?? null,
+              diff_wl_bank: n.latest?.diff_wl_bank ?? null,
+              observed_at: n.latest?.ts ?? null,
+            }
+          : null,
+      };
+    }),
+    facts,
+    consent: { granted: c.consent === true, ts: c.consentTs ?? null },
+    pending_consent: !!c.pendingConsent?.length,
+    line_linked: lineLinked,
+  };
+}
+
+function chatFor(ctx: Ctx, s: MockState): ChatSessionState | undefined {
+  const sid = ctx.headers.get("X-Chat-Session");
+  return sid ? s.chats[sid] : undefined;
+}
+
+route("GET", "/api/profile", (ctx) => {
+  const s = loadState();
+  return { data: profileOf(chatFor(ctx, s), s, !!userFor(ctx.token, s)) };
+}, [100, 250]);
+
+route("DELETE", "/api/profile/places/:id", (ctx) => {
+  let out: Result = {};
+  updateState((s) => {
+    const c = chatFor(ctx, s);
+    const id = Number(ctx.params.id);
+    if (!c?.places?.some((p) => p.id === id)) {
+      out = fail(404, "not_found", `place ${id} not found`);
+      return;
+    }
+    c.places = c.places.filter((p) => p.id !== id);
+    out = { data: profileOf(c, s, !!userFor(ctx.token, s)) };
+  });
+  return out;
+});
+
+route("DELETE", "/api/profile/facts/:kind", (ctx) => {
+  const kind = ctx.params.kind;
+  if (!["household", "needs", "house", "assets", "history", "all"].includes(kind)) {
+    return fail(400, "bad_request", `unknown kind: ${kind}`);
+  }
+  let out: Result = {};
+  updateState((s) => {
+    const c = chatFor(ctx, s);
+    if (c && (kind === "household" || kind === "all")) {
+      c.household = [];
+      c.pendingConsent = null;
+    }
+    if (c && kind === "all") c.places = [];
+    out = { data: profileOf(c, s, !!userFor(ctx.token, s)) };
+  });
+  return out;
+});
+
 // --- auth ---------------------------------------------------------------------
 
 route("POST", "/api/auth/line", ({ body }) => {
@@ -236,6 +314,7 @@ export function createMockTransport(): Transport {
       query: url.searchParams,
       body: text ? JSON.parse(text) : undefined,
       token: auth?.startsWith("Bearer ") ? auth.slice(7) : null,
+      headers: req.headers,
     });
     if (result.error) return json(result.status ?? 500, { error: result.error });
     return json(result.status ?? 200, { data: result.data, meta: { ingested_at: data.ingestedAt() } });

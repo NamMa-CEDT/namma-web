@@ -1,6 +1,6 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "./client";
-import type { RescueTicket, TicketPatch, TicketStatus, TicketSummary } from "./types";
+import type { FactKind, Profile, RescueTicket, TicketPatch, TicketStatus, TicketSummary } from "./types";
 
 // ThaiWater updates every 10 min (HII) / hourly (RID); no need to poll faster than a minute.
 const STATION_REFRESH_MS = 60_000;
@@ -14,6 +14,7 @@ export const keys = {
   shelters: (lat: number | null, lon: number | null, patients: boolean) => ["shelters", lat, lon, patients] as const,
   tickets: (status: TicketStatus[]) => ["tickets", status.join(",")] as const,
   ticket: (id: number) => ["ticket", id] as const,
+  profile: (chatSession: string) => ["profile", chatSession] as const,
 };
 
 export function useStations() {
@@ -94,5 +95,19 @@ export function usePatchTicket() {
       qc.invalidateQueries({ queryKey: keys.ticket(id) });
       qc.invalidateQueries({ queryKey: ["tickets"] });
     },
+  });
+}
+
+/** What NamMa remembers for this chat (ProfilePanel). Refetched after every chat turn by the chat page. */
+export function useProfile(chatSession: string) {
+  return useQuery({ queryKey: keys.profile(chatSession), queryFn: () => api.profile(chatSession) });
+}
+
+export function useDeleteFromProfile(chatSession: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (what: { place: number } | { facts: FactKind | "all" }) =>
+      "place" in what ? api.deletePlace(chatSession, what.place) : api.deleteFacts(chatSession, what.facts),
+    onSuccess: (profile: Profile) => qc.setQueryData(keys.profile(chatSession), profile),
   });
 }

@@ -11,6 +11,7 @@ import { ApiError, API_MODE, MOCK_STORE_KEY } from "./api/client";
 import { Shell } from "./app/Shell";
 import { initSession } from "./auth/session";
 
+const HomePage = lazy(() => import("./features/home/HomePage"));
 const ChatPage = lazy(() => import("./features/chat/ChatPage"));
 const MapPage = lazy(() => import("./features/map/MapPage"));
 const DashboardPage = lazy(() => import("./features/dashboard/DashboardPage"));
@@ -39,10 +40,11 @@ initSession().then(() => {
         <HashRouter>
           <Routes>
             <Route element={<Shell />}>
+              <Route index element={<HomePage />} />
               <Route path="/chat" element={<ChatPage />} />
               <Route path="/map" element={<MapPage />} />
               <Route path="/dashboard" element={<DashboardPage />} />
-              <Route path="*" element={<Navigate to="/chat" replace />} />
+              <Route path="*" element={<Navigate to="/" replace />} />
             </Route>
           </Routes>
         </HashRouter>

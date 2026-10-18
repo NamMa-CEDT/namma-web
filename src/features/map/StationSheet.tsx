@@ -1,6 +1,7 @@
 import { lazy, Suspense } from "react";
 import { useReadings, useStation } from "../../api/queries";
-import type { StationDetail, StationLink } from "../../api/types";
+import type { StationLink } from "../../api/types";
+import { Gauge } from "../../components/Gauge";
 import { ChevronLeftIcon } from "../../components/icons";
 import { StaleNotice } from "../../components/Stale";
 import { ErrorState, Loading } from "../../components/States";
@@ -56,40 +57,6 @@ function Links({ title, links, onSelect }: { title: string; links: StationLink[]
         ))}
       </ul>
     </section>
-  );
-}
-
-/** DS gauge: a staff gauge on its side. No house marker: we don't know the house's height. */
-function Gauge({ s }: { s: StationDetail }) {
-  const level = s.latest?.level_msl;
-  const bank = s.min_bank;
-  if (level == null || bank == null) return null;
-  // Track from 3 m below the bank to 1 m above it, widened to fit the reading.
-  const lo = Math.min(bank - 3, level - 0.5);
-  const hi = Math.max(bank + 1, level + 0.5);
-  const pos = (v: number) => ((v - lo) / (hi - lo)) * 100;
-  const over = level > bank;
-  return (
-    <div>
-      <div
-        role="img"
-        aria-label={`${copy.station.level} ${formatLevel(level)} ${copy.station.bankLevel} ${formatLevel(bank)}`}
-        className={`nm-gauge ${over ? "nm-gauge--over" : ""}`}
-        style={{ "--level-pos": pos(level), "--bank-pos": pos(bank) } as React.CSSProperties}
-      >
-        <div className="nm-gauge__water" />
-        <div className="nm-gauge__ticks" />
-        <div className="nm-gauge__bank" />
-      </div>
-      <div className="nm-gauge-legend">
-        <span>
-          {copy.station.level} {formatLevel(level)}
-        </span>
-        <span>
-          {copy.station.bankLevel} {formatLevel(bank)}
-        </span>
-      </div>
-    </div>
   );
 }
 
@@ -150,7 +117,7 @@ export function StationSheet({
           {reason && ` · ${reason}`}
         </p>
 
-        <Gauge s={s} />
+        <Gauge level={s.latest?.level_msl} bank={s.min_bank} />
 
         <dl className="nm-station__facts">
           <div>

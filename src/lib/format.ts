@@ -87,6 +87,13 @@ export function formatDateTime(ts: string | null | undefined): string {
   return `${timeFmt.format(d)} น. ${dayFmt.format(d)} ${year}`;
 }
 
+/** "14 ต.ค. 69": a date with its Buddhist-era year, no time (consent dates). */
+export function formatDate(ts: string | null | undefined): string {
+  if (!ts) return copy.unknown;
+  const d = new Date(ts);
+  return `${dayFmt.format(d)} ${yearFmt.format(d).replace(/\D/g, "").slice(-2)}`;
+}
+
 /** The Thai way: "อ.บางบาล จ.พระนครศรีอยุธยา" (Bangkok has เขต and no จ.). */
 export function formatPlace(amphoe: string | null | undefined, province: string | null | undefined): string {
   const bkk = province === "กรุงเทพมหานคร" || province === "กรุงเทพฯ";
