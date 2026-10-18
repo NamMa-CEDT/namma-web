@@ -108,6 +108,15 @@ export interface Shelter {
   phone: string | null;
   /** Present when the request had lat/lon. */
   distance_km: number | null;
+  /** DDPM live status (backend ingest/shelters.py). Optional: the mock fixtures don't have them. */
+  is_open?: boolean | null;
+  current_residents?: number | null;
+  /** true / false / null = DDPM doesn't say (most shelters). accepts_patients is true only when this is true. */
+  accepts_bedridden?: boolean | null;
+  province?: string | null;
+  district?: string | null;
+  source?: "ddpm" | "manual";
+  updated_at?: string | null;
 }
 
 // --- rescue tickets ---------------------------------------------------------
