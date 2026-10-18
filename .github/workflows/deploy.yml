@@ -1,0 +1,51 @@
+name: Deploy
+
+# After CI passes on a push to main, build for the real backend and ship dist/ to the ECS VM
+# (namma-backend serves it from /opt/namma-web/dist). Also runnable by hand (Actions → Deploy → Run).
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
+env:
+  DEPLOY_HOST: 110.238.115.73
+  # The VM's SSH host key (same VM as namma-backend). Refresh with: ssh-keyscan -t ed25519 <host>
+  KNOWN_HOST: "110.238.115.73 ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIB/meTPELgrkda2meYqttYlfDu0ar02fhyfGMoS9ISVi"
+
+jobs:
+  deploy:
+    if: github.event_name == 'workflow_dispatch' || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Build
+        env:
+          VITE_API_MODE: http
+          # DEMO LOGIN IS ON for the demo. Remove this line before going public (namma-backend TODOs #6).
+          VITE_DEMO_LOGIN: "1"
+        run: npm run build
+      - name: SSH key
+        env:
+          KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+        run: |
+          install -d -m 700 ~/.ssh
+          printf '%s\n' "$KEY" > ~/.ssh/id_ed25519 && chmod 600 ~/.ssh/id_ed25519
+          printf '%s\n' "$KNOWN_HOST" > ~/.ssh/known_hosts
+      - name: Ship
+        # namma-deploy keeps the previous build in /opt/namma-web/dist.prev.
+        run: tar -C dist -czf - . | ssh -o BatchMode=yes deploy@"$DEPLOY_HOST" sudo namma-deploy web
+      - name: Public check
+        run: curl -fsS https://"$DEPLOY_HOST".sslip.io/ | grep -q '<div id="root"'
