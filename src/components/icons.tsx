@@ -15,6 +15,7 @@ import {
   PaperPlaneRight,
   Phone,
   Trash,
+  UserCircle,
   ShieldCheck,
   Users,
   Warning,
@@ -44,6 +45,7 @@ export const ArrowUpIcon = wrap(ArrowUp);
 export const ArrowRightIcon = wrap(ArrowRight);
 export const MicIcon = wrap(Microphone);
 export const TrashIcon = wrap(Trash);
+export const UserIcon = wrap(UserCircle);
 export const ArrowDownIcon = wrap(ArrowDown);
 export const MinusIcon = wrap(Minus);
 export const UsersIcon = wrap(Users);

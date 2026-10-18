@@ -195,3 +195,26 @@ describe("profile (what the chat remembers)", () => {
     expect((await profile("mine")).places).toHaveLength(1);
   });
 });
+
+describe("accounts", () => {
+  it("signs in with Google or LINE demo ids, links, unlinks (never the last), logs out and deletes", async () => {
+    const g = await call("POST", "/api/auth/google", { id_token: "demo:google:pim" });
+    expect(g.status).toBe(200);
+    expect(g.json.data.user.identities).toEqual({ line: false, google: "pim@demo.namma" });
+    const t = g.json.data.session_token as string;
+
+    expect((await call("DELETE", "/api/auth/link/google", undefined, t)).status).toBe(409);
+    const linked = await call("POST", "/api/auth/link/line", { id_token: "demo:user:pim" }, t);
+    expect(linked.json.data.identities).toEqual({ line: true, google: "pim@demo.namma" });
+    expect((await call("POST", "/api/auth/link/google", { id_token: "demo:google:other" }, t)).status).toBe(409);
+    expect((await call("DELETE", "/api/auth/link/google", undefined, t)).json.data.identities.google).toBeNull();
+
+    expect((await call("POST", "/api/auth/logout", undefined, t)).status).toBe(200);
+    expect((await call("GET", "/api/me", undefined, t)).status).toBe(401);
+
+    const l = await call("POST", "/api/auth/line", { id_token: "demo:user:somchai" });
+    expect(l.json.data.user.display_name).toBe("somchai");
+    expect((await call("DELETE", "/api/me", undefined, l.json.data.session_token)).json.data).toEqual({ deleted: true });
+    expect((await call("POST", "/api/auth/line", { id_token: "demo:user:Bad Name" })).status).toBe(401);
+  });
+});

@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { Link } from "react-router";
+import { useSession } from "../../auth/session";
 import { useDeleteFromProfile, useProfile } from "../../api/queries";
 import type { Fact, FactKind, Profile, SavedPlace } from "../../api/types";
 import { TrashIcon } from "../../components/icons";
@@ -126,6 +128,7 @@ const HOUSE: FactKind[] = ["house", "assets", "history"];
 export function ProfilePanel({ chatSession }: { chatSession: string }) {
   const profile = useProfile(chatSession);
   const del = useDeleteFromProfile(chatSession);
+  const session = useSession();
   const [open, setOpen] = useState(false);
   const p = profile.data;
   if (!p) return null;
@@ -196,6 +199,11 @@ export function ProfilePanel({ chatSession }: { chatSession: string }) {
         </Section>
 
         <Section title={copy.profile.line} busy={del.isPending}>
+          {!session && (
+            <Link to="/account" className="inline-flex min-h-11 items-center font-semibold text-river">
+              {copy.profile.signInToKeep}
+            </Link>
+          )}
           {p.line_linked ? (
             <span className="nm-memory__note">{copy.profile.lineLinked}</span>
           ) : (

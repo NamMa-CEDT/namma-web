@@ -15,6 +15,7 @@ const HomePage = lazy(() => import("./features/home/HomePage"));
 const ChatPage = lazy(() => import("./features/chat/ChatPage"));
 const MapPage = lazy(() => import("./features/map/MapPage"));
 const DashboardPage = lazy(() => import("./features/dashboard/DashboardPage"));
+const AccountPage = lazy(() => import("./features/account/AccountPage"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -44,6 +45,7 @@ initSession().then(() => {
               <Route path="/chat" element={<ChatPage />} />
               <Route path="/map" element={<MapPage />} />
               <Route path="/dashboard" element={<DashboardPage />} />
+              <Route path="/account" element={<AccountPage />} />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Route>
           </Routes>

@@ -1,5 +1,6 @@
-// The anonymous web chat: one session id per browser tab (sessionStorage), sent with every chat turn and
-// as X-Chat-Session when reading the profile, so the ProfilePanel shows what this chat saved.
+// The anonymous web chat: one session id per browser (localStorage), sent with every chat turn and as
+// X-Chat-Session when reading the profile, so the ProfilePanel shows what this chat saved. Signing in folds
+// that chat into the account (chat_session on POST /api/auth/*). The chat transcript stays per tab.
 
 const SESSION_KEY = "namma.chat.session";
 
@@ -28,11 +29,21 @@ export function save(key: string, value: unknown): void {
 }
 
 export function loadSessionId(): string {
+  try {
+    const stored = localStorage.getItem(SESSION_KEY);
+    if (stored) return JSON.parse(stored) as string;
+  } catch {
+    // fall through
+  }
   return load(SESSION_KEY, "") || newId();
 }
 
 export function saveSessionId(id: string): void {
-  save(SESSION_KEY, id);
+  try {
+    localStorage.setItem(SESSION_KEY, JSON.stringify(id));
+  } catch {
+    save(SESSION_KEY, id);
+  }
 }
 
 /** What another page asks the chat to do on arrival (react-router location state). */

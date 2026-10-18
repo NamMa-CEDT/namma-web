@@ -1,7 +1,8 @@
 import { lazy, Suspense } from "react";
 import { Link, NavLink, Outlet, useLocation, useNavigate, useSearchParams } from "react-router";
 import { API_MODE } from "../api/client";
-import { ChatIcon, LineIcon, MapIcon, PhoneIcon, ShieldIcon } from "../components/icons";
+import { ChatIcon, LineIcon, MapIcon, PhoneIcon, ShieldIcon, UserIcon } from "../components/icons";
+import { useSession } from "../auth/session";
 import { LogoMark } from "../components/Logo";
 import { ErrorBoundary, Loading } from "../components/States";
 import { StaleBanner } from "../components/Stale";
@@ -31,11 +32,12 @@ function useDemoMode(): boolean {
 export function Shell() {
   const demo = useDemoMode();
   const navigate = useNavigate();
+  const session = useSession();
   // On a phone the chat needs the height; the header's 1784 button and each answer's HotlineNotice carry the hotline.
   const inChat = useLocation().pathname === "/chat";
   return (
     <div className="flex h-dvh flex-col bg-surface text-ink">
-      <header className="z-[1000] flex min-h-16 items-center gap-x-2 border-b border-line bg-surface-raised px-3 py-1 sm:gap-x-4 sm:px-6">
+      <header className="z-[1000] flex min-h-16 items-center gap-x-1.5 border-b border-line bg-surface-raised px-2 py-1 sm:gap-x-4 sm:px-6">
         <Link to="/" className="nm-wordmark" aria-label={`${copy.appNameEn} ${copy.appName} ${copy.nav.home}`}>
           <LogoMark size={36} />
           <span className="nm-wordmark__en max-sm:hidden">{copy.appNameEn}</span>
@@ -57,15 +59,27 @@ export function Shell() {
             </NavLink>
           ))}
         </nav>
-        <div className="ml-auto flex shrink-0 items-center gap-2">
-          <a href={DDPM.telHref} className="nm-btn nm-btn--call nm-btn--sm max-sm:px-3">
+        <div className="ml-auto flex shrink-0 items-center gap-1.5 sm:gap-2">
+          <NavLink
+            to="/account"
+            aria-label={session ? `${copy.account.nav}: ${session.display_name}` : copy.account.signIn}
+            className={({ isActive }) =>
+              `flex min-h-11 items-center gap-2 rounded-md px-1 text-label no-underline sm:px-2 ${
+                isActive ? "font-semibold text-ink" : "text-ink-muted hover:text-ink"
+              }`
+            }
+          >
+            <UserIcon className="text-[24px]" />
+            <span className="max-w-32 truncate max-md:hidden">{session ? session.display_name : copy.account.signIn}</span>
+          </NavLink>
+          <a href={DDPM.telHref} className="nm-btn nm-btn--call nm-btn--sm max-sm:px-2 max-sm:text-[15px]">
             <PhoneIcon className="text-[20px] max-sm:hidden" />
             {copy.footer.callButton}
           </a>
           {/* Rescue starts in the chat: triage asks before anything is sent (CLAUDE.md §6). */}
           <button
             type="button"
-            className="nm-btn nm-btn--danger nm-btn--sm max-sm:px-3"
+            className="nm-btn nm-btn--danger nm-btn--sm max-sm:px-2 max-sm:text-[15px]"
             onClick={() => navigate("/chat", { state: { send: copy.rescueMessage } })}
           >
             {copy.nav.rescue}
