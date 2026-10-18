@@ -2,6 +2,7 @@ import { lazy, Suspense } from "react";
 import { Link, NavLink, Outlet, useLocation, useNavigate, useSearchParams } from "react-router";
 import { API_MODE } from "../api/client";
 import { ChatIcon, LineIcon, MapIcon, PhoneIcon, ShieldIcon } from "../components/icons";
+import { LogoMark } from "../components/Logo";
 import { ErrorBoundary, Loading } from "../components/States";
 import { StaleBanner } from "../components/Stale";
 import { copy, DDPM } from "../copy";
@@ -36,7 +37,7 @@ export function Shell() {
     <div className="flex h-dvh flex-col bg-surface text-ink">
       <header className="z-[1000] flex min-h-16 items-center gap-x-2 border-b border-line bg-surface-raised px-3 py-1 sm:gap-x-4 sm:px-6">
         <Link to="/" className="nm-wordmark" aria-label={`${copy.appNameEn} ${copy.appName} ${copy.nav.home}`}>
-          <span className="nm-mark" />
+          <LogoMark size={36} />
           <span className="nm-wordmark__en max-sm:hidden">{copy.appNameEn}</span>
           <span className="nm-wordmark__th max-sm:hidden">{copy.appName}</span>
         </Link>

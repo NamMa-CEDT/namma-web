@@ -27,7 +27,9 @@ Settings: `.env.example` (copy to `.env.local`).
 - **Hosting:** the backend serves the built app on the same origin as `/api` (one cert, no CORS). Build here,
   then copy `dist/` to the VM and point `WEB_DIST` at it (see `infra/deploy/README.md` in `namma-backend`).
 - Why `HashRouter` and no service workers: OBS can't rewrite deep links, and the LIFF browser has none.
-- Thai copy lives in `src/copy.ts`. Design tokens: `src/styles/tokens.json`
+- Thai copy lives in `src/copy.ts`.
+- Logo (บ้านบนคลื่น, a house on a wave): `src/components/Logo.tsx` in the app; files in `public/brand/`
+  (`namma-mark.svg`, `-dark`, `-mono`, `namma-line-profile.png` for the LINE OA profile picture, `namma-app-icon.svg`). Design tokens: `src/styles/tokens.json`
   (CSS via `scripts/tokens_to_css.py`); component classes `nm-*` in `src/index.css`.
 
 ## Rules that apply here too
