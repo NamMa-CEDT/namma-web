@@ -5,13 +5,14 @@ import { resetState } from "./store";
 const send = createMockTransport();
 const ORIGIN = "http://localhost";
 
-async function call(method: string, path: string, body?: unknown, token?: string) {
+async function call(method: string, path: string, body?: unknown, token?: string, chatSession?: string) {
   const res = await send(
     new Request(ORIGIN + path, {
       method,
       headers: {
         "Content-Type": "application/json",
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...(chatSession ? { "X-Chat-Session": chatSession } : {}),
       },
       body: body === undefined ? undefined : JSON.stringify(body),
     }),
@@ -137,5 +138,60 @@ describe("chat follows the demo script (CLAUDE.md §15)", () => {
     expect(a.emergency).toBe(true);
     expect(a.quick_replies.some((q: { type: string }) => q.type === "location")).toBe(true);
     expect(a.quick_replies.some((q: { data?: string }) => q.data === "triage:confirm")).toBe(false);
+  });
+});
+
+describe("profile (what the chat remembers)", () => {
+  const profile = async (sid: string) => (await call("GET", "/api/profile", undefined, undefined, sid)).json.data;
+
+  it("is empty for an unknown session", async () => {
+    expect(await profile("nobody")).toEqual({
+      places: [],
+      facts: [],
+      consent: { granted: false, ts: null },
+      pending_consent: false,
+      line_linked: false,
+    });
+  });
+
+  it("saves the named place, shows household facts only after consent, and deletes", async () => {
+    const sid = "profile-1";
+    const answer = await chat(sid, { message: "บ้านแม่อยู่บางบาล อยุธยา น้ำจะถึงไหม" });
+    // Station sources carry the reading the StationCard draws; bank = level − diff.
+    const st = answer.sources.find((x: { type: string }) => x.type === "station");
+    expect(st.diff_wl_bank).not.toBeNull();
+    expect(st.bank_msl).toBeCloseTo(st.level_msl - st.diff_wl_bank, 2);
+    expect(st.river).toBeTruthy();
+
+    let p = await profile(sid);
+    expect(p.places).toHaveLength(1);
+    expect(p.places[0]).toMatchObject({ label: "บ้านแม่", approx: true, where: "อ.บางบาล จ.พระนครศรีอยุธยา" });
+    expect(p.places[0].nearest.code).toBe("C.37");
+
+    await chat(sid, { message: "ที่บ้านมียายติดเตียง" });
+    p = await profile(sid);
+    expect(p.facts).toEqual([]);
+    expect(p.pending_consent).toBe(true);
+
+    await chat(sid, { postback: "consent:sensitive_memory:yes" });
+    p = await profile(sid);
+    expect(p.consent.granted).toBe(true);
+    expect(p.consent.ts).toBeTruthy();
+    expect(p.facts.map((f: { kind: string }) => f.kind)).toContain("household");
+    expect(p.facts.every((f: { sensitive: boolean }) => f.sensitive)).toBe(true);
+
+    const del = await call("DELETE", `/api/profile/places/${p.places[0].id}`, undefined, undefined, sid);
+    expect(del.status).toBe(200);
+    expect(del.json.data.places).toEqual([]);
+    expect((await call("DELETE", "/api/profile/places/999", undefined, undefined, sid)).status).toBe(404);
+    expect((await call("DELETE", "/api/profile/facts/all", undefined, undefined, sid)).json.data.facts).toEqual([]);
+    expect((await call("DELETE", "/api/profile/facts/bogus", undefined, undefined, sid)).status).toBe(400);
+  });
+
+  it("another session cannot delete my place", async () => {
+    await chat("mine", { message: "บ้านแม่อยู่บางบาล อยุธยา น้ำจะถึงไหม" });
+    const id = (await profile("mine")).places[0].id;
+    expect((await call("DELETE", `/api/profile/places/${id}`, undefined, undefined, "theirs")).status).toBe(404);
+    expect((await profile("mine")).places).toHaveLength(1);
   });
 });

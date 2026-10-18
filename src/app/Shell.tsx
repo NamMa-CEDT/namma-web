@@ -1,5 +1,5 @@
 import { lazy, Suspense } from "react";
-import { NavLink, Outlet, useSearchParams } from "react-router";
+import { Link, NavLink, Outlet, useLocation, useNavigate, useSearchParams } from "react-router";
 import { API_MODE } from "../api/client";
 import { ChatIcon, LineIcon, MapIcon, PhoneIcon, ShieldIcon } from "../components/icons";
 import { ErrorBoundary, Loading } from "../components/States";
@@ -29,22 +29,25 @@ function useDemoMode(): boolean {
 
 export function Shell() {
   const demo = useDemoMode();
+  const navigate = useNavigate();
+  // On a phone the chat needs the height; the header's 1784 button and each answer's HotlineNotice carry the hotline.
+  const inChat = useLocation().pathname === "/chat";
   return (
     <div className="flex h-dvh flex-col bg-surface text-ink">
-      <header className="z-[1000] flex min-h-16 items-center gap-3 border-b border-line bg-surface-raised px-4">
-        {/* No logo yet: the name in the body face at 600 (DS Iconography). */}
-        <NavLink to="/chat" className="flex items-baseline gap-2 text-ink no-underline">
-          <span className="text-title font-semibold">{copy.appName}</span>
-          <span className="text-caption text-ink-muted">{copy.appNameEn}</span>
-        </NavLink>
-        <nav className="ml-4 hidden gap-1 sm:flex" aria-label="หลัก">
+      <header className="z-[1000] flex min-h-16 items-center gap-x-2 border-b border-line bg-surface-raised px-3 py-1 sm:gap-x-4 sm:px-6">
+        <Link to="/" className="nm-wordmark" aria-label={`${copy.appNameEn} ${copy.appName} ${copy.nav.home}`}>
+          <span className="nm-mark" />
+          <span className="nm-wordmark__en max-sm:hidden">{copy.appNameEn}</span>
+          <span className="nm-wordmark__th max-sm:hidden">{copy.appName}</span>
+        </Link>
+        <nav className="hidden flex-1 gap-1 md:flex" aria-label="หลัก">
           {NAV.map(({ to, label, Icon }) => (
             <NavLink
               key={to}
               to={to}
               className={({ isActive }) =>
-                `flex min-h-11 items-center gap-2 rounded-md px-3 text-label font-semibold no-underline ${
-                  isActive ? "bg-river-soft text-river" : "text-ink-muted hover:bg-surface-sunken hover:text-ink"
+                `flex min-h-11 items-center gap-2 border-b-[3px] px-2 text-label no-underline ${
+                  isActive ? "border-river font-semibold text-ink" : "border-transparent text-ink-muted hover:text-ink"
                 }`
               }
             >
@@ -53,10 +56,20 @@ export function Shell() {
             </NavLink>
           ))}
         </nav>
-        <a href={DDPM.telHref} className="nm-btn nm-btn--call nm-btn--sm ml-auto">
-          <PhoneIcon className="text-[20px]" />
-          {copy.footer.callButton}
-        </a>
+        <div className="ml-auto flex shrink-0 items-center gap-2">
+          <a href={DDPM.telHref} className="nm-btn nm-btn--call nm-btn--sm max-sm:px-3">
+            <PhoneIcon className="text-[20px] max-sm:hidden" />
+            {copy.footer.callButton}
+          </a>
+          {/* Rescue starts in the chat: triage asks before anything is sent (CLAUDE.md §6). */}
+          <button
+            type="button"
+            className="nm-btn nm-btn--danger nm-btn--sm max-sm:px-3"
+            onClick={() => navigate("/chat", { state: { send: copy.rescueMessage } })}
+          >
+            {copy.nav.rescue}
+          </button>
+        </div>
       </header>
 
       <StaleBanner />
@@ -69,7 +82,7 @@ export function Shell() {
         </ErrorBoundary>
       </main>
 
-      <footer className="border-t border-line bg-surface-raised px-4 py-1.5 text-caption text-ink-muted">
+      <footer className={`border-t border-line bg-surface-raised px-4 py-1.5 text-caption text-ink-muted ${inChat ? "max-md:hidden" : ""}`}>
         <p className="m-0 flex flex-wrap items-center gap-x-2">
           <span className="font-semibold text-ink">{copy.footer.unofficial}</span>
           <span aria-hidden="true">·</span>
@@ -95,7 +108,7 @@ export function Shell() {
         </p>
       </footer>
 
-      <nav className="pb-safe grid grid-cols-3 border-t border-line bg-surface-raised sm:hidden" aria-label="หลัก">
+      <nav className="pb-safe grid grid-cols-3 border-t border-line bg-surface-raised md:hidden" aria-label="หลัก">
         {NAV.map(({ to, label, Icon }) => (
           <NavLink
             key={to}

@@ -31,8 +31,22 @@ export interface PendingTriage {
   urgency: Urgency;
 }
 
+/** A place the user named or shared, as the backend's user_locations keeps it. */
+export interface SavedPlaceState {
+  id: number;
+  label: string;
+  lat: number;
+  lon: number;
+  approx: boolean;
+  where: string | null;
+}
+
 export interface ChatSessionState {
   place: Place | null;
+  /** Saved places (the profile panel). Optional: sessions stored before it existed lack it. */
+  places?: SavedPlaceState[];
+  /** When consent was last decided. */
+  consentTs?: string | null;
   /** Household facts usable in this conversation. Saved to memory only with consent. */
   household: Vulnerable[];
   consent: boolean | null;
@@ -47,7 +61,7 @@ export interface ChatDeps {
 }
 
 export function emptyChatState(): ChatSessionState {
-  return { place: null, household: [], consent: null, pendingConsent: null, pendingTriage: null };
+  return { place: null, places: [], consentTs: null, household: [], consent: null, pendingConsent: null, pendingTriage: null };
 }
 
 // --- text understanding (the LLM's job in real mode) ---------------------------
@@ -98,6 +112,21 @@ const NEED_PATTERNS: [Need, RegExp][] = [
 const CRITICAL_VULNERABLE: Vulnerable[] = ["bedridden", "infant", "pregnant", "disabled", "patient"];
 const CRITICAL_NEEDS: Need[] = ["oxygen", "dialysis", "medical"];
 
+/** "บ้านแม่อยู่บางบาล" → "บ้านแม่"; first-person homes collapse to "บ้าน" (as agent/memory.py). */
+export function locationLabel(text: string): string | null {
+  const m = text.replace(/\s/g, "").match(/(บ้าน\S{0,12}?)(?:อยู่|ที่|แถว)/);
+  if (!m) return null;
+  return /^บ้าน(ผม|ฉัน|หนู|เรา|ดิฉัน|ตัวเอง)?$/.test(m[1]) ? "บ้าน" : m[1];
+}
+
+/** Upsert by label, like tools.save_location. */
+export function savePlace(s: ChatSessionState, p: Omit<SavedPlaceState, "id">): void {
+  const places = (s.places ??= []);
+  const existing = places.find((x) => x.label === p.label);
+  if (existing) Object.assign(existing, p);
+  else places.push({ id: Math.max(0, ...places.map((x) => x.id)) + 1, ...p });
+}
+
 export function findPlace(text: string): Place | null {
   return PLACES.find((p) => p.match.test(text))?.place ?? null;
 }
@@ -132,6 +161,8 @@ function reply(text: string, extra: Partial<ChatResponse> = {}): ChatResponse {
 }
 
 function stationSource(s: NearbyStation): Source {
+  const level = s.latest?.level_msl ?? null;
+  const diff = s.latest?.diff_wl_bank ?? null;
   return {
     type: "station",
     station_id: s.id,
@@ -139,6 +170,17 @@ function stationSource(s: NearbyStation): Source {
     name_th: s.name_th,
     distance_km: s.distance_km,
     observed_at: s.latest?.ts ?? null,
+    river: s.river,
+    agency: s.agency,
+    amphoe: s.amphoe,
+    province: s.province,
+    level_msl: level,
+    diff_wl_bank: diff,
+    bank_msl: level != null && diff != null ? Math.round((level - diff) * 100) / 100 : null,
+    trend_cm_per_hr: s.risk?.trend_cm_per_hr ?? null,
+    hours_to_bank: s.risk?.hours_to_bank ?? null,
+    risk_tier: s.risk?.tier ?? null,
+    upstream_over: [],
   };
 }
 
@@ -283,6 +325,7 @@ function handlePostback(data: string, s: ChatSessionState, deps: ChatDeps): Chat
     const facts = s.pendingConsent ?? [];
     s.household = union(s.household, facts);
     s.consent = granted;
+    s.consentTs = new Date().toISOString();
     s.pendingConsent = null;
     if (!granted) return reply("ไม่บันทึก จะใช้ข้อมูลนี้เฉพาะในการสนทนานี้เท่านั้น");
     const lines = [`บันทึกแล้ว: ที่บ้านมี${listVulnerable(facts)} ลบได้ทุกเมื่อโดยพิมพ์ "ข้อมูลอะไรที่จำเกี่ยวกับฉัน"`];
@@ -320,6 +363,7 @@ function handlePostback(data: string, s: ChatSessionState, deps: ChatDeps): Chat
   }
   if (data === "memory:delete_all") {
     s.household = [];
+    s.places = [];
     s.consent = null;
     return reply("ลบข้อมูลที่จำไว้ทั้งหมดแล้ว");
   }
@@ -328,7 +372,7 @@ function handlePostback(data: string, s: ChatSessionState, deps: ChatDeps): Chat
 
 function fallback(): ChatResponse {
   return reply("ยังไม่เข้าใจคำถาม ลองถามเรื่องระดับน้ำใกล้บ้าน หรือส่งตำแหน่งมาได้", {
-    quick_replies: [...copy.chat.starters.map((t) => ({ type: "message" as const, label: t, text: t })), ASK_LOCATION[0]],
+    quick_replies: ASK_LOCATION,
   });
 }
 
@@ -342,6 +386,7 @@ export function respond(req: ChatRequest, s: ChatSessionState, deps: ChatDeps): 
       s.pendingTriage.place = place;
       return triagePrompt(s.pendingTriage);
     }
+    savePlace(s, { label: s.places?.length ? "ตำแหน่งที่แชร์" : "บ้าน", ...req.location, approx: false, where: null });
     return riskAnswer(place, s, deps);
   }
 
@@ -397,6 +442,8 @@ export function respond(req: ChatRequest, s: ChatSessionState, deps: ChatDeps): 
 
   if (place) {
     s.place = place;
+    const label = locationLabel(text);
+    if (label) savePlace(s, { label, lat: place.lat, lon: place.lon, approx: true, where: place.label });
     return riskAnswer(place, s, deps);
   }
   if (RISK.test(text)) {

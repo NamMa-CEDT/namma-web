@@ -28,6 +28,7 @@
   --radius-*: initial;
   --radius-sm: 4px;
   --radius-md: 10px;
+  --radius-lg: 16px;
   --radius-pill: 999px;
   --radius-full: 9999px;
 
@@ -38,6 +39,18 @@
 
 :root {
   --font-body: var(--font-sans);
+  /* Spacing and radius tokens as variables, for the design system's component CSS. */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-12: 48px;
+  --radius-sm: 4px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --radius-pill: 999px;
 }
 
 /* Layered so Tailwind utilities (layout, spacing) can adjust any design-system component. */
@@ -72,544 +85,282 @@
     font-variant-numeric: tabular-nums;
   }
 
+  @media (prefers-reduced-motion: reduce) {
+    * {
+      transition: none !important;
+      animation: none !important;
+    }
+  }
+
   .pb-safe {
     padding-bottom: env(safe-area-inset-bottom);
   }
 }
 
 /* ---------------------------------------------------------------- design system components (nm-) */
+/* Copied from the NamMa design system's components/bundle.css. Don't hand-edit: re-copy it.
+   Left out: the font @import (fontsource loads them), body and focus rules (base layer above). */
 @layer components {
+/* NamMa components: plain CSS classes, prefix nm-. Load after tokens.css.
+   One Thai font family (looped, two weights) + Plex Mono for station codes only. */
 
-  .nm-code {
-    font: 500 14px/22px var(--font-mono);
-    color: var(--river);
-  }
+.nm-code { font: 500 14px/22px var(--font-mono); color: var(--river); }
+.nm-row { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); }
+.nm-stack { display: flex; flex-direction: column; gap: var(--space-3); }
 
-  /* Shapes: every tier shows a word AND one of these. */
-  .nm-shape {
-    display: inline-block;
-    flex: none;
-    width: 10px;
-    height: 10px;
-    background: currentColor;
-    box-sizing: border-box;
-  }
-  .nm-shape--normal {
-    border-radius: 50%;
-  }
-  .nm-shape--watch {
-    background: none;
-    border: 2px solid currentColor;
-    border-radius: 50%;
-  }
-  .nm-shape--warning {
-    clip-path: polygon(50% 0, 100% 100%, 0 100%);
-    width: 11px;
-    height: 11px;
-  }
-  .nm-shape--danger {
-    width: 9px;
-    height: 9px;
-    transform: rotate(45deg);
-  }
-  /* Not a design-system tier: a station with no risk row. Dashed ring, never "normal". */
-  .nm-shape--unknown {
-    background: none;
-    border: 1.5px dashed currentColor;
-    border-radius: 50%;
-  }
 
-  /* House icon: marks anything that belongs to the household */
-  .nm-house {
-    display: inline-block;
-    flex: none;
-    width: 14px;
-    height: 14px;
-    background: currentColor;
-    clip-path: polygon(50% 0, 100% 46%, 86% 46%, 86% 100%, 14% 100%, 14% 46%, 0 46%);
-  }
+/* Shapes: every tier shows a word AND one of these. Used inside badges, alert bands and map pins. */
+.nm-shape { display: inline-block; flex: none; width: 10px; height: 10px; background: currentColor; box-sizing: border-box; }
+.nm-shape--normal  { border-radius: 50%; }
+.nm-shape--watch   { background: none; border: 2px solid currentColor; border-radius: 50%; }
+.nm-shape--warning { clip-path: polygon(50% 0, 100% 100%, 0 100%); width: 11px; height: 11px; }
+.nm-shape--danger  { width: 9px; height: 9px; transform: rotate(45deg); }
 
-  /* Button */
-  .nm-btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    min-height: 48px;
-    padding: 10px 24px;
-    box-sizing: border-box;
-    border-radius: var(--radius-md);
-    font: 600 16px/24px var(--font-body);
-    text-align: center;
-    cursor: pointer;
-    text-decoration: none;
-    border: 1px solid transparent;
-  }
-  .nm-btn:hover {
-    box-shadow: inset 0 0 0 999px rgba(0, 0, 0, 0.08);
-  }
-  .nm-btn--primary,
-  .nm-btn--primary:hover,
-  .nm-btn--primary:visited {
-    background: var(--river);
-    color: var(--on-river);
-  }
-  .nm-btn--secondary,
-  .nm-btn--secondary:hover,
-  .nm-btn--secondary:visited {
-    background: var(--surface-raised);
-    color: var(--ink);
-    border-color: var(--line-strong);
-  }
-  .nm-btn--danger,
-  .nm-btn--danger:hover,
-  .nm-btn--danger:visited {
-    background: var(--tier-danger);
-    color: var(--on-tier-danger);
-  }
-  .nm-btn--call,
-  .nm-btn--call:hover,
-  .nm-btn--call:visited {
-    background: var(--surface-raised);
-    color: var(--tier-danger-ink);
-    border: 2px solid var(--tier-danger-ink);
-  }
-  .nm-btn--line,
-  .nm-btn--line:hover,
-  .nm-btn--line:visited {
-    background: var(--line-green);
-    color: var(--on-line-green);
-    font-size: 18px;
-    font-weight: 700;
-  }
-  .nm-btn--block {
-    display: flex;
-    width: 100%;
-  }
-  .nm-btn--sm {
-    min-height: 44px;
-    padding: 8px 16px;
-  }
-  .nm-btn:disabled,
-  .nm-btn[aria-disabled="true"] {
-    background: var(--surface-sunken);
-    color: var(--ink-muted);
-    border-color: var(--line);
-    box-shadow: none;
-    cursor: not-allowed;
-  }
+/* House icon: marks anything that belongs to the household */
+.nm-house { display: inline-block; flex: none; width: 14px; height: 14px; background: currentColor; clip-path: polygon(50% 0, 100% 46%, 86% 46%, 86% 100%, 14% 100%, 14% 46%, 0 46%); }
 
-  /* Input */
-  .nm-input {
-    min-height: 52px;
-    width: 100%;
-    box-sizing: border-box;
-    padding: 0 16px;
-    border: 1px solid var(--line-strong);
-    border-radius: var(--radius-md);
-    background: var(--surface-raised);
-    color: var(--ink);
-    font: 400 18px/28px var(--font-body);
-  }
-  .nm-input::placeholder {
-    color: var(--ink-muted);
-  }
-  .nm-input[aria-invalid="true"] {
-    border: 2px solid var(--tier-danger-ink);
-  }
-  .nm-field-error {
-    font: 400 14px/22px var(--font-body);
-    color: var(--tier-danger-ink);
-  }
+/* Button */
+.nm-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: var(--space-2);
+  min-height: 48px; padding: 10px var(--space-6); box-sizing: border-box; border-radius: var(--radius-md);
+  font: 600 16px/24px var(--font-body); text-align: center; cursor: pointer; text-decoration: none;
+  border: 1px solid transparent;
+}
+.nm-btn:hover { box-shadow: inset 0 0 0 999px rgba(0, 0, 0, 0.08); }
+.nm-btn--primary, .nm-btn--primary:hover, .nm-btn--primary:visited { background: var(--river); color: var(--on-river); }
+.nm-btn--secondary, .nm-btn--secondary:hover, .nm-btn--secondary:visited { background: var(--surface-raised); color: var(--ink); border-color: var(--line-strong); }
+.nm-btn--danger, .nm-btn--danger:hover, .nm-btn--danger:visited { background: var(--tier-danger); color: var(--on-tier-danger); }
+.nm-btn--call, .nm-btn--call:hover, .nm-btn--call:visited { background: var(--surface-raised); color: var(--tier-danger-ink); border: 2px solid var(--tier-danger-ink); }
+.nm-btn--line, .nm-btn--line:hover, .nm-btn--line:visited { background: var(--line-green); color: var(--on-line-green); font-size: 18px; font-weight: 700; }
+.nm-btn--block { display: flex; width: 100%; }
+.nm-btn:disabled, .nm-btn[aria-disabled="true"] { background: var(--surface-sunken); color: var(--ink-muted); border-color: var(--line); box-shadow: none; cursor: not-allowed; }
 
-  /* Risk badge: word + shape, never colour alone */
-  .nm-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 2px 8px;
-    border-radius: var(--radius-sm);
-    font: 600 15px/24px var(--font-body);
-    white-space: nowrap;
-  }
-  .nm-badge::before {
-    content: "";
-    display: inline-block;
-    flex: none;
-    width: 10px;
-    height: 10px;
-    background: currentColor;
-    box-sizing: border-box;
-  }
-  .nm-badge--normal::before {
-    border-radius: 50%;
-  }
-  .nm-badge--watch::before {
-    background: none;
-    border: 2px solid currentColor;
-    border-radius: 50%;
-  }
-  .nm-badge--warning::before {
-    clip-path: polygon(50% 0, 100% 100%, 0 100%);
-    width: 11px;
-    height: 11px;
-  }
-  .nm-badge--danger::before {
-    width: 9px;
-    height: 9px;
-    transform: rotate(45deg);
-  }
-  .nm-badge--unknown::before {
-    background: none;
-    border: 1.5px dashed currentColor;
-    border-radius: 50%;
-  }
-  .nm-badge--normal {
-    background: var(--tier-normal);
-    color: var(--on-tier-normal);
-  }
-  .nm-badge--watch {
-    background: var(--tier-watch);
-    color: var(--on-tier-watch);
-    box-shadow: inset 0 0 0 1px var(--tier-watch-ink);
-  }
-  .nm-badge--warning {
-    background: var(--tier-warning);
-    color: var(--on-tier-warning);
-  }
-  .nm-badge--danger {
-    background: var(--tier-danger);
-    color: var(--on-tier-danger);
-  }
-  .nm-badge--unknown {
-    background: var(--surface-sunken);
-    color: var(--ink-muted);
-  }
-  .nm-badge--soft.nm-badge--normal {
-    background: var(--tier-normal-soft);
-    color: var(--tier-normal-ink);
-  }
-  .nm-badge--soft.nm-badge--watch {
-    background: var(--tier-watch-soft);
-    color: var(--tier-watch-ink);
-    box-shadow: none;
-  }
-  .nm-badge--soft.nm-badge--warning {
-    background: var(--tier-warning-soft);
-    color: var(--tier-warning-ink);
-  }
-  .nm-badge--soft.nm-badge--danger {
-    background: var(--tier-danger-soft);
-    color: var(--tier-danger-ink);
-  }
+/* Input */
+.nm-input {
+  min-height: 52px; width: 100%; box-sizing: border-box; padding: 0 var(--space-4);
+  border: 1px solid var(--line-strong); border-radius: var(--radius-md);
+  background: var(--surface-raised); color: var(--ink); font: 400 18px/28px var(--font-body);
+}
+.nm-input::placeholder { color: var(--ink-muted); }
+.nm-input[aria-invalid="true"] { border: 2px solid var(--tier-danger-ink); }
+.nm-field-error { font: 400 14px/22px var(--font-body); color: var(--tier-danger-ink); }
 
-  /* Gauge: a staff gauge laid on its side. Positions are 0–100 (% of track). */
-  .nm-gauge {
-    position: relative;
-    height: 28px;
-    border-radius: var(--radius-sm);
-    background: var(--surface-sunken);
-    overflow: hidden;
-  }
-  .nm-gauge__water {
-    position: absolute;
-    inset: 0 auto 0 0;
-    width: calc(var(--level-pos) * 1%);
-    background: var(--water);
-  }
-  .nm-gauge__ticks {
-    position: absolute;
-    inset: auto 0 0 0;
-    height: 8px;
-    background: repeating-linear-gradient(90deg, var(--ink-muted) 0 1px, transparent 1px 10%);
-    opacity: 0.55;
-  }
-  .nm-gauge__bank {
-    position: absolute;
-    top: 0;
-    bottom: 0;
-    left: calc(var(--bank-pos) * 1%);
-    width: 3px;
-    margin-left: -1px;
-    background: var(--bank);
-    box-shadow: 0 0 0 1px var(--surface-raised);
-  }
-  .nm-gauge--over .nm-gauge__water {
-    background: var(--tier-danger);
-  }
-  .nm-gauge-legend {
-    display: flex;
-    justify-content: space-between;
-    gap: 8px;
-    margin-top: 4px;
-    font: 400 14px/22px var(--font-body);
-    color: var(--ink-muted);
-    font-variant-numeric: tabular-nums;
-  }
+/* Risk badge: word + shape, never colour alone */
+.nm-badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 2px var(--space-2); border-radius: var(--radius-sm);
+  font: 600 15px/24px var(--font-body); white-space: nowrap;
+}
+.nm-badge::before { content: ""; display: inline-block; flex: none; width: 10px; height: 10px; background: currentColor; box-sizing: border-box; }
+.nm-badge--normal::before  { border-radius: 50%; }
+.nm-badge--watch::before   { background: none; border: 2px solid currentColor; border-radius: 50%; }
+.nm-badge--warning::before { clip-path: polygon(50% 0, 100% 100%, 0 100%); width: 11px; height: 11px; }
+.nm-badge--danger::before  { width: 9px; height: 9px; transform: rotate(45deg); }
+.nm-badge--normal  { background: var(--tier-normal);  color: var(--on-tier-normal); }
+.nm-badge--watch   { background: var(--tier-watch);   color: var(--on-tier-watch); box-shadow: inset 0 0 0 1px var(--tier-watch-ink); }
+.nm-badge--warning { background: var(--tier-warning); color: var(--on-tier-warning); }
+.nm-badge--danger  { background: var(--tier-danger);  color: var(--on-tier-danger); }
+.nm-badge--soft.nm-badge--normal  { background: var(--tier-normal-soft);  color: var(--tier-normal-ink); }
+.nm-badge--soft.nm-badge--watch   { background: var(--tier-watch-soft);   color: var(--tier-watch-ink); box-shadow: none; }
+.nm-badge--soft.nm-badge--warning { background: var(--tier-warning-soft); color: var(--tier-warning-ink); }
+.nm-badge--soft.nm-badge--danger  { background: var(--tier-danger-soft);  color: var(--tier-danger-ink); }
 
-  /* Station card */
-  .nm-station {
-    background: var(--surface-raised);
-    border: 1px solid var(--line);
-    border-radius: var(--radius-md);
-    padding: 16px;
-    display: grid;
-    gap: 12px;
-    min-width: 0;
-  }
-  .nm-station__head {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    gap: 12px;
-  }
-  .nm-station__name {
-    margin: 0;
-    font: 600 19px/30px var(--font-body);
-  }
-  .nm-station__meta {
-    font: 400 14px/22px var(--font-body);
-    color: var(--ink-muted);
-  }
-  .nm-station__gap {
-    font: 600 30px/40px var(--font-body);
-    font-variant-numeric: tabular-nums;
-  }
-  .nm-station__gap--over {
-    color: var(--tier-danger-ink);
-  }
-  .nm-station__why {
-    font: 400 16px/26px var(--font-body);
-  }
-  .nm-station__facts {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-    gap: 12px;
-    margin: 0;
-  }
-  .nm-station__facts dt {
-    font: 400 14px/22px var(--font-body);
-    color: var(--ink-muted);
-  }
-  .nm-station__facts dd {
-    margin: 0;
-    font: 600 16px/24px var(--font-body);
-    font-variant-numeric: tabular-nums;
-  }
-  .nm-source {
-    margin: 0;
-    padding-top: 12px;
-    border-top: 1px solid var(--line);
-    font: 400 14px/22px var(--font-body);
-    color: var(--ink-muted);
-  }
-  .nm-source a {
-    color: var(--river);
-  }
+/* Gauge: a staff gauge laid on its side. Positions are 0–100 (% of track). */
+.nm-gauge { position: relative; height: 28px; border-radius: var(--radius-sm); background: var(--surface-sunken); overflow: hidden; }
+.nm-gauge__water { position: absolute; inset: 0 auto 0 0; width: calc(var(--level-pos) * 1%); background: var(--water); }
+.nm-gauge__ticks {
+  position: absolute; inset: auto 0 0 0; height: 8px;
+  background: repeating-linear-gradient(90deg, var(--ink-muted) 0 1px, transparent 1px 10%);
+  opacity: .55;
+}
+.nm-gauge__bank { position: absolute; top: 0; bottom: 0; left: calc(var(--bank-pos) * 1%); width: 3px; margin-left: -1px; background: var(--bank); box-shadow: 0 0 0 1px var(--surface-raised); }
+.nm-gauge--over .nm-gauge__water { background: var(--tier-danger); }
+.nm-gauge-legend { display: flex; justify-content: space-between; gap: var(--space-2); margin-top: var(--space-1); font: 400 14px/22px var(--font-body); color: var(--ink-muted); font-variant-numeric: tabular-nums; }
 
-  /* Stale data: shown when ThaiWater has not updated */
-  .nm-stale {
-    display: flex;
-    gap: 8px;
-    align-items: flex-start;
-    padding: 8px 12px;
-    border-radius: var(--radius-sm);
-    background: var(--tier-watch-soft);
-    color: var(--tier-watch-ink);
-    font: 400 14px/22px var(--font-body);
-  }
+/* Station card */
+.nm-station { background: var(--surface-raised); border: 1px solid var(--line); border-radius: var(--radius-md); padding: var(--space-4); display: grid; gap: var(--space-3); min-width: 0; }
+.nm-station__head { display: flex; justify-content: space-between; align-items: flex-start; gap: var(--space-3); }
+.nm-station__name { margin: 0; font: 600 19px/30px var(--font-body); }
+.nm-station__meta { font: 400 14px/22px var(--font-body); color: var(--ink-muted); }
+.nm-station__gap { font: 600 30px/40px var(--font-body); font-variant-numeric: tabular-nums; }
+.nm-station__gap--over { color: var(--tier-danger-ink); }
+.nm-station__why { font: 400 16px/26px var(--font-body); }
+.nm-station__facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: var(--space-3); margin: 0; }
+.nm-station__facts dt { font: 400 14px/22px var(--font-body); color: var(--ink-muted); }
+.nm-station__facts dd { margin: 0; font: 600 16px/24px var(--font-body); font-variant-numeric: tabular-nums; }
+.nm-source { margin: 0; padding-top: var(--space-3); border-top: 1px solid var(--line); font: 400 14px/22px var(--font-body); color: var(--ink-muted); }
+.nm-source a { color: var(--river); }
 
-  /* Household: navy + house icon on a soft wave ground */
-  .nm-place {
-    display: grid;
-    gap: 8px;
-    padding: 12px 12px 26px;
-    border-radius: var(--radius-sm);
-    background-color: var(--home-soft);
-    background-image:
-      radial-gradient(circle at 50% 100%, transparent 6px, var(--home-wave) 6px 8px, transparent 8px),
-      radial-gradient(circle at 50% 100%, transparent 6px, var(--home-wave) 6px 8px, transparent 8px);
-    background-size:
-      20px 10px,
-      20px 10px;
-    background-position:
-      0 calc(100% - 4px),
-      10px calc(100% + 2px);
-    background-repeat: repeat-x;
-  }
-  .nm-place__label {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font: 600 17px/26px var(--font-body);
-    color: var(--home);
-  }
-  .nm-place__where {
-    font: 400 14px/22px var(--font-body);
-    color: var(--ink-muted);
-  }
+/* Stale data: shown when ThaiWater has not updated */
+.nm-stale { display: flex; gap: var(--space-2); align-items: flex-start; padding: var(--space-2) var(--space-3); border-radius: var(--radius-sm); background: var(--tier-watch-soft); color: var(--tier-watch-ink); font: 400 14px/22px var(--font-body); }
 
-  /* Quick replies: mirror LINE quick-reply chips (labels ≤ 20 characters) */
-  .nm-chip {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    min-height: 44px;
-    padding: 8px 16px;
-    box-sizing: border-box;
-    border-radius: var(--radius-pill);
-    border: 1px solid var(--line-strong);
-    background: var(--surface-raised);
-    color: var(--river);
-    font: 600 16px/24px var(--font-body);
-    cursor: pointer;
-    text-align: left;
-  }
-  .nm-chip:disabled {
-    color: var(--ink-muted);
-    cursor: not-allowed;
-  }
-  .nm-chip--urgent {
-    background: var(--tier-danger-soft);
-    color: var(--tier-danger-ink);
-    border-color: var(--tier-danger-ink);
-  }
-  .nm-chip--memory {
-    color: var(--home);
-    background: var(--home-soft);
-    border-color: transparent;
-    cursor: default;
-    font-weight: 400;
-  }
+/* Household: navy + house icon on a soft wave ground */
+.nm-place {
+  display: grid; gap: var(--space-2); padding: var(--space-3) var(--space-3) 26px; border-radius: var(--radius-sm);
+  background-color: var(--home-soft);
+  background-image:
+    radial-gradient(circle at 50% 100%, transparent 6px, var(--home-wave) 6px 8px, transparent 8px),
+    radial-gradient(circle at 50% 100%, transparent 6px, var(--home-wave) 6px 8px, transparent 8px);
+  background-size: 20px 10px, 20px 10px;
+  background-position: 0 calc(100% - 4px), 10px calc(100% + 2px);
+  background-repeat: repeat-x;
+}
+.nm-place__label { display: flex; align-items: center; gap: var(--space-2); font: 600 17px/26px var(--font-body); color: var(--home); }
+.nm-place__where { font: 400 14px/22px var(--font-body); color: var(--ink-muted); }
 
-  /* Chat bubbles */
-  .nm-bubble {
-    max-width: 34ch;
-    padding: 12px 16px;
-    border-radius: var(--radius-md);
-    font: 400 18px/30px var(--font-body);
-  }
-  .nm-bubble--bot {
-    background: var(--surface-raised);
-    border: 1px solid var(--line);
-    border-top-left-radius: var(--radius-sm);
-  }
-  .nm-bubble--user {
-    background: var(--river-soft);
-    margin-left: auto;
-    border-top-right-radius: var(--radius-sm);
-  }
+/* Alert card: the shape of a LINE push, also used in the web app */
+.nm-alert { background: var(--surface-raised); border: 1px solid var(--line); border-radius: var(--radius-md); overflow: hidden; max-width: 400px; }
+.nm-alert__band { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); padding: var(--space-3) var(--space-4); font: 600 17px/26px var(--font-body); }
+.nm-alert__band > span:first-child { display: inline-flex; align-items: center; gap: var(--space-2); }
+.nm-alert--watch   .nm-alert__band { background: var(--tier-watch);   color: var(--on-tier-watch); }
+.nm-alert--warning .nm-alert__band { background: var(--tier-warning); color: var(--on-tier-warning); }
+.nm-alert--danger  .nm-alert__band { background: var(--tier-danger);  color: var(--on-tier-danger); }
+.nm-alert__body { padding: var(--space-4); display: grid; gap: var(--space-3); }
+.nm-alert__title { margin: 0; font: 600 22px/34px var(--font-body); }
+.nm-alert__text { margin: 0; font: 400 18px/30px var(--font-body); }
+.nm-alert__section { display: grid; gap: var(--space-1); }
+.nm-alert__label { font: 600 15px/24px var(--font-body); color: var(--ink-muted); }
+.nm-alert__todo { margin: 0; padding-left: 1.3em; font: 400 18px/30px var(--font-body); }
+.nm-alert__place { display: flex; justify-content: space-between; align-items: flex-start; gap: var(--space-2); padding: var(--space-3); border-radius: var(--radius-sm); background: var(--home-soft); color: var(--ink); font: 400 16px/26px var(--font-body); }
+.nm-alert__place b { color: var(--home); font-weight: 600; }
+.nm-alert__place .nm-num { white-space: nowrap; }
 
-  /* Hotline notice: required on every risk answer and alert; first in every rescue reply */
-  .nm-hotline {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 8px 16px;
-    padding: 12px 16px;
-    border-radius: var(--radius-sm);
-    background: var(--surface-sunken);
-    font: 400 16px/26px var(--font-body);
-    color: var(--ink);
-  }
-  .nm-hotline__num,
-  .nm-hotline__num:hover,
-  .nm-hotline__num:visited {
-    display: inline-flex;
-    align-items: center;
-    min-height: 44px;
-    font: 600 22px/28px var(--font-body);
-    color: var(--tier-danger-ink);
-    text-decoration: underline;
-    text-underline-offset: 3px;
-    font-variant-numeric: tabular-nums;
-  }
-  .nm-hotline__note {
-    flex-basis: 100%;
-    font: 400 15px/24px var(--font-body);
-    color: var(--ink-muted);
-  }
+/* Quick replies: mirror LINE quick-reply chips (labels ≤ 20 characters) */
+.nm-chip {
+  display: inline-flex; align-items: center; gap: var(--space-2); min-height: 44px; padding: 8px var(--space-4); box-sizing: border-box;
+  border-radius: var(--radius-pill); border: 1px solid var(--line-strong); background: var(--surface-raised);
+  color: var(--river); font: 600 16px/24px var(--font-body); cursor: pointer; text-align: left;
+}
+.nm-chip--urgent { background: var(--tier-danger-soft); color: var(--tier-danger-ink); border-color: var(--tier-danger-ink); }
+.nm-chip--memory { color: var(--home); background: var(--home-soft); border-color: transparent; cursor: default; font-weight: 400; }
 
-  /* Rescue ticket row (responder dashboard) */
-  .nm-ticket {
-    display: grid;
-    grid-template-columns: 6px minmax(0, 1fr) auto;
-    gap: 12px;
-    align-items: start;
-    width: 100%;
-    padding: 12px 16px 12px 0;
-    background: var(--surface-raised);
-    border: 0;
-    border-bottom: 1px solid var(--line);
-    color: var(--ink);
-    text-align: left;
-    text-decoration: none;
-    cursor: pointer;
-  }
-  .nm-ticket:hover {
-    background: var(--surface-sunken);
-  }
-  .nm-ticket[aria-current="true"] {
-    background: var(--river-soft);
-  }
-  .nm-ticket__stripe {
-    align-self: stretch;
-    background: var(--tier-normal);
-  }
-  .nm-ticket--urgent .nm-ticket__stripe {
-    background: var(--tier-danger);
-  }
-  .nm-ticket--high .nm-ticket__stripe {
-    background: var(--tier-warning);
-  }
-  .nm-ticket__main {
-    display: grid;
-    gap: 4px;
-    min-width: 0;
-  }
-  .nm-ticket__quote {
-    margin: 0;
-    font: 400 17px/28px var(--font-body);
-  }
-  .nm-ticket__meta {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 4px 12px;
-    font: 400 14px/22px var(--font-body);
-    color: var(--ink-muted);
-  }
-  .nm-ticket__id {
-    font: 500 14px/22px var(--font-mono);
-    color: var(--ink-muted);
-  }
-  .nm-ticket__tags {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 4px;
-  }
-  .nm-tag {
-    padding: 0 8px;
-    border-radius: var(--radius-sm);
-    font: 600 14px/26px var(--font-body);
-    background: var(--surface-sunken);
-    color: var(--ink);
-  }
-  .nm-tag--vulnerable {
-    background: var(--tier-danger-soft);
-    color: var(--tier-danger-ink);
-  }
-  .nm-ticket__side {
-    display: grid;
-    justify-items: end;
-    gap: 4px;
-  }
-  .nm-status {
-    font: 600 14px/22px var(--font-body);
-    color: var(--ink-muted);
-  }
-  .nm-status--open {
-    color: var(--river);
-  }
+/* Chat bubbles */
+.nm-bubble { max-width: 34ch; padding: var(--space-3) var(--space-4); border-radius: var(--radius-md); font: 400 18px/30px var(--font-body); }
+.nm-bubble--bot { background: var(--surface-raised); border: 1px solid var(--line); border-top-left-radius: var(--radius-sm); }
+.nm-bubble--user { background: var(--river-soft); margin-left: auto; border-top-right-radius: var(--radius-sm); }
+
+/* Hotline notice: required on every risk answer and alert */
+.nm-hotline { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2) var(--space-4); padding: var(--space-3) var(--space-4); border-radius: var(--radius-sm); background: var(--surface-sunken); font: 400 16px/26px var(--font-body); color: var(--ink); }
+.nm-hotline__num, .nm-hotline__num:hover, .nm-hotline__num:visited { display: inline-flex; align-items: center; min-height: 44px; font: 600 22px/28px var(--font-body); color: var(--tier-danger-ink); text-decoration: underline; text-underline-offset: 3px; font-variant-numeric: tabular-nums; }
+.nm-hotline__note { flex-basis: 100%; font: 400 15px/24px var(--font-body); color: var(--ink-muted); }
+
+/* Rescue ticket row (responder dashboard): the whole row is a link to the ticket */
+.nm-ticket, .nm-ticket:hover, .nm-ticket:visited { display: grid; grid-template-columns: 6px minmax(0, 1fr) auto; gap: var(--space-3); align-items: start; padding: var(--space-3) var(--space-4) var(--space-3) 0; background: var(--surface-raised); border-bottom: 1px solid var(--line); color: var(--ink); text-decoration: none; }
+.nm-ticket:hover { background: var(--surface-sunken); }
+.nm-ticket__stripe { align-self: stretch; background: var(--tier-normal); }
+.nm-ticket--urgent .nm-ticket__stripe { background: var(--tier-danger); }
+.nm-ticket--high .nm-ticket__stripe { background: var(--tier-warning); }
+.nm-ticket__main { display: grid; gap: var(--space-1); min-width: 0; }
+.nm-ticket__quote { margin: 0; font: 400 17px/28px var(--font-body); }
+.nm-ticket__meta { display: flex; flex-wrap: wrap; gap: var(--space-1) var(--space-3); font: 400 14px/22px var(--font-body); color: var(--ink-muted); }
+.nm-ticket__id { font: 500 14px/22px var(--font-mono); color: var(--ink-muted); }
+.nm-ticket__tags { display: flex; flex-wrap: wrap; gap: var(--space-1); }
+.nm-tag { padding: 0 var(--space-2); border-radius: var(--radius-sm); font: 600 14px/26px var(--font-body); background: var(--surface-sunken); color: var(--ink); }
+.nm-tag--vulnerable { background: var(--tier-danger-soft); color: var(--tier-danger-ink); }
+.nm-ticket__side { display: grid; justify-items: end; gap: var(--space-1); }
+.nm-status { font: 600 14px/22px var(--font-body); color: var(--ink-muted); }
+
+/* ── Web layout ─────────────────────────────────────────────── */
+
+/* Mark + wordmark: a staff gauge (three blocks, one waterline) before "NamMa น้ำมา" */
+.nm-wordmark { display: inline-flex; align-items: center; gap: 10px; color: var(--ink); text-decoration: none; }
+.nm-wordmark__en { font: 600 22px/32px var(--font-body); }
+.nm-wordmark__th { font: 600 17px/26px var(--font-body); color: var(--river); }
+.nm-mark { position: relative; display: inline-block; flex: none; width: 16px; height: 26px; border-left: 2px solid currentColor; box-sizing: border-box; }
+.nm-mark::before { content: ""; position: absolute; left: 0; top: 0; width: 9px; height: 18px; background: repeating-linear-gradient(to bottom, currentColor 0 4px, transparent 4px 7px); }
+.nm-mark::after { content: ""; position: absolute; left: -2px; right: -2px; bottom: 3px; height: 3px; background: var(--water); }
+
+/* The bank line: one per page. Above it people ask; below it is what the river and NamMa know. */
+.nm-above { background: var(--surface); }
+.nm-below { background: var(--surface-sunken); border-top: 2px solid var(--bank); }
+
+/* Messages on the web: NamMa's replies are plain text, not boxed. The user's own stay in nm-bubble--user. */
+.nm-msg { max-width: 68ch; font: 400 18px/30px var(--font-body); color: var(--ink); }
+.nm-msg > p { margin: 0 0 var(--space-3); }
+.nm-msg > :last-child { margin-bottom: 0; }
+.nm-msg ol { margin: 0; padding-left: 1.3em; }
+.nm-msg__label { display: block; font-weight: 600; }
+
+/* Composer: the one place a person types */
+.nm-composer { display: flex; flex-direction: column; gap: var(--space-2); padding: var(--space-3); background: var(--surface-raised); border: 1px solid var(--line-strong); border-radius: var(--radius-lg); }
+.nm-composer:focus-within { outline: 2px solid var(--focus); outline-offset: 2px; }
+.nm-composer__input { display: block; width: 100%; min-height: 84px; box-sizing: border-box; resize: none; border: 0; padding: var(--space-1) var(--space-2); background: transparent; color: var(--ink); font: 400 18px/30px var(--font-body); }
+.nm-composer__input:focus { outline: none; }
+.nm-composer__input::placeholder { color: var(--ink-muted); }
+.nm-composer__bar { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); }
+.nm-composer__spacer { flex: 1 1 auto; }
+.nm-composer--compact { flex-direction: row; flex-wrap: wrap; align-items: center; padding: var(--space-2); }
+.nm-composer--compact .nm-composer__input { flex: 1 1 240px; width: auto; min-height: 44px; }
+.nm-icon-btn { display: inline-flex; align-items: center; justify-content: center; gap: var(--space-2); min-width: 44px; min-height: 44px; padding: 0 var(--space-3); box-sizing: border-box; border: 1px solid var(--line-strong); border-radius: var(--radius-md); background: var(--surface-raised); color: var(--ink); font: 600 15px/24px var(--font-body); cursor: pointer; text-decoration: none; }
+.nm-icon-btn:hover { box-shadow: inset 0 0 0 999px rgba(0, 0, 0, 0.06); }
+.nm-icon-btn--send, .nm-icon-btn--send:hover { background: var(--river); border-color: var(--river); color: var(--on-river); }
+
+/* River profile: staff gauges side by side, one shared bank line. --fill = (diff + 4) / 6 × 100.
+   --bank-at is where the bank sits on the track (%); --bank stays the bank colour token. */
+.nm-profile { --track: 200px; --bank-at: 66.667; --head: 42px; display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 0 var(--space-3); }
+.nm-profile__axis { position: relative; width: 128px; height: var(--track); margin-top: var(--head); font: 400 14px/22px var(--font-body); color: var(--ink-muted); text-align: right; }
+.nm-profile__axis > span { position: absolute; right: 0; transform: translateY(50%); white-space: nowrap; }
+.nm-profile__axis > .is-bank { color: var(--ink); font-weight: 600; }
+.nm-profile__scroll { overflow-x: auto; min-width: 0; }
+.nm-profile__rivers { position: relative; isolation: isolate; display: flex; gap: var(--space-8); min-width: max-content; padding-bottom: var(--space-2); }
+.nm-profile__rivers::before { content: ""; position: absolute; z-index: -1; left: 0; right: 0; top: calc(var(--head) + var(--track) * (1 - var(--bank-at) / 100)); height: calc(var(--track) * var(--bank-at) / 100); background: var(--surface-sunken); }
+.nm-profile__rivers::after { content: ""; position: absolute; z-index: 2; left: 0; right: 0; top: calc(var(--head) + var(--track) * (1 - var(--bank-at) / 100) - 1px); height: 2px; background: var(--bank); }
+.nm-profile__name { height: 30px; margin: 0 0 12px; font: 600 16px/30px var(--font-body); color: var(--river); white-space: nowrap; }
+.nm-profile__stations { list-style: none; margin: 0; padding: 0; display: flex; gap: var(--space-4); }
+.nm-profile__station { width: 96px; display: flex; flex-direction: column; gap: var(--space-1); }
+.nm-profile__place { margin-top: var(--space-2); font: 600 16px/24px var(--font-body); }
+.nm-profile__code { font: 500 14px/22px var(--font-mono); color: var(--river); }
+.nm-profile__reading { font: 400 14px/22px var(--font-body); color: var(--ink-muted); font-variant-numeric: tabular-nums; }
+.nm-profile__station .nm-badge { align-self: flex-start; }
+.nm-staff { position: relative; width: 44px; height: var(--track); box-sizing: border-box; background: var(--surface-raised); box-shadow: inset 0 0 0 1px var(--line-strong); border-radius: 2px; overflow: hidden; }
+.nm-staff::before { content: ""; position: absolute; left: 1px; top: 0; bottom: 0; width: 10px; background: repeating-linear-gradient(to top, var(--line-strong) 0 calc(var(--track) / 12), transparent calc(var(--track) / 12) calc(var(--track) / 6)); }
+.nm-staff__water { position: absolute; left: 13px; right: 1px; bottom: 0; height: calc(min(var(--fill), var(--bank-at)) * 1%); background: var(--water); }
+.nm-staff__over { position: absolute; left: 13px; right: 1px; bottom: calc(var(--bank-at) * 1%); height: calc(max(0, var(--fill) - var(--bank-at)) * 1%); background: var(--tier-danger); }
+
+/* Steps: only for a real sequence */
+.nm-steps { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: var(--space-6); counter-reset: nm-step; }
+.nm-steps > li { counter-increment: nm-step; display: grid; grid-template-columns: 32px minmax(0, 1fr); gap: 0 var(--space-3); align-content: start; }
+.nm-steps > li::before { content: counter(nm-step); grid-row: span 2; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: var(--surface-raised); box-shadow: inset 0 0 0 2px var(--river); color: var(--river); font: 600 16px/1 var(--font-body); }
+.nm-steps__title { font: 600 17px/28px var(--font-body); }
+.nm-steps__text { font: 400 16px/26px var(--font-body); color: var(--ink-muted); }
+
+/* Profile panel: what NamMa remembers, with the setup meter */
+.nm-memory { display: flex; flex-direction: column; gap: var(--space-6); }
+.nm-memory__title { margin: 0; font: 600 19px/30px var(--font-body); }
+.nm-memory__sub { margin: 0; font: 400 14px/22px var(--font-body); color: var(--ink-muted); }
+.nm-memory__section { display: flex; flex-direction: column; gap: var(--space-2); }
+.nm-memory__label { margin: 0; font: 600 15px/24px var(--font-body); color: var(--ink-muted); }
+.nm-memory__empty { font: 400 15px/24px var(--font-body); color: var(--ink-muted); }
+.nm-memory__note { font: 400 14px/22px var(--font-body); color: var(--ink-muted); }
+.nm-meter { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; }
+.nm-meter > li { display: flex; flex-direction: column; gap: var(--space-1); font: 400 14px/22px var(--font-body); color: var(--ink-muted); }
+.nm-meter > li::before { content: ""; height: 10px; border-radius: 2px; background: var(--surface-raised); box-shadow: inset 0 0 0 1px var(--line-strong); }
+.nm-meter > li.is-done { color: var(--ink); }
+.nm-meter > li.is-done::before { background: var(--water); box-shadow: none; }
+.nm-meter > li.is-now { color: var(--ink); font-weight: 600; }
+.nm-meter > li.is-now::before { box-shadow: inset 0 0 0 2px var(--river); }
+.nm-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+}
+
+/* Web-only additions, not in the design system. */
+@layer components {
+  /* A station with no risk row. Dashed ring, never "normal". */
+  .nm-shape--unknown { background: none; border: 1.5px dashed currentColor; border-radius: 50%; }
+  .nm-badge--unknown::before { background: none; border: 1.5px dashed currentColor; border-radius: 50%; }
+  .nm-badge--unknown { background: var(--surface-sunken); color: var(--ink-muted); }
+  /* Header-sized button (44px tap target). */
+  .nm-btn--sm { min-height: 44px; padding: 8px 16px; }
+  .nm-status--open { color: var(--river); }
+  .nm-chip:disabled { color: var(--ink-muted); cursor: not-allowed; }
+  /* Ticket rows are buttons here (the DS draws them as links): full width, no button chrome; selected = river-soft. */
+  .nm-ticket { width: 100%; border: 0; border-bottom: 1px solid var(--line); text-align: left; cursor: pointer; }
+  .nm-ticket[aria-current="true"] { background: var(--river-soft); }
+  /* DS disabled state for icon buttons (the send button before anything is typed). */
+  .nm-icon-btn:disabled,
+  .nm-icon-btn--send:disabled { background: var(--surface-sunken); border-color: var(--line); color: var(--ink-muted); box-shadow: none; cursor: not-allowed; }
+  /* A staff gauge that is a button (river profile → station on the map). */
+  .nm-profile__station > a { color: inherit; text-decoration: none; display: flex; flex-direction: column; gap: var(--space-1); }
+  .nm-profile__station > a:hover .nm-profile__place { text-decoration: underline; }
 }
 
 /* Leaflet's own CSS is unlayered, so these overrides and the pins stay unlayered too. */

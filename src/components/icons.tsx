@@ -4,14 +4,17 @@
 import {
   ArrowDown,
   ArrowUp,
+  ArrowRight,
   CaretLeft,
   ChatCircleText,
   Crosshair,
   MapPin,
   MapTrifold,
+  Microphone,
   Minus,
   PaperPlaneRight,
   Phone,
+  Trash,
   ShieldCheck,
   Users,
   Warning,
@@ -38,6 +41,9 @@ export const CloseIcon = wrap(X);
 export const ChevronLeftIcon = wrap(CaretLeft);
 export const AlertIcon = wrap(Warning);
 export const ArrowUpIcon = wrap(ArrowUp);
+export const ArrowRightIcon = wrap(ArrowRight);
+export const MicIcon = wrap(Microphone);
+export const TrashIcon = wrap(Trash);
 export const ArrowDownIcon = wrap(ArrowDown);
 export const MinusIcon = wrap(Minus);
 export const UsersIcon = wrap(Users);
