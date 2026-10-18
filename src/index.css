@@ -295,15 +295,16 @@
 .nm-icon-btn:hover { box-shadow: inset 0 0 0 999px rgba(0, 0, 0, 0.06); }
 .nm-icon-btn--send, .nm-icon-btn--send:hover { background: var(--river); border-color: var(--river); color: var(--on-river); }
 
-/* River profile: staff gauges side by side, one shared bank line. --fill = (diff + 4) / 6 × 100 */
-.nm-profile { --track: 200px; --bank: 66.667; --head: 42px; display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 0 var(--space-3); }
+/* River profile: staff gauges side by side, one shared bank line. --fill = (diff + 4) / 6 × 100.
+   --bank-at is where the bank sits on the track (%); --bank stays the bank colour token. */
+.nm-profile { --track: 200px; --bank-at: 66.667; --head: 42px; display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 0 var(--space-3); }
 .nm-profile__axis { position: relative; width: 128px; height: var(--track); margin-top: var(--head); font: 400 14px/22px var(--font-body); color: var(--ink-muted); text-align: right; }
 .nm-profile__axis > span { position: absolute; right: 0; transform: translateY(50%); white-space: nowrap; }
 .nm-profile__axis > .is-bank { color: var(--ink); font-weight: 600; }
 .nm-profile__scroll { overflow-x: auto; min-width: 0; }
 .nm-profile__rivers { position: relative; isolation: isolate; display: flex; gap: var(--space-8); min-width: max-content; padding-bottom: var(--space-2); }
-.nm-profile__rivers::before { content: ""; position: absolute; z-index: -1; left: 0; right: 0; top: calc(var(--head) + var(--track) * (1 - var(--bank) / 100)); height: calc(var(--track) * var(--bank) / 100); background: var(--surface-sunken); }
-.nm-profile__rivers::after { content: ""; position: absolute; z-index: 2; left: 0; right: 0; top: calc(var(--head) + var(--track) * (1 - var(--bank) / 100) - 1px); height: 2px; background: var(--bank); }
+.nm-profile__rivers::before { content: ""; position: absolute; z-index: -1; left: 0; right: 0; top: calc(var(--head) + var(--track) * (1 - var(--bank-at) / 100)); height: calc(var(--track) * var(--bank-at) / 100); background: var(--surface-sunken); }
+.nm-profile__rivers::after { content: ""; position: absolute; z-index: 2; left: 0; right: 0; top: calc(var(--head) + var(--track) * (1 - var(--bank-at) / 100) - 1px); height: 2px; background: var(--bank); }
 .nm-profile__name { height: 30px; margin: 0 0 12px; font: 600 16px/30px var(--font-body); color: var(--river); white-space: nowrap; }
 .nm-profile__stations { list-style: none; margin: 0; padding: 0; display: flex; gap: var(--space-4); }
 .nm-profile__station { width: 96px; display: flex; flex-direction: column; gap: var(--space-1); }
@@ -313,8 +314,8 @@
 .nm-profile__station .nm-badge { align-self: flex-start; }
 .nm-staff { position: relative; width: 44px; height: var(--track); box-sizing: border-box; background: var(--surface-raised); box-shadow: inset 0 0 0 1px var(--line-strong); border-radius: 2px; overflow: hidden; }
 .nm-staff::before { content: ""; position: absolute; left: 1px; top: 0; bottom: 0; width: 10px; background: repeating-linear-gradient(to top, var(--line-strong) 0 calc(var(--track) / 12), transparent calc(var(--track) / 12) calc(var(--track) / 6)); }
-.nm-staff__water { position: absolute; left: 13px; right: 1px; bottom: 0; height: calc(min(var(--fill), var(--bank)) * 1%); background: var(--water); }
-.nm-staff__over { position: absolute; left: 13px; right: 1px; bottom: calc(var(--bank) * 1%); height: calc(max(0, var(--fill) - var(--bank)) * 1%); background: var(--tier-danger); }
+.nm-staff__water { position: absolute; left: 13px; right: 1px; bottom: 0; height: calc(min(var(--fill), var(--bank-at)) * 1%); background: var(--water); }
+.nm-staff__over { position: absolute; left: 13px; right: 1px; bottom: calc(var(--bank-at) * 1%); height: calc(max(0, var(--fill) - var(--bank-at)) * 1%); background: var(--tier-danger); }
 
 /* Steps: only for a real sequence */
 .nm-steps { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: var(--space-6); counter-reset: nm-step; }
@@ -357,9 +358,6 @@
   /* DS disabled state for icon buttons (the send button before anything is typed). */
   .nm-icon-btn:disabled,
   .nm-icon-btn--send:disabled { background: var(--surface-sunken); border-color: var(--line); color: var(--ink-muted); box-shadow: none; cursor: not-allowed; }
-  /* DS bug: .nm-profile sets --bank to a percentage (66.667), which shadows the --bank colour token, so the
-     shared bank line had no colour. The bank token is the ink colour in both themes. */
-  .nm-profile__rivers::after { background: var(--ink); }
   /* A staff gauge that is a button (river profile → station on the map). */
   .nm-profile__station > a { color: inherit; text-decoration: none; display: flex; flex-direction: column; gap: var(--space-1); }
   .nm-profile__station > a:hover .nm-profile__place { text-decoration: underline; }
