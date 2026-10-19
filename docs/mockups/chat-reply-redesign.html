@@ -1,0 +1,519 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>NamMa Chat Reply Redesign</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500&family=IBM+Plex+Sans+Thai+Looped:wght@400;600&display=swap">
+<style>
+/* Layout: the real chat column (NamMa design system), "now" and "proposed" side by side; stacks on phones. */
+:root {
+  --surface: #f3f7fc; --surface-raised: #ffffff; --surface-sunken: #e2ebf6;
+  --line: #d0dcea; --line-strong: #7889a1; --ink: #0b1a2e; --ink-muted: #465870;
+  --river: #1557b0; --on-river: #ffffff; --river-soft: #dde9f9;
+  --home: #0b1a2e; --home-soft: #eaf0f8; --water: #2b7ccc; --bank: #0b1a2e; --focus: #1557b0;
+  --tier-normal: #4d6178; --on-tier-normal: #ffffff; --tier-normal-soft: #e4eaf2; --tier-normal-ink: #3a4c61;
+  --tier-danger: #a8102f; --on-tier-danger: #ffffff; --tier-danger-soft: #f8dde2; --tier-danger-ink: #8f0d27;
+  --tier-watch-soft: #fbf0c9; --tier-watch-ink: #735600;
+  --font-body: "IBM Plex Sans Thai Looped", "Noto Sans Thai Looped", "Noto Sans Thai", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", "IBM Plex Sans Thai Looped", ui-monospace, Menlo, Consolas, monospace;
+  --space-1: 4px; --space-2: 8px; --space-3: 12px; --space-4: 16px; --space-6: 24px; --space-8: 32px;
+  --radius-sm: 4px; --radius-md: 10px; --radius-lg: 16px; --radius-pill: 999px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --surface: #0a1322; --surface-raised: #111d2f; --surface-sunken: #060d18;
+    --line: #20304a; --line-strong: #5d7393; --ink: #e3ecf8; --ink-muted: #9cb0c9;
+    --river: #6aa9f2; --on-river: #04152b; --river-soft: #11284a;
+    --home: #e3ecf8; --home-soft: #14233a; --water: #3a88d8; --bank: #e3ecf8; --focus: #8cc1ff;
+    --tier-normal: #93a7be; --on-tier-normal: #0a1322; --tier-normal-soft: #1a2637; --tier-normal-ink: #aebfd3;
+    --tier-danger: #e0475f; --on-tier-danger: #1a0207; --tier-danger-soft: #3f0d17; --tier-danger-ink: #f68a9b;
+    --tier-watch-soft: #3a2f08; --tier-watch-ink: #f0c63c;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --surface: #0a1322; --surface-raised: #111d2f; --surface-sunken: #060d18;
+  --line: #20304a; --line-strong: #5d7393; --ink: #e3ecf8; --ink-muted: #9cb0c9;
+  --river: #6aa9f2; --on-river: #04152b; --river-soft: #11284a;
+  --home: #e3ecf8; --home-soft: #14233a; --water: #3a88d8; --bank: #e3ecf8; --focus: #8cc1ff;
+  --tier-normal: #93a7be; --on-tier-normal: #0a1322; --tier-normal-soft: #1a2637; --tier-normal-ink: #aebfd3;
+  --tier-danger: #e0475f; --on-tier-danger: #1a0207; --tier-danger-soft: #3f0d17; --tier-danger-ink: #f68a9b;
+  --tier-watch-soft: #3a2f08; --tier-watch-ink: #f0c63c;
+}
+
+* { letter-spacing: normal; box-sizing: border-box; }
+body {
+  margin: 0; background: var(--surface); color: var(--ink);
+  font: 400 16px/27px var(--font-body); -webkit-font-smoothing: antialiased;
+}
+:where(a, button, input, label):focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.num { font-variant-numeric: tabular-nums; }
+
+/* ── page chrome ── */
+.page {
+  max-width: 1240px; margin: 0 auto;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: var(--space-8) 64px;
+  display: grid; gap: var(--space-6);
+}
+.intro { display: grid; gap: var(--space-2); max-width: 70ch; }
+.intro h1 { margin: 0; font: 600 28px/38px var(--font-body); text-wrap: balance; }
+.intro p { margin: 0; color: var(--ink-muted); }
+.tabs { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.tab {
+  min-height: 44px; padding: 8px var(--space-4); border-radius: var(--radius-pill);
+  border: 1px solid var(--line-strong); background: var(--surface-raised); color: var(--river);
+  font: 600 16px/24px var(--font-body); cursor: pointer;
+}
+.tab[aria-selected="true"] { background: var(--river); color: var(--on-river); border-color: var(--river); }
+
+.compare { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 500px), 1fr)); gap: var(--space-6); align-items: start; }
+.col { display: grid; gap: var(--space-3); min-width: 0; }
+.col__head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: var(--space-2); padding-bottom: var(--space-2); border-bottom: 2px solid var(--bank); }
+.col__title { margin: 0; font: 600 17px/26px var(--font-body); }
+.col__count { font: 400 14px/22px var(--font-body); color: var(--ink-muted); }
+.col__count b { color: var(--ink); font-weight: 600; }
+.chat { display: flex; flex-direction: column; gap: var(--space-6); padding: var(--space-4) 0; }
+.notes { margin: 0; padding: var(--space-4); padding-left: calc(var(--space-4) + 1.2em); border-radius: var(--radius-md); background: var(--surface-sunken); font: 400 15px/24px var(--font-body); display: grid; gap: var(--space-1); }
+.notes-title { margin: 0; font: 600 15px/24px var(--font-body); color: var(--ink-muted); }
+.variant { display: flex; align-items: center; gap: var(--space-2); min-height: 44px; font: 400 15px/24px var(--font-body); color: var(--ink-muted); cursor: pointer; }
+.variant input { width: 20px; height: 20px; accent-color: var(--river); }
+
+.backend { display: grid; gap: var(--space-3); max-width: 80ch; padding-top: var(--space-6); border-top: 1px solid var(--line); }
+.backend h2 { margin: 0; font: 600 19px/30px var(--font-body); }
+.backend p, .backend ul { margin: 0; }
+.backend ul { padding-left: 1.2em; display: grid; gap: var(--space-1); }
+.backend code { font: 500 14px/22px var(--font-mono); background: var(--surface-sunken); padding: 1px 6px; border-radius: var(--radius-sm); }
+
+/* ── NamMa design system pieces (copied from namma-web index.css) ── */
+.nm-code { font: 500 14px/22px var(--font-mono); color: var(--river); }
+.nm-bubble { max-width: 34ch; padding: var(--space-3) var(--space-4); border-radius: var(--radius-md); font: 400 18px/30px var(--font-body); }
+.nm-bubble--user { background: var(--river-soft); margin-left: auto; border-top-right-radius: var(--radius-sm); }
+.nm-msg { max-width: 68ch; font: 400 18px/30px var(--font-body); color: var(--ink); }
+.pre { white-space: pre-line; }
+.answer { display: flex; flex-direction: column; align-items: flex-start; gap: var(--space-3); }
+
+.nm-badge { display: inline-flex; align-items: center; gap: 6px; padding: 2px var(--space-2); border-radius: var(--radius-sm); font: 600 15px/24px var(--font-body); white-space: nowrap; flex: none; }
+.nm-badge::before { content: ""; display: inline-block; flex: none; width: 10px; height: 10px; background: currentColor; }
+.nm-badge--normal::before { border-radius: 50%; }
+.nm-badge--danger::before { width: 9px; height: 9px; transform: rotate(45deg); }
+.nm-badge--normal { background: var(--tier-normal); color: var(--on-tier-normal); }
+.nm-badge--danger { background: var(--tier-danger); color: var(--on-tier-danger); }
+
+.nm-station { width: 100%; max-width: 40rem; background: var(--surface-raised); border: 1px solid var(--line); border-radius: var(--radius-md); padding: var(--space-4); display: grid; gap: var(--space-3); min-width: 0; }
+.nm-station__head { display: flex; justify-content: space-between; align-items: flex-start; gap: var(--space-3); }
+.nm-station__name { margin: 0; font: 600 19px/30px var(--font-body); }
+.nm-station__meta { font: 400 14px/22px var(--font-body); color: var(--ink-muted); }
+.nm-station__gap { font: 600 30px/40px var(--font-body); font-variant-numeric: tabular-nums; }
+.nm-station__gap--over { color: var(--tier-danger-ink); }
+.nm-station__why { margin: 0; font: 400 16px/26px var(--font-body); }
+.nm-station__facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: var(--space-3); margin: 0; }
+.nm-station__facts dt { font: 400 14px/22px var(--font-body); color: var(--ink-muted); }
+.nm-station__facts dd { margin: 0; font: 600 16px/24px var(--font-body); font-variant-numeric: tabular-nums; }
+.nm-source { margin: 0; padding-top: var(--space-3); border-top: 1px solid var(--line); font: 400 14px/22px var(--font-body); color: var(--ink-muted); }
+.nm-source a { color: var(--river); }
+
+.nm-gauge { position: relative; height: 28px; border-radius: var(--radius-sm); background: var(--surface-sunken); overflow: hidden; }
+.nm-gauge__water { position: absolute; inset: 0 auto 0 0; width: calc(var(--level-pos) * 1%); background: var(--water); }
+.nm-gauge__ticks { position: absolute; inset: auto 0 0 0; height: 8px; background: repeating-linear-gradient(90deg, var(--ink-muted) 0 1px, transparent 1px 10%); opacity: .55; }
+.nm-gauge__bank { position: absolute; top: 0; bottom: 0; left: calc(var(--bank-pos) * 1%); width: 3px; margin-left: -1px; background: var(--bank); box-shadow: 0 0 0 1px var(--surface-raised); }
+.nm-gauge--over .nm-gauge__water { background: var(--tier-danger); }
+.nm-gauge-legend { display: flex; justify-content: space-between; gap: var(--space-2); margin-top: var(--space-1); font: 400 14px/22px var(--font-body); color: var(--ink-muted); font-variant-numeric: tabular-nums; }
+
+.nm-hotline { width: 100%; max-width: 40rem; display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2) var(--space-4); padding: var(--space-3) var(--space-4); border-radius: var(--radius-sm); background: var(--surface-sunken); font: 400 16px/26px var(--font-body); }
+.nm-hotline__num { display: inline-flex; align-items: center; min-height: 44px; font: 600 22px/28px var(--font-body); color: var(--tier-danger-ink); text-decoration: underline; text-underline-offset: 3px; font-variant-numeric: tabular-nums; }
+.nm-hotline__line { font-weight: 600; text-decoration: underline; text-underline-offset: 3px; }
+.nm-hotline__note { flex-basis: 100%; font: 400 15px/24px var(--font-body); color: var(--ink-muted); }
+
+.src-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; width: 100%; max-width: 40rem; }
+.src-shelter { display: inline-flex; align-items: center; gap: var(--space-2); border-radius: var(--radius-sm); background: var(--home-soft); padding: 6px var(--space-3); font: 400 14px/22px var(--font-body); }
+.src-shelter b { font-weight: 600; color: var(--home); }
+.src-text { font: 400 14px/22px var(--font-body); color: var(--ink-muted); }
+.pin { width: 18px; height: 18px; flex: none; color: var(--home); }
+
+/* ── proposed: structured reply text ── */
+.reply { display: grid; gap: var(--space-3); }
+.reply p { margin: 0; }
+.reply__where { font: 400 15px/24px var(--font-body); color: var(--ink-muted); display: flex; align-items: center; gap: var(--space-2); }
+.reply__verdict { font-weight: 600; }
+.reply__verdict--danger { color: var(--tier-danger-ink); }
+.reply__label { display: block; font-weight: 600; margin-bottom: var(--space-1); }
+.reply ul { margin: 0; padding-left: 1.2em; display: grid; gap: var(--space-1); }
+.reply li::marker { color: var(--ink-muted); }
+.reply__aside { font: 400 16px/26px var(--font-body); color: var(--ink-muted); }
+.nm-house { display: inline-block; flex: none; width: 14px; height: 14px; background: currentColor; clip-path: polygon(50% 0, 100% 46%, 86% 46%, 86% 100%, 14% 100%, 14% 46%, 0 46%); }
+
+/* ── proposed: shelter card (new) ── */
+.nm-shelters { width: 100%; max-width: 40rem; background: var(--surface-raised); border: 1px solid var(--line); border-radius: var(--radius-md); display: grid; min-width: 0; }
+.nm-shelters__head { display: flex; align-items: center; gap: var(--space-2); padding: var(--space-3) var(--space-4); border-bottom: 1px solid var(--line); font: 600 15px/24px var(--font-body); color: var(--ink-muted); }
+.nm-shelter { display: grid; gap: var(--space-2); padding: var(--space-3) var(--space-4); min-width: 0; }
+.nm-shelter + .nm-shelter { border-top: 1px solid var(--line); }
+.nm-shelter__top { display: flex; justify-content: space-between; align-items: flex-start; gap: var(--space-3); }
+.nm-shelter__name { margin: 0; font: 600 18px/28px var(--font-body); min-width: 0; }
+.nm-shelter__meta { font: 400 14px/22px var(--font-body); color: var(--ink-muted); }
+.nm-open { display: inline-flex; align-items: center; gap: 6px; flex: none; padding: 2px var(--space-2); border-radius: var(--radius-sm); font: 600 14px/22px var(--font-body); white-space: nowrap; }
+.nm-open::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
+.nm-open--yes { background: var(--river-soft); color: var(--river); }
+.nm-open--no { background: var(--surface-sunken); color: var(--ink-muted); }
+.nm-open--no::before { background: none; border: 2px solid currentColor; }
+.nm-shelter__row { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2) var(--space-3); }
+.nm-occ { display: flex; align-items: center; gap: var(--space-2); font: 400 14px/22px var(--font-body); color: var(--ink-muted); font-variant-numeric: tabular-nums; }
+.nm-occ__bar { width: 72px; height: 6px; border-radius: 3px; background: var(--surface-sunken); overflow: hidden; }
+.nm-occ__fill { height: 100%; background: var(--river); width: calc(var(--fill) * 1%); min-width: 2px; }
+.nm-tag { display: inline-flex; align-items: center; gap: 6px; padding: 0 var(--space-2); border-radius: var(--radius-sm); font: 600 14px/26px var(--font-body); background: var(--home-soft); color: var(--home); }
+.nm-tag--unknown { background: var(--tier-watch-soft); color: var(--tier-watch-ink); font-weight: 400; }
+.nm-pick { font: 600 13px/20px var(--font-body); color: var(--river); }
+.nm-shelters__foot { display: flex; flex-wrap: wrap; justify-content: space-between; gap: var(--space-1) var(--space-4); padding: var(--space-3) var(--space-4); border-top: 1px solid var(--line); font: 400 14px/22px var(--font-body); color: var(--ink-muted); }
+.nm-shelters__foot a { color: var(--river); font-weight: 600; }
+
+@media (max-width: 480px) {
+  .nm-station__gap { font-size: 26px; line-height: 36px; }
+  .intro h1 { font-size: 24px; line-height: 34px; }
+}
+</style>
+</head>
+<body>
+
+<main class="page">
+  <header class="intro">
+    <h1>NamMa chat replies: now and proposed</h1>
+    <p>Live backend, 19 Oct 19:59 (left) · proposed (right)</p>
+  </header>
+
+  <div class="tabs" role="tablist" aria-label="Scenario">
+    <button class="tab" role="tab" id="tab-risk" aria-controls="sc-risk" aria-selected="true">"น้ำจะถึงไหม" (risk)</button>
+    <button class="tab" role="tab" id="tab-shelter" aria-controls="sc-shelter" aria-selected="false">"ศูนย์พักพิงอยู่ไหน" (shelters)</button>
+  </div>
+
+  <!-- ═══════════════ Scenario 1: risk ═══════════════ -->
+  <section id="sc-risk" role="tabpanel" aria-labelledby="tab-risk" class="compare">
+    <div class="col">
+      <div class="col__head"><h2 class="col__title">Now</h2><span class="col__count" data-count-for="risk-now"></span></div>
+      <div class="chat">
+        <div class="nm-bubble nm-bubble--user">บ้านอยู่บางบาล อยุธยา น้ำจะถึงไหม</div>
+        <div class="answer">
+          <div class="nm-msg pre" id="risk-now">บ้าน อ.บางบาล จ.พระนครศรีอยุธยา (ตำแหน่งโดยประมาณจากชื่อพื้นที่)
+สถานีวัดน้ำ ridhydro_C.36 บ้านบางหลวงโดด (ไม่ระบุลำน้ำ) ห่าง 2.4 กม.
+• ระดับน้ำ 5.67 ม.รทก. — ต่ำกว่าตลิ่ง 1.77 ม.
+• 3 ชม.ล่าสุด: น้ำลง 1.0 ซม./ชม.
+ระดับความเสี่ยงที่สถานี: ปกติ
+ข้อมูล ณ 18:00 น. 19/10 จาก ThaiWater (สสน.) / RID
+
+สถานีวัดน้ำ CPY009 คลองบางหลวง (แม่น้ำน้อย) ห่าง 2.4 กม.
+• ระดับน้ำ 5.63 ม.รทก. — สูงกว่าตลิ่ง 1.32 ม.
+• 3 ชม.ล่าสุด: ทรงตัว
+ระดับความเสี่ยงที่สถานี: อันตราย
+ข้อมูล ณ 20:40 น. 19/10 จาก ThaiWater (สสน.) / HII
+ภาพดาวเทียม GISTDA 3 วันล่าสุด: ไม่พบพื้นที่น้ำท่วมในรัศมี 5 กม. (ข้อมูล ณ 18:39 น. 19/10)
+ค่านี้วัดที่สถานีริมแม่น้ำ ไม่ใช่ระดับน้ำที่บ้านโดยตรง ใช้เป็นการประเมินเท่านั้น
+
+สิ่งที่ควรทำตอนนี้
+• สวัสดีครับ ผม "น้ำมา" ขอสรุปสิ่งที่ควรทำตอนนี้สำหรับครอบครัวคุณใน อ.บางบาล ดังนี้ครับ
+• เตรียมพร้อมอพยพทันที:** แม้ภาพดาวเทียมยังไม่พบน้ำท่วม แต่สถานีวัดน้ำใกล้เคียงระบุว่าระดับน้ำสูงเกินตลิ่งและอยู่ในเกณฑ์ "อันตราย" หากบ้านท่านอยู่ในพื้นที่ต่ำหรือริมน้ำ ให้รีบย้ายคนและของสำคัญขึ้นที่สูงหรือไปยังศูนย์พักพิงทันที
+• ตัดระบบไฟฟ้า:** ก่อนที่น้ำจะไหลเข้าตัวบ้าน ให้รีบปิดเบรกเกอร์ไฟฟ้าหลักเพื่อป้องกันอันตรายจากไฟดูดและไฟลัดวงจร
+• ติดตามคำสั่งทางการอย่างใกล้ชิด:** โปรดเฝ้าระวังประกาศจากหน่วยงานท้องถิ่น หากมีคำสั่งให้อพยพ ต้องปฏิบัติตามทันทีโดยไม่ต้องรอให้สถานการณ์รุนแรงขึ้นครับ
+
+ศูนย์พักพิงที่แนะนำ: โรงเรียนวัดกอไผ่ อ.บางบาล ห่าง 1.9 กม. (เปิดรับอยู่ มีผู้พัก 5/60 คน)
+ข้อมูลศูนย์พักพิงจาก ปภ. สถานะเปลี่ยนได้ โทร 1784 สอบถามก่อนเดินทาง
+
+บันทึก "บ้าน" ไว้แล้ว ถ้าน้ำที่สถานีใกล้ๆ สูงขึ้น จะส่งข้อความเตือน
+
+ที่บ้านมีผู้สูงอายุ คนที่เดินไม่ได้ เด็กเล็ก หรือสัตว์เลี้ยงไหม? บอกได้ จะช่วยวางแผนให้เหมาะกับครอบครัว</div>
+
+          <!-- station cards in source order: the main (normal) station first -->
+          <article class="nm-station">
+            <div class="nm-station__head">
+              <div style="min-width:0">
+                <h3 class="nm-station__name">บ้านบางหลวงโดด <span class="nm-code">ridhydro_C.36</span></h3>
+                <div class="nm-station__meta">ห่าง 2.4 กม.</div>
+              </div>
+              <span class="nm-badge nm-badge--normal">ปกติ</span>
+            </div>
+            <div>
+              <div class="nm-station__gap">ต่ำกว่าตลิ่ง 1.77 ม.</div>
+              <p class="nm-station__why">ลดลง 1.0 ซม./ชม.</p>
+            </div>
+            <div>
+              <div class="nm-gauge" style="--level-pos:30.75;--bank-pos:75" role="img" aria-label="ระดับน้ำ 5.67 ม.รทก. ตลิ่ง 7.44 ม.รทก."><div class="nm-gauge__water"></div><div class="nm-gauge__ticks"></div><div class="nm-gauge__bank"></div></div>
+              <div class="nm-gauge-legend"><span>ระดับน้ำ 5.67 ม.รทก.</span><span>ตลิ่ง 7.44 ม.รทก.</span></div>
+            </div>
+            <dl class="nm-station__facts"><div><dt>ระดับน้ำที่สถานี</dt><dd>5.67 ม.รทก.</dd></div></dl>
+            <p class="nm-source">ที่มา: <a href="#sc-risk">สถานีบ้านบางหลวงโดด (ridhydro_C.36)</a> กรมชลประทาน ผ่าน ThaiWater (สสน.) · <span class="num">18:00 น. 19 ต.ค. 69</span> · ระดับเสี่ยงประเมินโดยน้ำมา</p>
+          </article>
+
+          <article class="nm-station">
+            <div class="nm-station__head">
+              <div style="min-width:0">
+                <h3 class="nm-station__name">คลองบางหลวง <span class="nm-code">CPY009</span></h3>
+                <div class="nm-station__meta">แม่น้ำน้อย · ห่าง 2.4 กม.</div>
+              </div>
+              <span class="nm-badge nm-badge--danger">อันตราย</span>
+            </div>
+            <div>
+              <div class="nm-station__gap nm-station__gap--over">ล้นตลิ่ง 1.33 ม.</div>
+              <p class="nm-station__why">ทรงตัว · ระดับน้ำสูงกว่าตลิ่งแล้ว</p>
+            </div>
+            <div>
+              <div class="nm-gauge nm-gauge--over" style="--level-pos:89.6;--bank-pos:62.1" role="img" aria-label="ระดับน้ำ 5.64 ม.รทก. ตลิ่ง 4.31 ม.รทก."><div class="nm-gauge__water"></div><div class="nm-gauge__ticks"></div><div class="nm-gauge__bank"></div></div>
+              <div class="nm-gauge-legend"><span>ระดับน้ำ 5.64 ม.รทก.</span><span>ตลิ่ง 4.31 ม.รทก.</span></div>
+            </div>
+            <dl class="nm-station__facts"><div><dt>ระดับน้ำที่สถานี</dt><dd>5.64 ม.รทก.</dd></div></dl>
+            <p class="nm-source">ที่มา: <a href="#sc-risk">สถานีคลองบางหลวง (CPY009)</a> สถาบันสารสนเทศทรัพยากรน้ำ (สสน.) ผ่าน ThaiWater (สสน.) · <span class="num">20:50 น. 19 ต.ค. 69</span> · ระดับเสี่ยงประเมินโดยน้ำมา</p>
+          </article>
+
+          <ul class="src-list">
+            <li><span class="src-shelter"><svg class="pin" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 2a7 7 0 0 0-7 7c0 5 7 13 7 13s7-8 7-13a7 7 0 0 0-7-7Zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5Z"/></svg><b>โรงเรียนวัดกอไผ่</b><span class="num">· 1.9 กม.</span></span></li>
+            <li><span class="src-text">ที่มา: GISTDA (สทอภ.) · ภาพดาวเทียม GISTDA 3 วันล่าสุด: ไม่พบพื้นที่น้ำท่วมในรัศมี 5 กม. (ข้อมูล ณ 18:39 น. 19/10)</span></li>
+          </ul>
+
+          <aside class="nm-hotline" aria-label="สายด่วน">
+            <span>สายด่วน ปภ. <span class="nm-hotline__num">1784</span></span>
+            <span class="nm-hotline__line">LINE @1784DDPM</span>
+            <span class="nm-hotline__note">น้ำมาไม่ใช่หน่วยงานรัฐ ข้อมูลระดับน้ำจาก ThaiWater โดยสถาบันสารสนเทศทรัพยากรน้ำ (สสน.) ระดับเสี่ยงประเมินโดยน้ำมา โปรดปฏิบัติตามประกาศของทางการ</span>
+          </aside>
+        </div>
+      </div>
+    </div>
+
+    <div class="col">
+      <div class="col__head"><h2 class="col__title">Proposed</h2><span class="col__count" data-count-for="risk-new"></span></div>
+      <label class="variant" for="hh-toggle"><input type="checkbox" id="hh-toggle"> Bedridden grandmother saved</label>
+      <div class="chat">
+        <div class="nm-bubble nm-bubble--user">บ้านอยู่บางบาล อยุธยา น้ำจะถึงไหม</div>
+        <div class="answer">
+          <div class="nm-msg reply" id="risk-new">
+            <p class="reply__where"><span class="nm-house" aria-hidden="true"></span>บ้าน · อ.บางบาล จ.พระนครศรีอยุธยา (โดยประมาณ)</p>
+            <p class="reply__verdict reply__verdict--danger">สถานีใกล้บ้านน้ำล้นตลิ่งแล้ว ระดับอันตราย</p>
+            <div>
+              <span class="reply__label">สิ่งที่ควรทำตอนนี้</span>
+              <ul data-variant="plain">
+                <li>ถ้าบ้านอยู่ที่ลุ่มหรือริมน้ำ ย้ายคนและของสำคัญไปที่สูงตอนนี้</li>
+                <li>ปิดเบรกเกอร์ไฟก่อนน้ำเข้าบ้าน</li>
+                <li>ทำตามประกาศอพยพของทางการทันที</li>
+              </ul>
+              <ul data-variant="hh" hidden>
+                <li>ยายเดินไม่ได้: ย้ายไปที่ปลอดภัยก่อนน้ำมา อย่ารอ ประสานรถหรือเรือไว้ล่วงหน้า</li>
+                <li>ย้ายคนและของสำคัญไปที่สูงตอนนี้</li>
+                <li>ปิดเบรกเกอร์ไฟก่อนน้ำเข้าบ้าน</li>
+              </ul>
+            </div>
+            <p class="reply__aside" data-variant="plain">บันทึก "บ้าน" แล้ว จะเตือนถ้าน้ำขึ้นค่ะ</p>
+            <p data-variant="plain">มีผู้สูงอายุ เด็กเล็ก หรือสัตว์เลี้ยงไหมคะ?</p>
+          </div>
+
+          <!-- worst station first -->
+          <article class="nm-station">
+            <div class="nm-station__head">
+              <div style="min-width:0">
+                <h3 class="nm-station__name">คลองบางหลวง <span class="nm-code">CPY009</span></h3>
+                <div class="nm-station__meta">แม่น้ำน้อย · ห่าง 2.4 กม.</div>
+              </div>
+              <span class="nm-badge nm-badge--danger">อันตราย</span>
+            </div>
+            <div>
+              <div class="nm-station__gap nm-station__gap--over">ล้นตลิ่ง 1.33 ม.</div>
+              <p class="nm-station__why">ทรงตัว · ระดับน้ำสูงกว่าตลิ่งแล้ว</p>
+            </div>
+            <div>
+              <div class="nm-gauge nm-gauge--over" style="--level-pos:89.6;--bank-pos:62.1" role="img" aria-label="ระดับน้ำ 5.64 ม.รทก. ตลิ่ง 4.31 ม.รทก."><div class="nm-gauge__water"></div><div class="nm-gauge__ticks"></div><div class="nm-gauge__bank"></div></div>
+              <div class="nm-gauge-legend"><span>ระดับน้ำ 5.64 ม.รทก.</span><span>ตลิ่ง 4.31 ม.รทก.</span></div>
+            </div>
+            <dl class="nm-station__facts"><div><dt>ระดับน้ำที่สถานี</dt><dd>5.64 ม.รทก.</dd></div></dl>
+            <p class="nm-source">ที่มา: <a href="#sc-risk">สถานีคลองบางหลวง (CPY009)</a> สถาบันสารสนเทศทรัพยากรน้ำ (สสน.) ผ่าน ThaiWater (สสน.) · <span class="num">20:50 น. 19 ต.ค. 69</span> · ระดับเสี่ยงประเมินโดยน้ำมา</p>
+          </article>
+
+          <article class="nm-station">
+            <div class="nm-station__head">
+              <div style="min-width:0">
+                <h3 class="nm-station__name">บ้านบางหลวงโดด <span class="nm-code">C.36</span></h3>
+                <div class="nm-station__meta">ห่าง 2.4 กม.</div>
+              </div>
+              <span class="nm-badge nm-badge--normal">ปกติ</span>
+            </div>
+            <div>
+              <div class="nm-station__gap">ต่ำกว่าตลิ่ง 1.77 ม.</div>
+              <p class="nm-station__why">ลดลง 1.0 ซม./ชม.</p>
+            </div>
+            <div>
+              <div class="nm-gauge" style="--level-pos:30.75;--bank-pos:75" role="img" aria-label="ระดับน้ำ 5.67 ม.รทก. ตลิ่ง 7.44 ม.รทก."><div class="nm-gauge__water"></div><div class="nm-gauge__ticks"></div><div class="nm-gauge__bank"></div></div>
+              <div class="nm-gauge-legend"><span>ระดับน้ำ 5.67 ม.รทก.</span><span>ตลิ่ง 7.44 ม.รทก.</span></div>
+            </div>
+            <dl class="nm-station__facts"><div><dt>ระดับน้ำที่สถานี</dt><dd>5.67 ม.รทก.</dd></div></dl>
+            <p class="nm-source">ที่มา: <a href="#sc-risk">สถานีบ้านบางหลวงโดด (C.36)</a> กรมชลประทาน ผ่าน ThaiWater (สสน.) · <span class="num">18:00 น. 19 ต.ค. 69</span> · ระดับเสี่ยงประเมินโดยน้ำมา</p>
+          </article>
+
+          <!-- new: one recommended shelter as a card -->
+          <section class="nm-shelters" aria-label="ศูนย์พักพิงที่แนะนำ" data-variant="plain">
+            <div class="nm-shelters__head"><svg class="pin" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 2a7 7 0 0 0-7 7c0 5 7 13 7 13s7-8 7-13a7 7 0 0 0-7-7Zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5Z"/></svg>ศูนย์พักพิงใกล้สุด</div>
+            <div class="nm-shelter">
+              <div class="nm-shelter__top">
+                <div style="min-width:0"><h3 class="nm-shelter__name">โรงเรียนวัดกอไผ่</h3><div class="nm-shelter__meta">อ.บางบาล · ห่าง <span class="num">1.9 กม.</span></div></div>
+                <span class="nm-open nm-open--yes">เปิดรับอยู่</span>
+              </div>
+              <div class="nm-shelter__row">
+                <span class="nm-occ"><span class="nm-occ__bar"><span class="nm-occ__fill" style="--fill:8.3;display:block"></span></span>มีผู้พัก 5 / 60 คน</span>
+              </div>
+            </div>
+            <div class="nm-shelters__foot"><span>ข้อมูล ปภ. · โทร 1784 ก่อนเดินทาง</span><a href="#sc-risk">ดูบนแผนที่</a></div>
+          </section>
+          <section class="nm-shelters" aria-label="ศูนย์พักพิงที่แนะนำ" data-variant="hh" hidden>
+            <div class="nm-shelters__head"><svg class="pin" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 2a7 7 0 0 0-7 7c0 5 7 13 7 13s7-8 7-13a7 7 0 0 0-7-7Zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5Z"/></svg>ศูนย์พักพิงที่รับผู้ป่วยติดเตียง</div>
+            <div class="nm-shelter">
+              <div class="nm-shelter__top">
+                <div style="min-width:0"><h3 class="nm-shelter__name">โรงเรียนวัดโคกหิรัญ</h3><div class="nm-shelter__meta">อ.บางบาล · ห่าง <span class="num">2.8 กม.</span></div></div>
+                <span class="nm-open nm-open--yes">เปิดรับอยู่</span>
+              </div>
+              <div class="nm-shelter__row">
+                <span class="nm-tag"><span class="nm-house" aria-hidden="true"></span>รับผู้ป่วยติดเตียง</span>
+                <span class="nm-occ"><span class="nm-occ__bar"><span class="nm-occ__fill" style="--fill:12;display:block"></span></span>มีผู้พัก 12 / 100 คน</span>
+              </div>
+            </div>
+            <div class="nm-shelters__foot"><span>ข้อมูล ปภ. · โทร 1784 ก่อนเดินทาง</span><a href="#sc-risk">ดูบนแผนที่</a></div>
+          </section>
+
+          <ul class="src-list"><li><span class="src-text">ที่มา: GISTDA (สทอภ.) · ภาพดาวเทียม 3 วันล่าสุด · 18:39 น. 19 ต.ค. 69</span></li></ul>
+
+          <aside class="nm-hotline" aria-label="สายด่วน">
+            <span>สายด่วน ปภ. <span class="nm-hotline__num">1784</span></span>
+            <span class="nm-hotline__line">LINE @1784DDPM</span>
+            <span class="nm-hotline__note">น้ำมาไม่ใช่หน่วยงานรัฐ ข้อมูลระดับน้ำจาก ThaiWater โดยสถาบันสารสนเทศทรัพยากรน้ำ (สสน.) ระดับเสี่ยงประเมินโดยน้ำมา โปรดปฏิบัติตามประกาศของทางการ</span>
+          </aside>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════ Scenario 2: shelters ═══════════════ -->
+  <section id="sc-shelter" role="tabpanel" aria-labelledby="tab-shelter" class="compare" hidden>
+    <div class="col">
+      <div class="col__head"><h2 class="col__title">Now</h2><span class="col__count" data-count-for="sh-now"></span></div>
+      <div class="chat">
+        <div class="nm-bubble nm-bubble--user">ศูนย์พักพิงใกล้ที่สุดอยู่ไหน</div>
+        <div class="answer">
+          <div class="nm-msg pre" id="sh-now">ศูนย์พักพิงใกล้ บ้าน (ตำแหน่งประมาณจากชื่อพื้นที่) เรียงให้ศูนย์ที่รับผู้ป่วยติดเตียงขึ้นก่อน:
+1. โรงเรียนวัดโคกหิรัญ อ.บางบาล ห่าง 2.8 กม. (เปิดรับอยู่ มีผู้พัก 12/100 คน, รับผู้ป่วยติดเตียง)
+2. สนามกีฬาเสนาบดี อ.เสนา ห่าง 10.5 กม. (เปิดรับอยู่ มีผู้พัก 0/500 คน, รับผู้ป่วยติดเตียง)
+3. ลานอเนกประสงค์ ม.2 ต.บางหลวง อ.บางบาล ห่าง 3.2 กม. (ยังไม่เปิด, รับผู้ป่วยติดเตียง)
+
+ข้อมูลศูนย์พักพิงจาก ปภ. สถานะเปลี่ยนได้ โทร 1784 สอบถามก่อนเดินทาง
+ถ้ามีคำสั่งอพยพจากทางการ ให้ไปตามจุดที่ทางการกำหนด
+
+น้ำมาเป็นผู้ช่วยไม่เป็นทางการ โปรดติดตามประกาศและทำตามคำสั่งอพยพของทางการเสมอ
+สายด่วน ปภ. 1784 • LINE @1784DDPM</div>
+          <ul class="src-list">
+            <li><span class="src-shelter"><svg class="pin" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 2a7 7 0 0 0-7 7c0 5 7 13 7 13s7-8 7-13a7 7 0 0 0-7-7Zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5Z"/></svg><b>โรงเรียนวัดโคกหิรัญ</b><span class="num">· 2.8 กม.</span></span></li>
+            <li><span class="src-shelter"><svg class="pin" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 2a7 7 0 0 0-7 7c0 5 7 13 7 13s7-8 7-13a7 7 0 0 0-7-7Zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5Z"/></svg><b>สนามกีฬาเสนาบดี</b><span class="num">· 10.5 กม.</span></span></li>
+            <li><span class="src-shelter"><svg class="pin" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 2a7 7 0 0 0-7 7c0 5 7 13 7 13s7-8 7-13a7 7 0 0 0-7-7Zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5Z"/></svg><b>ลานอเนกประสงค์ ม.2 ต.บางหลวง</b><span class="num">· 3.2 กม.</span></span></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="col">
+      <div class="col__head"><h2 class="col__title">Proposed</h2><span class="col__count" data-count-for="sh-new"></span></div>
+      <div class="chat">
+        <div class="nm-bubble nm-bubble--user">ศูนย์พักพิงใกล้ที่สุดอยู่ไหน</div>
+        <div class="answer">
+          <div class="nm-msg reply" id="sh-new">
+            <p>ศูนย์พักพิงใกล้บ้านค่ะ ถ้ามีคำสั่งอพยพ ให้ไปตามจุดที่ทางการกำหนด</p>
+          </div>
+
+          <section class="nm-shelters" aria-label="ศูนย์พักพิงใกล้บ้าน">
+            <div class="nm-shelters__head"><span class="nm-house" aria-hidden="true"></span>ใกล้บ้าน · อ.บางบาล</div>
+            <div class="nm-shelter">
+              <div class="nm-shelter__top">
+                <div style="min-width:0"><span class="nm-pick">แนะนำ</span><h3 class="nm-shelter__name">โรงเรียนวัดโคกหิรัญ</h3><div class="nm-shelter__meta">อ.บางบาล · ห่าง <span class="num">2.8 กม.</span></div></div>
+                <span class="nm-open nm-open--yes">เปิดรับอยู่</span>
+              </div>
+              <div class="nm-shelter__row">
+                <span class="nm-tag"><span class="nm-house" aria-hidden="true"></span>รับผู้ป่วยติดเตียง</span>
+                <span class="nm-occ"><span class="nm-occ__bar"><span class="nm-occ__fill" style="--fill:12;display:block"></span></span>มีผู้พัก 12 / 100 คน</span>
+              </div>
+            </div>
+            <div class="nm-shelter">
+              <div class="nm-shelter__top">
+                <div style="min-width:0"><h3 class="nm-shelter__name">สนามกีฬาเสนาบดี</h3><div class="nm-shelter__meta">อ.เสนา · ห่าง <span class="num">10.5 กม.</span></div></div>
+                <span class="nm-open nm-open--yes">เปิดรับอยู่</span>
+              </div>
+              <div class="nm-shelter__row">
+                <span class="nm-tag"><span class="nm-house" aria-hidden="true"></span>รับผู้ป่วยติดเตียง</span>
+                <span class="nm-occ"><span class="nm-occ__bar"><span class="nm-occ__fill" style="--fill:0;display:block"></span></span>มีผู้พัก 0 / 500 คน</span>
+              </div>
+            </div>
+            <div class="nm-shelter">
+              <div class="nm-shelter__top">
+                <div style="min-width:0"><h3 class="nm-shelter__name">ลานอเนกประสงค์ ม.2 ต.บางหลวง</h3><div class="nm-shelter__meta">อ.บางบาล · ห่าง <span class="num">3.2 กม.</span></div></div>
+                <span class="nm-open nm-open--no">ยังไม่เปิด</span>
+              </div>
+              <div class="nm-shelter__row">
+                <span class="nm-tag"><span class="nm-house" aria-hidden="true"></span>รับผู้ป่วยติดเตียง</span>
+              </div>
+            </div>
+            <div class="nm-shelters__foot"><span>ข้อมูล ปภ. · โทร 1784 ก่อนเดินทาง</span><a href="#sc-shelter">ดูบนแผนที่</a></div>
+          </section>
+
+          <aside class="nm-hotline" aria-label="สายด่วน">
+            <span>สายด่วน ปภ. <span class="nm-hotline__num">1784</span></span>
+            <span class="nm-hotline__line">LINE @1784DDPM</span>
+            <span class="nm-hotline__note">น้ำมาไม่ใช่หน่วยงานรัฐ ข้อมูลระดับน้ำจาก ThaiWater โดยสถาบันสารสนเทศทรัพยากรน้ำ (สสน.) ระดับเสี่ยงประเมินโดยน้ำมา โปรดปฏิบัติตามประกาศของทางการ</span>
+          </aside>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="backend" aria-labelledby="be-title">
+    <h2 id="be-title">Backend</h2>
+    <p>Add to the <code>shelter</code> source: <code>is_open</code>, <code>current_residents</code>, <code>capacity</code>, <code>accepts_bedridden</code>, <code>district</code>, <code>lat</code>, <code>lon</code>, <code>recommended</code>.</p>
+  </section>
+</main>
+
+<script>
+(function () {
+  var tabs = document.querySelectorAll('.tab');
+  function select(tab) {
+    tabs.forEach(function (t) {
+      var on = t === tab;
+      t.setAttribute('aria-selected', on ? 'true' : 'false');
+      document.getElementById(t.getAttribute('aria-controls')).hidden = !on;
+    });
+    try { localStorage.setItem('namma-redesign-tab', tab.id); } catch (e) {}
+  }
+  tabs.forEach(function (t) { t.addEventListener('click', function () { select(t); }); });
+  try {
+    var saved = localStorage.getItem('namma-redesign-tab');
+    if (saved && document.getElementById(saved)) select(document.getElementById(saved));
+  } catch (e) {}
+
+  function count() {
+    document.querySelectorAll('[data-count-for]').forEach(function (el) {
+      var src = document.getElementById(el.getAttribute('data-count-for'));
+      var text = '';
+      src.querySelectorAll(':scope > *').length
+        ? src.querySelectorAll(':scope > *').forEach(function (c) { if (!c.closest('[hidden]')) text += c.innerText + '\n'; })
+        : (text = src.textContent);
+      var n = text.replace(/\s+/g, ' ').trim().length;
+      el.innerHTML = '<b class="num">' + n.toLocaleString('en-US') + '</b> chars';
+    });
+  }
+
+  var hh = document.getElementById('hh-toggle');
+  hh.addEventListener('change', function () {
+    document.querySelectorAll('[data-variant]').forEach(function (el) {
+      el.hidden = el.getAttribute('data-variant') !== (hh.checked ? 'hh' : 'plain');
+    });
+    count();
+  });
+  count();
+  // Hidden tab panels measure 0 with innerText; recount when switching.
+  tabs.forEach(function (t) { t.addEventListener('click', count); });
+})();
+</script>
+</body>
+</html>
