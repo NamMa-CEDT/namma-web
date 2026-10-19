@@ -45,12 +45,12 @@ export function AccountMenu() {
         aria-expanded={open}
         aria-haspopup="dialog"
         aria-label={session ? `${copy.account.nav}: ${session.display_name}` : copy.account.signIn}
-        className="inline-flex size-11 items-center justify-center overflow-hidden rounded-full text-ink-muted hover:text-ink sm:border sm:border-line-strong sm:text-ink"
+        className="inline-flex size-11 items-center justify-center rounded-md text-ink-muted hover:text-ink sm:border sm:border-line-strong sm:text-ink"
       >
         {session?.picture_url ? (
-          <img src={session.picture_url} alt="" referrerPolicy="no-referrer" className="size-full object-cover" />
+          <img src={session.picture_url} alt="" referrerPolicy="no-referrer" className="size-7 rounded object-cover" />
         ) : (
-          <UserIcon className="text-[26px]" />
+          <UserIcon className="text-[20px]" />
         )}
       </button>
 
