@@ -167,7 +167,17 @@ function Segmented<T extends string>({
 }
 
 /** One saved place: how close GISTDA's flooding is, and a way to ask NamMa about it (DS option G banner). */
-function PlaceFlood({ place, period, onAsk }: { place: SavedPlace; period: FloodPeriod; onAsk: (text: string) => void }) {
+function PlaceFlood({
+  place,
+  period,
+  onAsk,
+  onFocus,
+}: {
+  place: SavedPlace;
+  period: FloodPeriod;
+  onAsk: (text: string) => void;
+  onFocus: (place: SavedPlace) => void;
+}) {
   const near = useFloodNear(period, place);
   const d = near.data;
   let status: string | null = null;
@@ -178,37 +188,53 @@ function PlaceFlood({ place, period, onAsk }: { place: SavedPlace; period: Flood
     else status = copy.flood.placeClear(d.radius_km);
   }
   return (
-    <button
-      type="button"
-      onClick={() => onAsk(copy.flood.askPlaceText(place.label))}
-      className="flex min-h-12 w-full items-center gap-3 rounded-md bg-home-soft px-4 py-2 text-left text-ink hover:shadow-[inset_0_0_0_999px_rgba(0,0,0,0.06)]"
-    >
-      <span className="nm-house text-home" aria-hidden="true" />
-      <span className="min-w-0 flex-1 text-body">
-        <b className="font-semibold">{place.label}</b>
-        {place.where && <span className="text-ink-muted"> · {place.where}</span>}
-        {status && (
-          <span className="block sm:inline">
-            <span className="max-sm:hidden"> — </span>
-            {status}
-            {place.approx && <span className="text-ink-muted"> ({copy.flood.placeApprox})</span>}
-          </span>
-        )}
-      </span>
-      <span className="shrink-0 font-semibold text-river">
+    <div className="flex min-h-12 w-full items-center rounded-md bg-home-soft text-ink">
+      <button
+        type="button"
+        onClick={() => onFocus(place)}
+        className="flex min-h-12 min-w-0 flex-1 items-center gap-3 rounded-l-md py-2 pl-4 text-left hover:shadow-[inset_0_0_0_999px_rgba(0,0,0,0.06)]"
+      >
+        <span className="nm-house text-home" aria-hidden="true" />
+        <span className="min-w-0 flex-1 text-body">
+          <b className="font-semibold">{place.label}</b>
+          {place.where && <span className="text-ink-muted"> · {place.where}</span>}
+          {status && (
+            <span className="block sm:inline">
+              <span className="max-sm:hidden"> — </span>
+              {status}
+              {place.approx && <span className="text-ink-muted"> ({copy.flood.placeApprox})</span>}
+            </span>
+          )}
+        </span>
+      </button>
+      <button
+        type="button"
+        onClick={() => onAsk(copy.flood.askPlaceText(place.label))}
+        className="flex min-h-12 shrink-0 items-center rounded-r-md px-4 font-semibold text-river hover:shadow-[inset_0_0_0_999px_rgba(0,0,0,0.06)]"
+      >
         <span className="max-sm:sr-only">{copy.flood.ask} </span>
         <span aria-hidden="true">›</span>
-      </span>
-    </button>
+      </button>
+    </div>
   );
 }
 
-function Places({ places, period, onAsk }: { places: SavedPlace[]; period: FloodPeriod; onAsk: (text: string) => void }) {
+function Places({
+  places,
+  period,
+  onAsk,
+  onFocus,
+}: {
+  places: SavedPlace[];
+  period: FloodPeriod;
+  onAsk: (text: string) => void;
+  onFocus: (place: SavedPlace) => void;
+}) {
   if (!places.length) return null;
   return (
     <div className="flex flex-col gap-2">
       {places.map((p) => (
-        <PlaceFlood key={p.id} place={p} period={period} onAsk={onAsk} />
+        <PlaceFlood key={p.id} place={p} period={period} onAsk={onAsk} onFocus={onFocus} />
       ))}
     </div>
   );
@@ -780,6 +806,7 @@ export function FloodExplorer({
   const [tilesFailed, setTilesFailed] = useState(false);
   const [picked, setPicked] = useState<Picked | null>(null);
   const detail = useRef<HTMLDivElement>(null);
+  const mapEl = useRef<HTMLDivElement>(null);
 
   // The history layer has no cells to show close up: it stays on tambons.
   const stage: Stage =
@@ -875,6 +902,10 @@ export function FloodExplorer({
   }, [picked]);
 
   const ask = (text: string) => navigate("/chat", { state: { send: text } satisfies ChatHandoff });
+  const focusPlace = (p: SavedPlace) => {
+    setFlyTo({ lat: p.lat, lon: p.lon, zoom: FLY_ZOOM.tambon });
+    mapEl.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  };
   const goTo = (p: string | null, a: string | null) => onScope({ province: p, amphoe: a });
 
   /** A tap on the map: a province zooms in to its tambons, a tambon opens its card; close up, a dry spot says how far
@@ -950,6 +981,7 @@ export function FloodExplorer({
 
   const map = (
     <div
+      ref={mapEl}
       className={
         embedded
           ? "relative h-[440px] overflow-hidden rounded-md border border-line lg:h-auto lg:min-w-0 lg:flex-1"
@@ -1090,7 +1122,7 @@ export function FloodExplorer({
     <div className={embedded ? "flex flex-col gap-3" : "flex h-full flex-col"}>
       <FloodPatterns />
       <div className={embedded ? "" : "shrink-0 border-b border-line px-4 py-2 empty:hidden"}>
-        <Places places={places} period={period} onAsk={ask} />
+        <Places places={places} period={period} onAsk={ask} onFocus={focusPlace} />
       </div>
       <div className={embedded ? "flex flex-col gap-3 lg:h-[640px] lg:flex-row" : "flex min-h-0 flex-1 flex-col lg:flex-row"}>
         {map}
