@@ -1,5 +1,5 @@
 import { lazy, Suspense } from "react";
-import { Link, NavLink, Outlet, useSearchParams } from "react-router";
+import { Link, NavLink, Outlet, useLocation, useSearchParams } from "react-router";
 import { API_MODE } from "../api/client";
 import { AutoThemeIcon, ChatIcon, FloodIcon, LineIcon, MapIcon, MoonIcon, SunIcon } from "../components/icons";
 import { LogoMark } from "../components/Logo";
@@ -14,11 +14,20 @@ const THEME_ICON = { auto: AutoThemeIcon, light: SunIcon, dark: MoonIcon };
 // Static check so http builds drop the demo panel (and the mock store it imports) entirely.
 const DemoPanel = import.meta.env.VITE_API_MODE === "http" ? null : lazy(() => import("../features/demo/DemoPanel"));
 
+// Order: ask, see the flooding, then the stations behind it.
 const NAV = [
   { to: "/chat", label: copy.nav.chat, Icon: ChatIcon },
-  { to: "/map", label: copy.nav.map, Icon: MapIcon },
   { to: "/flood", label: copy.nav.flood, Icon: FloodIcon },
+  { to: "/map", label: copy.nav.map, Icon: MapIcon },
 ];
+
+// Phones name the page next to the logo (the desktop bar shows the links instead). The home page shows the wordmark.
+const PAGE_TITLE: Record<string, string> = {
+  "/chat": copy.nav.chat,
+  "/flood": copy.nav.flood,
+  "/map": copy.nav.map,
+  "/account": copy.account.nav,
+};
 
 function useDemoMode(): boolean {
   const [params] = useSearchParams();
@@ -36,36 +45,44 @@ export function Shell() {
   const demo = useDemoMode();
   const [theme, cycleTheme] = useTheme();
   const ThemeIcon = THEME_ICON[theme];
+  const pageTitle = PAGE_TITLE[useLocation().pathname] ?? null;
   return (
     <div className="flex h-dvh flex-col bg-surface text-ink">
-      <header className="z-[1000] flex min-h-16 items-center gap-x-1.5 border-b border-line bg-surface-raised px-2 py-1 sm:gap-x-4 sm:px-6">
-        <Link to="/" className="nm-wordmark min-h-11 min-w-11" aria-label={`${copy.appNameEn} ${copy.appName} ${copy.nav.home}`}>
-          <LogoMark size={36} />
-          <span className="nm-wordmark__en max-sm:hidden">{copy.appNameEn}</span>
+      {/* Design C: a slim 52 px bar. Mark + wordmark, the three sections, then theme and profile. */}
+      <header className="z-[1000] flex min-h-13 items-center gap-x-1 bg-surface-raised px-1 shadow-[0_1px_0_var(--line),0_2px_6px_rgb(11_26_46/0.05)] md:gap-x-5 md:px-5">
+        <Link to="/" className="nm-wordmark min-h-11 min-w-11 justify-center" aria-label={`${copy.appNameEn} ${copy.appName} ${copy.nav.home}`}>
+          <LogoMark size={32} />
+          <span className={`nm-wordmark__en ${pageTitle ? "max-md:hidden" : ""}`}>{copy.appNameEn}</span>
         </Link>
-        <nav className="hidden flex-1 gap-1 md:flex" aria-label="หลัก">
-          {NAV.map(({ to, label, Icon }) => (
+        {pageTitle && (
+          // The page's own heading is in the page; this is the phone's "you are here", like an app's title bar.
+          <span className="ml-1 truncate text-heading font-semibold md:hidden" aria-hidden="true">
+            {pageTitle}
+          </span>
+        )}
+        <span aria-hidden="true" className="hidden h-[22px] w-px bg-line md:block" />
+        <nav className="hidden gap-0.5 md:flex" aria-label="หลัก">
+          {NAV.map(({ to, label }) => (
             <NavLink
               key={to}
               to={to}
               className={({ isActive }) =>
-                `flex min-h-11 items-center gap-2 border-b-[3px] px-2 text-label no-underline ${
-                  isActive ? "border-river font-semibold text-ink" : "border-transparent text-ink-muted hover:text-ink"
+                `flex min-h-9 items-center rounded-md px-3 text-[15px] no-underline ${
+                  isActive ? "bg-river-soft font-semibold text-ink" : "text-ink-muted hover:bg-surface-sunken hover:text-ink"
                 }`
               }
             >
-              <Icon className="text-[20px]" />
               {label}
             </NavLink>
           ))}
         </nav>
-        <div className="ml-auto flex shrink-0 items-center gap-1.5 sm:gap-2">
+        <div className="ml-auto flex shrink-0 items-center gap-1 md:gap-2">
           <button
             type="button"
             onClick={cycleTheme}
             aria-label={`${copy.theme[theme]} · ${copy.theme.hint}`}
             title={copy.theme[theme]}
-            className="inline-flex size-11 items-center justify-center rounded-md text-ink-muted hover:text-ink sm:border sm:border-line-strong sm:text-ink"
+            className="inline-flex size-11 items-center justify-center rounded-md text-ink-muted hover:text-ink md:size-10 md:border md:border-line-strong md:text-ink"
           >
             <ThemeIcon className="text-[20px]" />
           </button>
