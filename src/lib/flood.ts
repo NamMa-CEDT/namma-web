@@ -1,6 +1,6 @@
 // Flood tab helpers: how flooded an area is (its shade and words) and how areas are named.
 // Every number shown comes from /api/flood (GISTDA's cells); nothing here estimates.
-import type { FloodArea, FloodLevel } from "../api/types";
+import type { FloodArea, FloodHistoryArea, FloodLevel } from "../api/types";
 
 export type FloodClass = "many" | "some" | "none";
 
@@ -10,6 +10,41 @@ export const MANY_SHARE = 0.25;
 /** The shade an area gets: flooded share of its whole area → ท่วมมาก / ท่วมบางส่วน / ไม่พบน้ำ. */
 export function floodClass(share: number): FloodClass {
   return share >= MANY_SHARE ? "many" : share > 0 ? "some" : "none";
+}
+
+const RAI_PER_KM2 = 625;
+/** History layer, all years: a tambon is ท่วมบ่อย from this many flooded years. */
+export const OFTEN_YEARS = 5;
+
+/** The worst year of an area's history and its rai; null when it never flooded. */
+export function worstYear(h: Pick<FloodHistoryArea, "rai_by_year">): { year: number; rai: number } | null {
+  let best: { year: number; rai: number } | null = null;
+  for (const [y, rai] of Object.entries(h.rai_by_year)) if (!best || rai > best.rai) best = { year: Number(y), rai };
+  return best;
+}
+
+/** Flooded share of an area (whole area areaKm2) in one year of its history. */
+export function historyShare(h: Pick<FloodHistoryArea, "rai_by_year">, year: number, areaKm2: number): number {
+  const rai = h.rai_by_year[String(year)] ?? 0;
+  return areaKm2 > 0 ? Math.min(1, rai / RAI_PER_KM2 / areaKm2) : 0;
+}
+
+/**
+ * An area's shade in the history layer. A chosen year: how much of it flooded that year (the same classes as the live
+ * layer). All years: a tambon by how many years it flooded, a province by its worst year (a count of years says
+ * little for a whole province: nearly every one flooded somewhere every year).
+ */
+export function historyClass(
+  h: FloodHistoryArea | undefined,
+  areaKm2: number,
+  year: number | null,
+  level: "province" | "tambon",
+): FloodClass {
+  if (!h) return "none";
+  if (year != null) return floodClass(historyShare(h, year, areaKm2));
+  if (level === "tambon") return h.years.length >= OFTEN_YEARS ? "many" : h.years.length > 0 ? "some" : "none";
+  const worst = worstYear(h);
+  return worst ? floodClass(historyShare(h, worst.year, areaKm2)) : "none";
 }
 
 // Fractions people say, largest first. A share falls to the nearest one below it ("about a third").

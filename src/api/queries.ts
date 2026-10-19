@@ -21,6 +21,7 @@ export const keys = {
   provinceShapes: ["shapes", "provinces"] as const,
   tambonShapes: (provinceCode: string) => ["shapes", "tambons", provinceCode] as const,
   floodNear: (period: FloodPeriod, lat: number, lon: number) => ["flood-near", period, lat, lon] as const,
+  floodHistory: (level: "province" | "tambon", province: string | null) => ["flood-history", level, province] as const,
 };
 
 /** Flooded area per province, or per amphoe / tambon inside one (drill-down in the flood tab). */
@@ -41,6 +42,31 @@ export function useFloodTambons(period: FloodPeriod, provinces: string[]) {
       queryKey: keys.floodAreas(period, "tambon", province, null),
       queryFn: () => api.floodAreas({ period, level: "tambon", province, limit: 1000 }),
       refetchInterval: FLOOD_REFRESH_MS,
+    })),
+  });
+}
+
+// The history changes only when another province is copied: an hour is plenty.
+const HISTORY_STALE_MS = 60 * 60_000;
+
+/** Flood history 2011– per province (the history layer zoomed out, and its ranking). */
+export function useFloodHistory(enabled: boolean) {
+  return useQuery({
+    queryKey: keys.floodHistory("province", null),
+    queryFn: () => api.floodHistory({ level: "province" }),
+    staleTime: HISTORY_STALE_MS,
+    enabled,
+  });
+}
+
+/** Flood history per tambon in each of these provinces (by code), for the history layer zoomed in. */
+export function useFloodHistoryTambons(provinceCodes: string[], enabled: boolean) {
+  return useQueries({
+    queries: provinceCodes.map((province) => ({
+      queryKey: keys.floodHistory("tambon", province),
+      queryFn: () => api.floodHistory({ level: "tambon", province }),
+      staleTime: HISTORY_STALE_MS,
+      enabled,
     })),
   });
 }

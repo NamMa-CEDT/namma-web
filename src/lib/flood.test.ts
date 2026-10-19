@@ -1,4 +1,4 @@
-import { areaName, floodClass, formatKm2, formatRai, placeName, shareWords } from "./flood";
+import { areaName, floodClass, formatKm2, formatRai, historyClass, placeName, shareWords, worstYear } from "./flood";
 
 it("shades an area by how much of it is under water", () => {
   expect([0, 0.001, 0.24, 0.25, 0.9].map(floodClass)).toEqual(["none", "some", "some", "many", "many"]);
@@ -33,4 +33,18 @@ it("names areas the Thai way, Bangkok included", () => {
   expect(areaName({ ...a, tambon: null, code: null }, "tambon")).toBe("ไม่ระบุตำบล");
   expect(placeName(a)).toBe("ต.บ้านกุ่ม อ.บางบาล จ.พระนครศรีอยุธยา");
   expect(placeName({ province: "อ่างทอง", amphoe: null, tambon: null })).toBe("จ.อ่างทอง");
+});
+
+test("history layer: a year by its flooded share, all years by how often (tambons) or the worst year (provinces)", () => {
+  const h = { code: "140501", province: "พระนครศรีอยุธยา", amphoe: "บางบาล", tambon: "บางบาล",
+    years: [2011, 2012, 2013, 2017, 2024], rai_by_year: { "2011": 3000, "2012": 100, "2013": 50, "2017": 900, "2024": 10 } };
+  // 6.11 km² = ~3,819 rai: 2011 flooded ~79% of it, 2012 ~3%.
+  expect(historyClass(h, 6.11, 2011, "tambon")).toBe("many");
+  expect(historyClass(h, 6.11, 2012, "tambon")).toBe("some");
+  expect(historyClass(h, 6.11, 2015, "tambon")).toBe("none");
+  expect(historyClass(h, 6.11, null, "tambon")).toBe("many");                              // 5 years
+  expect(historyClass({ ...h, years: [2011] }, 6.11, null, "tambon")).toBe("some");
+  expect(historyClass(undefined, 6.11, null, "tambon")).toBe("none");
+  expect(worstYear(h)).toEqual({ year: 2011, rai: 3000 });
+  expect(historyClass(h, 2500, null, "province")).toBe("some");                            // worst year: 3,000 rai of 2,500 km²
 });
