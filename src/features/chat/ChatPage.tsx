@@ -103,7 +103,7 @@ export default function ChatPage() {
   };
   const startWith = (st: Starter) => (st.send ? sendText(st.send) : fill(`${st.fill ?? st.label} `));
 
-  // Arriving from the landing page or the header's rescue button: do what it asked, once.
+  // Arriving from the landing page: do what it asked, once.
   // The ref guards against React StrictMode running the effect twice for the same navigation.
   const handled = useRef<string | null>(null);
   useEffect(() => {
@@ -217,9 +217,6 @@ function Answer({ response: r, firstEmergency }: { response: ChatResponse; first
         </div>
       )}
       <div className="nm-msg whitespace-pre-line">{r.reply}</div>
-      {r.ticket_id != null && (
-        <p className="m-0 rounded-sm bg-surface-sunken px-3 py-1.5 text-caption">{copy.chat.ticketCreated(r.ticket_id)}</p>
-      )}
       {cards.map((s) => (
         <StationCard key={s.station_id} source={s} />
       ))}

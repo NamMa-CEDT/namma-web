@@ -1,17 +1,7 @@
 import { lazy, Suspense } from "react";
-import { Link, NavLink, Outlet, useLocation, useNavigate, useSearchParams } from "react-router";
+import { Link, NavLink, Outlet, useSearchParams } from "react-router";
 import { API_MODE } from "../api/client";
-import {
-  AutoThemeIcon,
-  ChatIcon,
-  LineIcon,
-  MapIcon,
-  MoonIcon,
-  PhoneIcon,
-  ShieldIcon,
-  SunIcon,
-  UserIcon,
-} from "../components/icons";
+import { AutoThemeIcon, ChatIcon, LineIcon, MapIcon, MoonIcon, SunIcon, UserIcon } from "../components/icons";
 import { useSession } from "../auth/session";
 import { LogoMark } from "../components/Logo";
 import { ErrorBoundary, Loading } from "../components/States";
@@ -27,7 +17,6 @@ const DemoPanel = import.meta.env.VITE_API_MODE === "http" ? null : lazy(() => i
 const NAV = [
   { to: "/chat", label: copy.nav.chat, Icon: ChatIcon },
   { to: "/map", label: copy.nav.map, Icon: MapIcon },
-  { to: "/dashboard", label: copy.nav.dashboard, Icon: ShieldIcon },
 ];
 
 function useDemoMode(): boolean {
@@ -44,12 +33,9 @@ function useDemoMode(): boolean {
 
 export function Shell() {
   const demo = useDemoMode();
-  const navigate = useNavigate();
   const session = useSession();
   const [theme, cycleTheme] = useTheme();
   const ThemeIcon = THEME_ICON[theme];
-  // On a phone the chat needs the height; the header's 1784 button and each answer's HotlineNotice carry the hotline.
-  const inChat = useLocation().pathname === "/chat";
   return (
     <div className="flex h-dvh flex-col bg-surface text-ink">
       <header className="z-[1000] flex min-h-16 items-center gap-x-1.5 border-b border-line bg-surface-raised px-2 py-1 sm:gap-x-4 sm:px-6">
@@ -95,18 +81,6 @@ export function Shell() {
             <UserIcon className="text-[24px]" />
             <span className="max-w-32 truncate max-md:hidden">{session ? session.display_name : copy.account.signIn}</span>
           </NavLink>
-          <a href={DDPM.telHref} className="nm-btn nm-btn--call nm-btn--sm max-sm:px-2 max-sm:text-[15px]">
-            <PhoneIcon className="text-[20px] max-sm:hidden" />
-            {copy.footer.callButton}
-          </a>
-          {/* Rescue starts in the chat: triage asks before anything is sent (CLAUDE.md §6). */}
-          <button
-            type="button"
-            className="nm-btn nm-btn--danger nm-btn--sm max-sm:px-2 max-sm:text-[15px]"
-            onClick={() => navigate("/chat", { state: { send: copy.rescueMessage } })}
-          >
-            {copy.nav.rescue}
-          </button>
         </div>
       </header>
 
@@ -120,7 +94,8 @@ export function Shell() {
         </ErrorBoundary>
       </main>
 
-      <footer className={`border-t border-line bg-surface-raised px-4 py-1.5 text-caption text-ink-muted ${inChat ? "max-md:hidden" : ""}`}>
+      {/* Always shown, chat included: with no call button in the header, this is the hotline on every page. */}
+      <footer className="border-t border-line bg-surface-raised px-4 py-1.5 text-caption text-ink-muted">
         <p className="m-0 flex flex-wrap items-center gap-x-2">
           <span className="font-semibold text-ink">{copy.footer.unofficial}</span>
           <span aria-hidden="true">·</span>
@@ -154,7 +129,7 @@ export function Shell() {
         </p>
       </footer>
 
-      <nav className="pb-safe grid grid-cols-3 border-t border-line bg-surface-raised md:hidden" aria-label="หลัก">
+      <nav className="pb-safe grid grid-cols-2 border-t border-line bg-surface-raised md:hidden" aria-label="หลัก">
         {NAV.map(({ to, label, Icon }) => (
           <NavLink
             key={to}

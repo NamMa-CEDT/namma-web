@@ -2,11 +2,10 @@
 // Works without service workers (LIFF browser, plain-http LAN on a phone, static demo builds).
 // Each route mirrors one endpoint in docs/api.md.
 import type { Transport } from "../client";
-import type { Fact, Profile, RescueTicket, SessionUser, TicketPatch, TicketStatus, TicketSummary } from "../types";
+import type { Fact, Profile, SessionUser } from "../types";
 import { copy } from "../../copy";
-import { respond, type ChatSessionState, type PendingTriage } from "./chatScript";
+import { respond, type ChatSessionState } from "./chatScript";
 import * as data from "./data";
-import { toBangkokIso } from "./geo";
 import { chatState, loadState, updateState, type MockState } from "./store";
 
 interface Ctx {
@@ -41,21 +40,9 @@ function userFor(token: string | null, s: MockState): SessionUser | null {
   return token ? (s.sessions[token] ?? null) : null;
 }
 
-function requireResponder(ctx: Ctx, s: MockState): Result | null {
-  const user = userFor(ctx.token, s);
-  if (!user) return fail(401, "unauthorized", "login required");
-  if (user.role !== "responder") return fail(403, "forbidden", "responder role required");
-  return null;
-}
-
 function num(q: URLSearchParams, key: string): number | undefined {
   const v = q.get(key);
   return v == null || v === "" || Number.isNaN(Number(v)) ? undefined : Number(v);
-}
-
-function summarize(t: RescueTicket): TicketSummary {
-  const { raw_text: _raw, contact_phone: _phone, assignee: _assignee, notes: _notes, ...summary } = t;
-  return summary;
 }
 
 // --- stations -----------------------------------------------------------------
@@ -92,55 +79,6 @@ route("GET", "/api/shelters", ({ query }) => ({
   }),
 }));
 
-// --- tickets ------------------------------------------------------------------
-
-route("GET", "/api/tickets", (ctx) => {
-  const s = loadState();
-  const denied = requireResponder(ctx, s);
-  if (denied) return denied;
-  const statuses = ctx.query.get("status")?.split(",").filter(Boolean) as TicketStatus[] | undefined;
-  const since = ctx.query.get("since");
-  const list = s.tickets
-    .filter((t) => !statuses?.length || statuses.includes(t.status))
-    .filter((t) => !since || Date.parse(t.updated_at) > Date.parse(since))
-    .sort((a, b) => Date.parse(b.created_at) - Date.parse(a.created_at))
-    .map(summarize);
-  return { data: list };
-});
-
-route("GET", "/api/tickets/:id", (ctx) => {
-  const s = loadState();
-  const denied = requireResponder(ctx, s);
-  if (denied) return denied;
-  const t = s.tickets.find((x) => x.id === Number(ctx.params.id));
-  return t ? { data: t } : fail(404, "not_found", "ticket not found");
-});
-
-route("PATCH", "/api/tickets/:id", (ctx) => {
-  let result: Result = fail(404, "not_found", "ticket not found");
-  updateState((s) => {
-    const denied = requireResponder(ctx, s);
-    if (denied) {
-      result = denied;
-      return;
-    }
-    const t = s.tickets.find((x) => x.id === Number(ctx.params.id));
-    if (!t) return;
-    const patch = ctx.body as TicketPatch;
-    if (patch.updated_at !== t.updated_at) {
-      result = fail(409, "conflict", "ticket changed since you loaded it");
-      return;
-    }
-    const now = toBangkokIso(Date.now());
-    if (patch.status) t.status = patch.status;
-    if (patch.assignee !== undefined) t.assignee = patch.assignee;
-    if (patch.note) t.notes = [t.notes, `${now} ${patch.note}`].filter(Boolean).join("\n");
-    t.updated_at = now;
-    result = { data: t };
-  });
-  return result;
-});
-
 // --- chat ---------------------------------------------------------------------
 
 route(
@@ -155,7 +93,6 @@ route(
         nearest: (lat: number, lon: number, k: number) => data.nearestStations(lat, lon, k, s.tierOverrides),
         shelters: (lat: number, lon: number, patientsOnly: boolean) =>
           data.shelters({ lat, lon, patients: patientsOnly }),
-        createTicket: (t: PendingTriage) => insertTicket(s, t, "web"),
       };
       out = { data: respond(req, chatState(s, req.session_id), deps) };
     });
@@ -163,30 +100,6 @@ route(
   },
   [900, 1600],
 );
-
-export function insertTicket(s: MockState, t: PendingTriage, channel: "line" | "web"): number {
-  const id = s.nextTicketId++;
-  const now = toBangkokIso(Date.now());
-  s.tickets.push({
-    id,
-    raw_text: t.raw_text,
-    place_label: t.place?.label ?? null,
-    lat: t.place?.lat ?? null,
-    lon: t.place?.lon ?? null,
-    people_count: t.people_count,
-    vulnerable: t.vulnerable,
-    needs: t.needs,
-    urgency: t.urgency,
-    status: "open",
-    channel,
-    contact_phone: null,
-    assignee: null,
-    notes: null,
-    created_at: now,
-    updated_at: now,
-  });
-  return id;
-}
 
 // --- profile ------------------------------------------------------------------
 

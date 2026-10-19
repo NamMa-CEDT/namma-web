@@ -20,11 +20,6 @@ async function call(method: string, path: string, body?: unknown, token?: string
   return { status: res.status, json: await res.json() };
 }
 
-async function login(role: "user" | "responder") {
-  const { json } = await call("POST", "/api/auth/line", { id_token: `demo:${role}` });
-  return json.data.session_token as string;
-}
-
 async function chat(session_id: string, req: Record<string, unknown>) {
   const { status, json } = await call("POST", "/api/chat", { session_id, ...req });
   expect(status).toBe(200);
@@ -69,35 +64,8 @@ describe("stations", () => {
   });
 });
 
-describe("tickets", () => {
-  it("requires a responder", async () => {
-    expect((await call("GET", "/api/tickets")).status).toBe(401);
-    expect((await call("GET", "/api/tickets", undefined, await login("user"))).status).toBe(403);
-  });
-
-  it("hides raw text and phone in the list, shows them in detail", async () => {
-    const token = await login("responder");
-    const list = (await call("GET", "/api/tickets?status=open", undefined, token)).json.data;
-    expect(list.length).toBeGreaterThan(0);
-    expect(list[0]).not.toHaveProperty("raw_text");
-    expect(list[0]).not.toHaveProperty("contact_phone");
-    const detail = (await call("GET", `/api/tickets/${list[0].id}`, undefined, token)).json.data;
-    expect(detail.raw_text).toBeTruthy();
-  });
-
-  it("rejects a stale PATCH with 409", async () => {
-    const token = await login("responder");
-    const [t] = (await call("GET", "/api/tickets?status=open", undefined, token)).json.data;
-    const ok = await call("PATCH", `/api/tickets/${t.id}`, { status: "acknowledged", updated_at: t.updated_at }, token);
-    expect(ok.status).toBe(200);
-    expect(ok.json.data.status).toBe("acknowledged");
-    const stale = await call("PATCH", `/api/tickets/${t.id}`, { status: "resolved", updated_at: t.updated_at }, token);
-    expect(stale.status).toBe(409);
-  });
-});
-
 describe("chat follows the demo script (CLAUDE.md §15)", () => {
-  it("answers, asks for consent, then triages into a ticket", async () => {
+  it("answers, asks for consent, then gives the hotline in danger", async () => {
     const sid = "test-session";
 
     const a1 = await chat(sid, { message: "บ้านแม่อยู่บางบาล อยุธยา น้ำจะถึงไหม" });
@@ -114,17 +82,10 @@ describe("chat follows the demo script (CLAUDE.md §15)", () => {
 
     const a4 = await chat(sid, { message: "น้ำเข้าบ้านแล้ว ยายเดินไม่ได้" });
     expect(a4.emergency).toBe(true);
-    expect(a4.reply.indexOf("1784")).toBeLessThan(a4.reply.indexOf("ตรวจสอบข้อมูล"));
+    expect(a4.reply.indexOf("1784")).toBeLessThan(a4.reply.indexOf("ตอนโทร"));
     expect(a4.reply).toContain("บางบาล");
-
-    const a5 = await chat(sid, { postback: "triage:confirm" });
-    expect(a5.ticket_id).toBeGreaterThan(0);
-
-    const token = await login("responder");
-    const ticket = (await call("GET", `/api/tickets/${a5.ticket_id}`, undefined, token)).json.data;
-    expect(ticket).toMatchObject({ urgency: "critical", status: "open", channel: "web" });
-    expect(ticket.vulnerable).toEqual(expect.arrayContaining(["elderly", "bedridden"]));
-    expect(ticket.needs).not.toContain("medication"); // "ยาย" is grandma, not medicine
+    expect(a4.reply).toContain("ผู้ป่วยติดเตียง");
+    expect(a4.quick_replies).toEqual([]); // nothing to confirm: NamMa sends no rescue request
   });
 
   it("is honest about places outside the demo basin", async () => {
@@ -133,11 +94,11 @@ describe("chat follows the demo script (CLAUDE.md §15)", () => {
     expect(a.sources).toHaveLength(0);
   });
 
-  it("asks for a location before triage when none is known", async () => {
+  it("gives the hotline in danger even with no place known", async () => {
     const a = await chat("s3", { message: "ติดอยู่ในบ้าน ช่วยด้วย" });
     expect(a.emergency).toBe(true);
-    expect(a.quick_replies.some((q: { type: string }) => q.type === "location")).toBe(true);
-    expect(a.quick_replies.some((q: { data?: string }) => q.data === "triage:confirm")).toBe(false);
+    expect(a.reply).toContain("1784");
+    expect(a.reply).not.toContain("ตอนโทร");
   });
 });
 

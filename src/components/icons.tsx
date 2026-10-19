@@ -15,14 +15,10 @@ import {
   Minus,
   Moon,
   PaperPlaneRight,
-  Phone,
   Sun,
   Trash,
   UserCircle,
-  ShieldCheck,
-  Users,
   Warning,
-  X,
   type Icon as PhosphorIcon,
   type IconProps,
 } from "@phosphor-icons/react";
@@ -34,14 +30,11 @@ function wrap(Icon: PhosphorIcon) {
   return Wrapped;
 }
 
-export const PhoneIcon = wrap(Phone);
 export const ChatIcon = wrap(ChatCircleText);
 export const MapIcon = wrap(MapTrifold);
-export const ShieldIcon = wrap(ShieldCheck);
 export const SendIcon = wrap(PaperPlaneRight);
 export const LocateIcon = wrap(Crosshair);
 export const PinIcon = wrap(MapPin);
-export const CloseIcon = wrap(X);
 export const ChevronLeftIcon = wrap(CaretLeft);
 export const AlertIcon = wrap(Warning);
 export const ArrowUpIcon = wrap(ArrowUp);
@@ -51,7 +44,6 @@ export const TrashIcon = wrap(Trash);
 export const UserIcon = wrap(UserCircle);
 export const ArrowDownIcon = wrap(ArrowDown);
 export const MinusIcon = wrap(Minus);
-export const UsersIcon = wrap(Users);
 export const SunIcon = wrap(Sun);
 export const MoonIcon = wrap(Moon);
 export const AutoThemeIcon = wrap(Desktop);

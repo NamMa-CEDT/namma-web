@@ -9,15 +9,11 @@ import type {
   Provider,
   NearbyStation,
   Profile,
-  RescueTicket,
   SessionUser,
   Shelter,
   StationDetail,
   StationReadings,
   StationSummary,
-  TicketPatch,
-  TicketStatus,
-  TicketSummary,
   FactKind,
 } from "./types";
 
@@ -102,11 +98,6 @@ export const api = {
     request<StationReadings>("GET", `/api/stations/${id}/readings`, { query: { hours } }),
   shelters: (q: { lat?: number; lon?: number; patients?: boolean; pets?: boolean } = {}) =>
     request<Shelter[]>("GET", "/api/shelters", { query: q }),
-  tickets: (q: { status?: TicketStatus[]; since?: string } = {}) =>
-    request<TicketSummary[]>("GET", "/api/tickets", { query: { status: q.status?.join(","), since: q.since } }),
-  ticket: (id: number) => request<RescueTicket>("GET", `/api/tickets/${id}`),
-  patchTicket: (id: number, patch: TicketPatch) =>
-    request<RescueTicket>("PATCH", `/api/tickets/${id}`, { body: patch }),
   chat: (req: ChatRequest) => request<ChatResponse>("POST", "/api/chat", { body: req }),
   /** chat_session: the anonymous web chat to fold into the account on sign-in. */
   login: (id_token: string, chat_session?: string, provider: Provider = "line") =>

@@ -107,7 +107,7 @@ export function TypingBubble() {
   );
 }
 
-/** DS starter chips under an empty composer. The danger starter is `--urgent` and goes straight to triage. */
+/** DS starter chips under an empty composer. The danger starter is `--urgent` and sends at once (hotline reply). */
 export function StarterChips({ onPick, center = false }: { onPick: (s: Starter) => void; center?: boolean }) {
   return (
     <div className={`nm-row ${center ? "justify-center" : ""}`}>

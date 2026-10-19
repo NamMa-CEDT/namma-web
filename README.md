@@ -1,6 +1,6 @@
 # NamMa web (น้ำมา)
 
-Web app for the NamMa flood assistant: chat, station map and responder dashboard.
+Web app for the NamMa flood assistant: chat and station map.
 The backend (FastAPI, LINE bot, ingest, risk, forecast) is in the sibling repo **[`namma-backend`](https://github.com/NamMa-CEDT/namma-backend)**.
 
 Stack: Vite + React 19 + TypeScript + Tailwind 4, react-router (`HashRouter`), TanStack Query, react-leaflet, Recharts.

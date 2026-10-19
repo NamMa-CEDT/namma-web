@@ -1,4 +1,4 @@
-import type { RiskTier, StationSummary, TicketStatus, Urgency } from "../api/types";
+import type { RiskTier, StationSummary } from "../api/types";
 import { copy } from "../copy";
 
 export type TierKey = RiskTier | "unknown";
@@ -24,18 +24,6 @@ export function tierInfo(key: TierKey): TierInfo {
 export function stationTier(s: Pick<StationSummary, "risk">): TierKey {
   return s.risk?.tier ?? "unknown";
 }
-
-/** Rescue urgency reuses the tier colours on purpose: responders already read them (DS TicketRow). */
-export const URGENCY_TIER: Record<Urgency, Exclude<TierKey, "unknown" | "watch">> = {
-  critical: "danger",
-  high: "warning",
-  normal: "normal",
-};
-
-export const URGENCY_RANK: Record<Urgency, number> = { critical: 0, high: 1, normal: 2 };
-
-export const ACTIVE_STATUSES: TicketStatus[] = ["open", "acknowledged", "in_progress"];
-export const CLOSED_STATUSES: TicketStatus[] = ["resolved", "cancelled"];
 
 /**
  * Why a station has its tier, in words (DS: show the reason next to any watch or warning badge).

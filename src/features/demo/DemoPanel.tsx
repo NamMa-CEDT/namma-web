@@ -1,7 +1,6 @@
 // Rehearsal controls for the mock backend (?demo=1). Never shipped in VITE_API_MODE=http builds.
 import { useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { insertTicket } from "../../api/mock";
 import { loadState, resetState, updateState } from "../../api/mock/store";
 import { useStations } from "../../api/queries";
 import type { RiskTier } from "../../api/types";
@@ -10,23 +9,6 @@ import { copy } from "../../copy";
 import { tierInfo } from "../../lib/tiers";
 
 const TIERS: RiskTier[] = ["normal", "watch", "warning", "danger"];
-
-const SAMPLE_TICKETS = [
-  {
-    raw_text: "น้ำเข้าบ้านแล้ว ยายเดินไม่ได้ ช่วยด้วย",
-    place: { label: "ต.บ้านป้อม จ.พระนครศรีอยุธยา", lat: 14.375, lon: 100.531 },
-    vulnerable: ["elderly", "bedridden"] as const,
-    needs: ["evacuation"] as const,
-    urgency: "critical" as const,
-  },
-  {
-    raw_text: "ติดอยู่บนหลังคา 3 คน มีเด็ก",
-    place: { label: "อ.บางปะหัน", lat: 14.462, lon: 100.552 },
-    vulnerable: ["child"] as const,
-    needs: ["boat", "evacuation"] as const,
-    urgency: "high" as const,
-  },
-];
 
 export default function DemoPanel() {
   const [open, setOpen] = useState(false);
@@ -54,9 +36,6 @@ export default function DemoPanel() {
             {copy.demo.role}: {session ? `${session.display_name} (${session.role})` : "ไม่ได้เข้าสู่ระบบ"}
           </p>
           <div className="mt-1 flex flex-wrap gap-1">
-            <button type="button" className="nm-btn nm-btn--secondary nm-btn--sm px-3" onClick={() => loginDemo("responder").then(refresh)}>
-              responder
-            </button>
             <button type="button" className="nm-btn nm-btn--secondary nm-btn--sm px-3" onClick={() => loginDemo("user").then(refresh)}>
               user
             </button>
@@ -122,30 +101,6 @@ export default function DemoPanel() {
           <button
             type="button"
             className="nm-btn nm-btn--secondary nm-btn--block mt-3"
-            onClick={() => {
-              const sample = SAMPLE_TICKETS[Math.floor(Math.random() * SAMPLE_TICKETS.length)];
-              updateState((s) =>
-                insertTicket(
-                  s,
-                  {
-                    raw_text: sample.raw_text,
-                    place: sample.place,
-                    vulnerable: [...sample.vulnerable],
-                    needs: [...sample.needs],
-                    people_count: null,
-                    urgency: sample.urgency,
-                  },
-                  "line",
-                ),
-              );
-              refresh();
-            }}
-          >
-            {copy.demo.injectTicket}
-          </button>
-          <button
-            type="button"
-            className="nm-btn nm-btn--secondary nm-btn--block mt-2"
             onClick={() => {
               resetState();
               sessionStorage.removeItem("namma.chat.items");

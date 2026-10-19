@@ -14,7 +14,6 @@ import { initSession } from "./auth/session";
 const HomePage = lazy(() => import("./features/home/HomePage"));
 const ChatPage = lazy(() => import("./features/chat/ChatPage"));
 const MapPage = lazy(() => import("./features/map/MapPage"));
-const DashboardPage = lazy(() => import("./features/dashboard/DashboardPage"));
 const AccountPage = lazy(() => import("./features/account/AccountPage"));
 
 const queryClient = new QueryClient({
@@ -27,7 +26,7 @@ const queryClient = new QueryClient({
 });
 
 if (API_MODE === "mock") {
-  // Another tab changed the mock store (e.g. chat created a ticket): refresh everything.
+  // Another tab changed the mock store (e.g. the demo panel raised a tier): refresh everything.
   window.addEventListener("storage", (e) => {
     if (e.key === MOCK_STORE_KEY) queryClient.invalidateQueries();
   });
@@ -44,7 +43,6 @@ initSession().then(() => {
               <Route index element={<HomePage />} />
               <Route path="/chat" element={<ChatPage />} />
               <Route path="/map" element={<MapPage />} />
-              <Route path="/dashboard" element={<DashboardPage />} />
               <Route path="/account" element={<AccountPage />} />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Route>

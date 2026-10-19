@@ -17,8 +17,6 @@ export const copy = {
     home: "หน้าแรก",
     chat: "แชท",
     map: "แผนที่สถานี",
-    dashboard: "เจ้าหน้าที่",
-    rescue: "ส่งขอความช่วยเหลือ",
   },
 
   // Header light/dark button: the label names the current mode; pressing moves to the next.
@@ -28,9 +26,6 @@ export const copy = {
     dark: "ธีม: มืด",
     hint: "กดเพื่อเปลี่ยน",
   },
-
-  // Rescue starts in the chat: triage asks before any ticket is sent (CLAUDE.md §6).
-  rescueMessage: "น้ำเข้าบ้านแล้ว ช่วยด้วย",
 
   line: {
     addFriend: "เพิ่มเพื่อนใน LINE",
@@ -146,7 +141,6 @@ export const copy = {
     emergency: "เหตุฉุกเฉินโทร",
     followOfficial: "ปฏิบัติตามประกาศอพยพของทางการเสมอ",
     dataCredit: "ข้อมูลระดับน้ำ: ThaiWater โดยสถาบันสารสนเทศทรัพยากรน้ำ (สสน.)",
-    callButton: "โทร 1784",
   },
 
   hotline: {
@@ -218,59 +212,6 @@ export const copy = {
     msl: "ม.รทก.",
   },
 
-  dashboard: {
-    title: "คำขอความช่วยเหลือ",
-    banner: "สำหรับเจ้าหน้าที่กู้ภัยเท่านั้น ข้อมูลส่วนบุคคลใช้เพื่อการช่วยเหลือเท่านั้น",
-    newTag: "ใหม่",
-    openInMaps: "เปิดใน Google Maps",
-    location: "ตำแหน่ง",
-    people_: "ผู้ประสบภัย",
-    assignee: "ผู้รับผิดชอบ",
-    cancel: "ยกเลิกคำขอ",
-    tapToView: "แตะเพื่อดู",
-    filters: {
-      active: "ยังไม่ปิด",
-      open: "รอรับเรื่อง",
-      in_progress: "กำลังดำเนินการ",
-      closed: "ปิดแล้ว",
-    },
-    empty: "ไม่มีคำขอในหมวดนี้",
-    newTicket: "มีคำขอความช่วยเหลือใหม่",
-    people: (n: number | null) => (n == null ? "ไม่ทราบจำนวนคน" : `${n} คน`),
-    noLocation: "ไม่มีพิกัด",
-    message: "ข้อความจากผู้ขอ",
-    contact: "เบอร์ติดต่อ",
-    vulnerable: "กลุ่มเปราะบาง",
-    needs: "สิ่งที่ต้องการ",
-    nearestStation: "สถานีวัดน้ำใกล้ที่สุด",
-    shelters: "ศูนย์พักพิงใกล้เคียง",
-    sheltersPatients: "ศูนย์พักพิงที่รับผู้ป่วย",
-    setStatus: "เปลี่ยนสถานะ",
-    conflict: "มีผู้อื่นแก้ไขคำขอนี้ไปแล้ว โหลดข้อมูลล่าสุดแล้ว ลองอีกครั้ง",
-    saveFailed: "บันทึกไม่สำเร็จ",
-    loginTitle: "สำหรับเจ้าหน้าที่",
-    loginBody: "หน้านี้แสดงข้อมูลผู้ขอความช่วยเหลือ ต้องเข้าสู่ระบบด้วยบัญชีเจ้าหน้าที่",
-    loginDemo: "เข้าสู่ระบบเจ้าหน้าที่ (โหมดทดลอง)",
-    loginLine: "เข้าสู่ระบบด้วย LINE",
-    loginNotReady: "การเข้าสู่ระบบด้วย LINE ยังไม่เปิดใช้",
-    forbidden: "บัญชีนี้ไม่มีสิทธิ์เจ้าหน้าที่",
-    channel: { line: "LINE", web: "เว็บ" },
-  },
-
-  urgency: {
-    critical: "ด่วนมาก",
-    high: "ด่วน",
-    normal: "ปกติ",
-  },
-
-  status: {
-    open: "รอรับเรื่อง",
-    acknowledged: "รับเรื่องแล้ว",
-    in_progress: "กำลังเดินทาง",
-    resolved: "ช่วยเหลือแล้ว",
-    cancelled: "ยกเลิก",
-  },
-
   vulnerable: {
     elderly: "ผู้สูงอายุ",
     bedridden: "ผู้ป่วยติดเตียง",
@@ -280,17 +221,6 @@ export const copy = {
     disabled: "ผู้พิการ",
     patient: "ผู้ป่วย",
     pet: "สัตว์เลี้ยง",
-  },
-
-  needs: {
-    evacuation: "อพยพ",
-    medical: "การแพทย์",
-    medication: "ยา",
-    oxygen: "ออกซิเจน",
-    dialysis: "ฟอกไต",
-    food_water: "อาหาร/น้ำดื่ม",
-    boat: "เรือ",
-    power: "ไฟฟ้า",
   },
 
   chat: {
@@ -307,7 +237,6 @@ export const copy = {
     failed: "ส่งไม่สำเร็จ",
     retry: "ลองอีกครั้ง",
     sentLocation: "ส่งตำแหน่งปัจจุบันแล้ว",
-    ticketCreated: (id: number) => `ส่งเรื่องขอความช่วยเหลือแล้ว เลขที่ #${id}`,
     emergencyTitle: "ถ้าอยู่ในอันตรายตอนนี้ โทรขอความช่วยเหลือก่อนค่ะ",
     // DS starter chips: what a person would say, 20 characters or fewer. `fill` starts the sentence in the
     // composer for the person to finish (it needs their place); `send` sends at once.
@@ -336,7 +265,6 @@ export const copy = {
     tier: "ระดับ",
     apply: "ใช้",
     clearOverrides: "ล้างการปรับระดับ",
-    injectTicket: "เพิ่มคำขอช่วยเหลือตัวอย่าง",
     reset: "รีเซ็ตข้อมูลเดโมทั้งหมด",
     role: "บทบาท",
   },

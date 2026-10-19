@@ -1,10 +1,9 @@
-import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "./client";
-import type { FactKind, Profile, RescueTicket, TicketPatch, TicketStatus, TicketSummary } from "./types";
+import type { FactKind, Profile } from "./types";
 
 // ThaiWater updates every 10 min (HII) / hourly (RID); no need to poll faster than a minute.
 const STATION_REFRESH_MS = 60_000;
-const TICKET_REFRESH_MS = 5_000;
 
 export const keys = {
   stations: ["stations"] as const,
@@ -12,8 +11,6 @@ export const keys = {
   readings: (id: number, hours: number) => ["readings", id, hours] as const,
   nearest: (lat: number, lon: number, k: number) => ["nearest", lat, lon, k] as const,
   shelters: (lat: number | null, lon: number | null, patients: boolean) => ["shelters", lat, lon, patients] as const,
-  tickets: (status: TicketStatus[]) => ["tickets", status.join(",")] as const,
-  ticket: (id: number) => ["ticket", id] as const,
   profile: (chatSession: string) => ["profile", chatSession] as const,
 };
 
@@ -52,49 +49,6 @@ export function useShelters(point: { lat: number; lon: number } | null, patients
     queryKey: keys.shelters(point?.lat ?? null, point?.lon ?? null, patients),
     queryFn: () => api.shelters({ lat: point?.lat, lon: point?.lon, patients }),
     enabled: point != null,
-  });
-}
-
-export function useTickets(status: TicketStatus[], enabled = true) {
-  return useQuery({
-    queryKey: keys.tickets(status),
-    queryFn: () => api.tickets({ status }),
-    refetchInterval: TICKET_REFRESH_MS,
-    placeholderData: keepPreviousData,
-    enabled,
-  });
-}
-
-export function useTicket(id: number | null) {
-  return useQuery({
-    queryKey: keys.ticket(id ?? -1),
-    queryFn: () => api.ticket(id!),
-    enabled: id != null,
-    refetchInterval: TICKET_REFRESH_MS,
-  });
-}
-
-/** Optimistic status change; rolls back on error (409 included) and refetches. */
-export function usePatchTicket() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: ({ id, patch }: { id: number; patch: TicketPatch }) => api.patchTicket(id, patch),
-    onMutate: async ({ id, patch }) => {
-      await qc.cancelQueries({ queryKey: keys.ticket(id) });
-      const prev = qc.getQueryData<RescueTicket>(keys.ticket(id));
-      if (prev) qc.setQueryData<RescueTicket>(keys.ticket(id), { ...prev, ...patch, updated_at: prev.updated_at });
-      qc.setQueriesData<TicketSummary[]>({ queryKey: ["tickets"] }, (list) =>
-        list?.map((t) => (t.id === id && patch.status ? { ...t, status: patch.status } : t)),
-      );
-      return { prev };
-    },
-    onError: (_e, { id }, ctx) => {
-      if (ctx?.prev) qc.setQueryData(keys.ticket(id), ctx.prev);
-    },
-    onSettled: (_d, _e, { id }) => {
-      qc.invalidateQueries({ queryKey: keys.ticket(id) });
-      qc.invalidateQueries({ queryKey: ["tickets"] });
-    },
   });
 }
 

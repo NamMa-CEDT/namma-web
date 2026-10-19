@@ -119,10 +119,8 @@ export interface Shelter {
   updated_at?: string | null;
 }
 
-// --- rescue tickets ---------------------------------------------------------
+// --- household (what the chat may remember, with consent) -------------------
 
-export type Urgency = "critical" | "high" | "normal";
-export type TicketStatus = "open" | "acknowledged" | "in_progress" | "resolved" | "cancelled";
 export type Vulnerable =
   | "elderly"
   | "bedridden"
@@ -132,46 +130,6 @@ export type Vulnerable =
   | "disabled"
   | "patient"
   | "pet";
-export type Need =
-  | "evacuation"
-  | "medical"
-  | "medication"
-  | "oxygen"
-  | "dialysis"
-  | "food_water"
-  | "boat"
-  | "power";
-
-/** List view. Leaves out raw text, phone and notes (PDPA: show the minimum). */
-export interface TicketSummary {
-  id: number;
-  place_label: string | null;
-  lat: number | null;
-  lon: number | null;
-  people_count: number | null;
-  vulnerable: Vulnerable[];
-  needs: Need[];
-  urgency: Urgency;
-  status: TicketStatus;
-  channel: "line" | "web";
-  created_at: string;
-  updated_at: string;
-}
-
-export interface RescueTicket extends TicketSummary {
-  raw_text: string;
-  contact_phone: string | null;
-  assignee: string | null;
-  notes: string | null;
-}
-
-export interface TicketPatch {
-  status?: TicketStatus;
-  assignee?: string | null;
-  note?: string;
-  /** The updated_at the client last saw. The server answers 409 if the ticket changed since. */
-  updated_at: string;
-}
 
 // --- chat -------------------------------------------------------------------
 
@@ -237,7 +195,6 @@ export interface ChatResponse {
   quick_replies: QuickReply[];
   /** True when the user signalled danger. The UI then shows the DDPM 1784 card first. */
   emergency: boolean;
-  ticket_id: number | null;
 }
 
 // --- profile ----------------------------------------------------------------

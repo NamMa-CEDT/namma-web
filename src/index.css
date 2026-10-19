@@ -360,11 +360,7 @@
   .nm-badge--unknown { background: var(--surface-sunken); color: var(--ink-muted); }
   /* Header-sized button (44px tap target). */
   .nm-btn--sm { min-height: 44px; padding: 8px 16px; }
-  .nm-status--open { color: var(--river); }
   .nm-chip:disabled { color: var(--ink-muted); cursor: not-allowed; }
-  /* Ticket rows are buttons here (the DS draws them as links): full width, no button chrome; selected = river-soft. */
-  .nm-ticket { width: 100%; border: 0; border-bottom: 1px solid var(--line); text-align: left; cursor: pointer; }
-  .nm-ticket[aria-current="true"] { background: var(--river-soft); }
   /* DS disabled state for icon buttons (the send button before anything is typed). */
   .nm-icon-btn:disabled,
   .nm-icon-btn--send:disabled { background: var(--surface-sunken); border-color: var(--line); color: var(--ink-muted); box-shadow: none; cursor: not-allowed; }

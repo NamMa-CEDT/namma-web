@@ -4,31 +4,12 @@
 import { copy } from "../../copy";
 import { formatBankGap, formatDistance, formatHoursToBank, formatTime, formatTrend } from "../../lib/format";
 import { stationTier, tierInfo, type TierKey } from "../../lib/tiers";
-import type {
-  ChatRequest,
-  ChatResponse,
-  NearbyStation,
-  Need,
-  QuickReply,
-  Shelter,
-  Source,
-  Urgency,
-  Vulnerable,
-} from "../types";
+import type { ChatRequest, ChatResponse, NearbyStation, QuickReply, Shelter, Source, Vulnerable } from "../types";
 
 export interface Place {
   label: string;
   lat: number;
   lon: number;
-}
-
-export interface PendingTriage {
-  raw_text: string;
-  place: Place | null;
-  vulnerable: Vulnerable[];
-  needs: Need[];
-  people_count: number | null;
-  urgency: Urgency;
 }
 
 /** A place the user named or shared, as the backend's user_locations keeps it. */
@@ -51,17 +32,15 @@ export interface ChatSessionState {
   household: Vulnerable[];
   consent: boolean | null;
   pendingConsent: Vulnerable[] | null;
-  pendingTriage: PendingTriage | null;
 }
 
 export interface ChatDeps {
   nearest(lat: number, lon: number, k: number): NearbyStation[];
   shelters(lat: number, lon: number, patientsOnly: boolean): Shelter[];
-  createTicket(t: PendingTriage): number;
 }
 
 export function emptyChatState(): ChatSessionState {
-  return { place: null, places: [], consentTs: null, household: [], consent: null, pendingConsent: null, pendingTriage: null };
+  return { place: null, places: [], consentTs: null, household: [], consent: null, pendingConsent: null };
 }
 
 // --- text understanding (the LLM's job in real mode) ---------------------------
@@ -100,18 +79,6 @@ const VULNERABLE_PATTERNS: [Vulnerable, RegExp][] = [
   ["pet", /หมา|แมว|สุนัข|สัตว์เลี้ยง/],
 ];
 
-const NEED_PATTERNS: [Need, RegExp][] = [
-  ["oxygen", /ออกซิเจน/],
-  ["dialysis", /ฟอกไต/],
-  ["medication", /ยา(?!ย)/],
-  ["boat", /เรือ/],
-  ["power", /ไฟดับ|ไฟฟ้า/],
-  ["food_water", /อาหาร|น้ำดื่ม|ถุงยังชีพ/],
-];
-
-const CRITICAL_VULNERABLE: Vulnerable[] = ["bedridden", "infant", "pregnant", "disabled", "patient"];
-const CRITICAL_NEEDS: Need[] = ["oxygen", "dialysis", "medical"];
-
 /** "บ้านแม่อยู่บางบาล" → "บ้านแม่"; first-person homes collapse to "บ้าน" (as agent/memory.py). */
 export function locationLabel(text: string): string | null {
   const m = text.replace(/\s/g, "").match(/(บ้าน\S{0,12}?)(?:อยู่|ที่|แถว)/);
@@ -135,29 +102,13 @@ export function extractVulnerable(text: string): Vulnerable[] {
   return VULNERABLE_PATTERNS.filter(([, re]) => re.test(text)).map(([v]) => v);
 }
 
-export function extractNeeds(text: string): Need[] {
-  return NEED_PATTERNS.filter(([, re]) => re.test(text)).map(([n]) => n);
-}
-
-function extractPeople(text: string): number | null {
-  const m = text.match(/(\d+)\s*คน/);
-  return m ? Number(m[1]) : null;
-}
-
-export function triageUrgency(vulnerable: Vulnerable[], needs: Need[]): Urgency {
-  if (vulnerable.some((v) => CRITICAL_VULNERABLE.includes(v)) || needs.some((n) => CRITICAL_NEEDS.includes(n))) {
-    return "critical";
-  }
-  return "high";
-}
-
 const union = <T,>(a: T[], b: T[]): T[] => [...new Set([...a, ...b])];
 const listVulnerable = (v: Vulnerable[]) => v.map((x) => copy.vulnerable[x]).join(", ");
 
 // --- replies ------------------------------------------------------------------
 
 function reply(text: string, extra: Partial<ChatResponse> = {}): ChatResponse {
-  return { reply: text, sources: [], quick_replies: [], emergency: false, ticket_id: null, ...extra };
+  return { reply: text, sources: [], quick_replies: [], emergency: false, ...extra };
 }
 
 function stationSource(s: NearbyStation): Source {
@@ -283,40 +234,25 @@ function shelterAnswer(place: Place | null, s: ChatSessionState, deps: ChatDeps)
   });
 }
 
-function triagePrompt(t: PendingTriage): ChatResponse {
+/** Danger: the hotline first. NamMa sends nothing on the person's behalf, so it says so and lists what to tell 1784. */
+function emergencyAnswer(text: string, s: ChatSessionState): ChatResponse {
+  const place = findPlace(text) ?? s.place;
+  const vulnerable = union(extractVulnerable(text), s.household);
+  const tell = [
+    place && `• ตำแหน่ง: ${place.label}`,
+    vulnerable.length > 0 && `• ผู้ที่ต้องช่วยเป็นพิเศษ: ${listVulnerable(vulnerable)}`,
+  ].filter(Boolean);
   const lines = [
     "ถ้าอยู่ในอันตรายตอนนี้ โทร 1784 ได้ทันที",
-    "น้ำมาจะบันทึกคำขอส่งต่อให้ทีมช่วยเหลือในระบบด้วย (ไม่ใช่ช่องทางทางการ) ตรวจสอบข้อมูลก่อนส่ง:",
-    `• ตำแหน่ง: ${t.place?.label ?? "ยังไม่ทราบ"}`,
-    `• ผู้ที่ต้องช่วยเป็นพิเศษ: ${t.vulnerable.length ? listVulnerable(t.vulnerable) : "ไม่ระบุ"}`,
-    `• จำนวนคน: ${t.people_count ?? "ไม่ทราบ"}`,
-    t.place ? "ถูกต้องไหม" : "ส่งตำแหน่งปัจจุบันได้ไหม หรือพิมพ์ชื่อตำบล/อำเภอ",
+    "น้ำมาไม่ได้ส่งเรื่องให้หน่วยกู้ภัย ต้องโทรแจ้งเอง",
+    ...(tell.length ? ["ตอนโทร แจ้งว่า:", ...tell] : []),
+    "ระหว่างรอ:",
+    "• ขึ้นไปชั้นบนหรือที่สูง พาผู้ที่เดินไม่ได้ขึ้นก่อน",
+    "• ตัดไฟชั้นล่างถ้าทำได้โดยไม่ต้องลุยน้ำ",
+    "• เตรียมยา น้ำดื่ม ไฟฉาย และเปิดโทรศัพท์ไว้",
+    "• ถ้าสถานการณ์แย่ลง โทร 1784 ซ้ำได้ทันที",
   ];
-  const qr: QuickReply[] = t.place
-    ? [
-        { type: "postback", label: "ยืนยัน ส่งเรื่อง", data: "triage:confirm", display_text: "ยืนยัน ส่งเรื่อง" },
-        { type: "location", label: "ส่งตำแหน่งปัจจุบัน" },
-        { type: "postback", label: "ยกเลิก", data: "triage:cancel", display_text: "ยกเลิก" },
-      ]
-    : [
-        { type: "location", label: "ส่งตำแหน่งปัจจุบัน" },
-        { type: "postback", label: "ยกเลิก", data: "triage:cancel", display_text: "ยกเลิก" },
-      ];
-  return reply(lines.join("\n"), { emergency: true, quick_replies: qr });
-}
-
-function startTriage(text: string, s: ChatSessionState): ChatResponse {
-  const vulnerable = union(extractVulnerable(text), s.household);
-  const needs = union(["evacuation"] as Need[], extractNeeds(text));
-  s.pendingTriage = {
-    raw_text: text,
-    place: findPlace(text) ?? s.place,
-    vulnerable,
-    needs,
-    people_count: extractPeople(text),
-    urgency: triageUrgency(vulnerable, needs),
-  };
-  return triagePrompt(s.pendingTriage);
+  return reply(lines.join("\n"), { emergency: true });
 }
 
 function handlePostback(data: string, s: ChatSessionState, deps: ChatDeps): ChatResponse {
@@ -341,26 +277,6 @@ function handlePostback(data: string, s: ChatSessionState, deps: ChatDeps): Chat
     }
     return reply(lines.join("\n"), { sources });
   }
-  if (data === "triage:confirm" && s.pendingTriage) {
-    const t = s.pendingTriage;
-    s.pendingTriage = null;
-    const id = deps.createTicket(t);
-    return reply(
-      [
-        `${copy.chat.ticketCreated(id)} (${copy.urgency[t.urgency]})`,
-        "ระหว่างรอ:",
-        "• ขึ้นไปชั้นบนหรือที่สูง พาผู้ที่เดินไม่ได้ขึ้นก่อน",
-        "• ตัดไฟชั้นล่างถ้าทำได้โดยไม่ต้องลุยน้ำ",
-        "• เตรียมยา น้ำดื่ม ไฟฉาย และเปิดโทรศัพท์ไว้",
-        "• ถ้าสถานการณ์แย่ลง โทร 1784 ซ้ำได้ทันที",
-      ].join("\n"),
-      { emergency: true, ticket_id: id },
-    );
-  }
-  if (data === "triage:cancel") {
-    s.pendingTriage = null;
-    return reply("ยกเลิกคำขอแล้ว ถ้าต้องการความช่วยเหลือ โทร 1784 ได้ตลอด 24 ชม.");
-  }
   if (data === "memory:delete_all") {
     s.household = [];
     s.places = [];
@@ -382,10 +298,6 @@ export function respond(req: ChatRequest, s: ChatSessionState, deps: ChatDeps): 
   if (req.location) {
     const place = { label: "ตำแหน่งที่ส่งมา", ...req.location };
     s.place = place;
-    if (s.pendingTriage) {
-      s.pendingTriage.place = place;
-      return triagePrompt(s.pendingTriage);
-    }
     savePlace(s, { label: s.places?.length ? "ตำแหน่งที่แชร์" : "บ้าน", ...req.location, approx: false, where: null });
     return riskAnswer(place, s, deps);
   }
@@ -393,16 +305,7 @@ export function respond(req: ChatRequest, s: ChatSessionState, deps: ChatDeps): 
   const text = (req.message ?? "").trim();
   if (!text) return fallback();
 
-  if (DANGER.test(text)) return startTriage(text, s);
-
-  if (s.pendingTriage) {
-    const place = findPlace(text);
-    if (place) {
-      s.pendingTriage.place = place;
-      s.place = place;
-      return triagePrompt(s.pendingTriage);
-    }
-  }
+  if (DANGER.test(text)) return emergencyAnswer(text, s);
 
   if (OUT_OF_AREA.test(text) && !findPlace(text)) {
     return reply(
