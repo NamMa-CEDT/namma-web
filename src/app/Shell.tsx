@@ -75,7 +75,9 @@ export function Shell() {
 
       <StaleBanner />
 
-      <main className="relative min-h-0 flex-1">
+      {/* Pages scroll inside themselves: nothing in one may make the window scroll (a second scrollbar, a gap under
+          the footer), not even an absolutely placed screen-reader label. */}
+      <main className="relative min-h-0 flex-1 overflow-hidden">
         <ErrorBoundary>
           <Suspense fallback={<Loading className="h-full" />}>
             <Outlet />

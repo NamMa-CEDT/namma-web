@@ -53,7 +53,7 @@ export default function HomePage() {
   };
 
   return (
-    <div className="h-full overflow-y-auto">
+    <div className="relative h-full overflow-y-auto">
       <div className="nm-above">
         <div className="mx-auto flex max-w-[760px] flex-col gap-6 px-4 pt-10 pb-10 sm:pt-16 sm:pb-14">
           <div className="flex flex-col gap-2 text-center">

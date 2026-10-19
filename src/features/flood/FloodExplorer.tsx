@@ -1060,8 +1060,8 @@ export function FloodExplorer({
     <aside
       className={
         embedded
-          ? "rounded-md border border-line bg-surface lg:max-h-[640px] lg:w-[380px] lg:shrink-0 lg:overflow-y-auto"
-          : "min-h-0 flex-1 overflow-y-auto border-t border-line bg-surface lg:w-[420px] lg:flex-none lg:border-t-0 lg:border-l"
+          ? "relative rounded-md border border-line bg-surface lg:max-h-[640px] lg:w-[380px] lg:shrink-0 lg:overflow-y-auto"
+          : "relative min-h-0 flex-1 overflow-y-auto border-t border-line bg-surface lg:w-[420px] lg:flex-none lg:border-t-0 lg:border-l"
       }
     >
       {!embedded && (
