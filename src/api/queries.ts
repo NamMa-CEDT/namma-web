@@ -17,6 +17,7 @@ export const keys = {
   floodAreas: (period: FloodPeriod, level: FloodLevel, province: string | null, amphoe: string | null) =>
     ["flood-areas", period, level, province, amphoe] as const,
   floodCells: (period: FloodPeriod, bbox: string, res: number) => ["flood-cells", period, bbox, res] as const,
+  floodNear: (period: FloodPeriod, lat: number, lon: number) => ["flood-near", period, lat, lon] as const,
 };
 
 /** Flooded area per province, or per amphoe / tambon inside one (drill-down in the flood tab). */
@@ -38,6 +39,16 @@ export function useFloodCells(period: FloodPeriod, view: { bbox: string; res: nu
     enabled: view != null,
     refetchInterval: FLOOD_REFRESH_MS,
     placeholderData: keepPreviousData,
+  });
+}
+
+/** Flooding around a saved place (the flood tab's place banner). */
+export function useFloodNear(period: FloodPeriod, point: { lat: number; lon: number } | null) {
+  return useQuery({
+    queryKey: keys.floodNear(period, point?.lat ?? 0, point?.lon ?? 0),
+    queryFn: () => api.floodNear({ period, lat: point!.lat, lon: point!.lon }),
+    enabled: point != null,
+    refetchInterval: FLOOD_REFRESH_MS,
   });
 }
 

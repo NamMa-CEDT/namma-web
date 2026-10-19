@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type KeyboardEvent } from "react";
 import { Link, useNavigate } from "react-router";
 import { useStations } from "../../api/queries";
 import { Composer } from "../../components/Composer";
@@ -9,18 +9,32 @@ import { copy, type Starter } from "../../copy";
 import type { ChatHandoff } from "../../lib/chatSession";
 import { LINE_OA_URL } from "../../lib/line";
 import { StarterChips } from "../chat/parts";
+import { FloodExplorer, type FloodScope } from "../flood/FloodExplorer";
+
+const TABS = ["flood", "river"] as const;
+type Tab = (typeof TABS)[number];
 
 /**
- * DS new-user page: the question, the composer and starter chips above the bank line; below it, what the
- * river and NamMa know (the live RiverProfile, drawn three ways: staff gauges, river line, cross-sections) and the
- * three setup steps. Sending opens the chat.
+ * DS new-user page: the question, the composer and starter chips above the bank line; below it, what the water is
+ * doing now in two tabs (DS option G): น้ำท่วม, GISTDA's satellite flood map first, then แม่น้ำ, the live
+ * RiverProfile (staff gauges, river line, cross-sections). Then the three setup steps. Sending opens the chat.
  */
 export default function HomePage() {
   const [text, setText] = useState("");
   const navigate = useNavigate();
+  const [tab, setTab] = useState<Tab>("flood");
+  const [floodScope, setFloodScope] = useState<FloodScope>({ period: "3days", province: null, amphoe: null });
   const stations = useStations();
   const go = (handoff: ChatHandoff) => navigate("/chat", { state: handoff });
   const pick = (s: Starter) => go(s.send ? { send: s.send } : { fill: `${s.fill ?? s.label} ` });
+  // ARIA tabs: arrows move between the two tabs and open the one they land on.
+  const onTabKey = (e: KeyboardEvent<HTMLButtonElement>) => {
+    if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
+    e.preventDefault();
+    const next = TABS[(TABS.indexOf(tab) + 1) % TABS.length];
+    setTab(next);
+    document.getElementById(`now-tab-${next}`)?.focus();
+  };
 
   return (
     <div className="h-full overflow-y-auto">
@@ -43,25 +57,53 @@ export default function HomePage() {
       </div>
 
       <div className="nm-below">
-        <section aria-labelledby="river-h" className="mx-auto flex max-w-[1344px] flex-col gap-4 px-4 pt-10 sm:px-6">
-          <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-            <div>
-              <h2 id="river-h" className="m-0 text-title font-semibold">
-                {copy.home.riverTitle}
-              </h2>
-              <p className="m-0 text-body text-ink-muted">{copy.home.riverSubtitle}</p>
+        <section aria-labelledby="now-h" className="mx-auto flex max-w-[1344px] flex-col gap-4 px-4 pt-10 sm:px-6">
+          <h2 id="now-h" className="sr-only">
+            {copy.home.nowTitle}
+          </h2>
+          <div className="flex flex-wrap items-end justify-between gap-x-4 gap-y-1 border-b border-line">
+            <div role="tablist" aria-label={copy.home.tabsLabel} className="-mb-px flex gap-1">
+              {TABS.map((t) => (
+                <button
+                  key={t}
+                  type="button"
+                  role="tab"
+                  id={`now-tab-${t}`}
+                  aria-selected={t === tab}
+                  aria-controls={`now-panel-${t}`}
+                  tabIndex={t === tab ? 0 : -1}
+                  onClick={() => setTab(t)}
+                  onKeyDown={onTabKey}
+                  className={`min-h-12 border-b-[3px] px-4 text-body-lg ${
+                    t === tab ? "border-river font-semibold text-ink" : "border-transparent text-ink-muted hover:text-ink"
+                  }`}
+                >
+                  {copy.home.tabs[t]}
+                </button>
+              ))}
             </div>
-            <Link to="/map" className="inline-flex min-h-11 items-center font-semibold text-river">
-              {copy.home.seeMap}
+            <Link to={tab === "flood" ? "/flood" : "/map"} className="inline-flex min-h-11 items-center font-semibold text-river">
+              {tab === "flood" ? copy.home.seeFlood : copy.home.seeMap}
             </Link>
           </div>
-          <div className="rounded-md border border-line bg-surface p-4 sm:p-6">
-            {stations.isPending ? (
-              <Loading />
-            ) : stations.isError ? (
-              <ErrorState error={stations.error} onRetry={() => stations.refetch()} />
+
+          {/* Only the open tab is mounted: the flood map (Leaflet) loads when it is shown. */}
+          <div role="tabpanel" id={`now-panel-${tab}`} aria-labelledby={`now-tab-${tab}`}>
+            {tab === "flood" ? (
+              <FloodExplorer embedded scope={floodScope} onScope={(c) => setFloodScope((s) => ({ ...s, ...c }))} />
             ) : (
-              <RiverProfile stations={stations.data} />
+              <div className="flex flex-col gap-3">
+                <p className="m-0 text-body text-ink-muted">{copy.home.riverSubtitle}</p>
+                <div className="rounded-md border border-line bg-surface p-4 sm:p-6">
+                  {stations.isPending ? (
+                    <Loading />
+                  ) : stations.isError ? (
+                    <ErrorState error={stations.error} onRetry={() => stations.refetch()} />
+                  ) : (
+                    <RiverProfile stations={stations.data} />
+                  )}
+                </div>
+              </div>
             )}
           </div>
         </section>

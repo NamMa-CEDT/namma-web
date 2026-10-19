@@ -6,7 +6,7 @@ import type { Fact, FloodLevel, FloodPeriod, Profile, SessionUser } from "../typ
 import { copy } from "../../copy";
 import { respond, type ChatSessionState } from "./chatScript";
 import * as data from "./data";
-import { floodAreas, floodCells } from "./flood";
+import { floodAreas, floodCells, floodNear } from "./flood";
 import { chatState, loadState, updateState, type MockState } from "./store";
 
 interface Ctx {
@@ -114,6 +114,16 @@ route("GET", "/api/flood/cells", ({ query }) => {
     return fail(400, "bad_request", "bbox must be minLon,minLat,maxLon,maxLat");
   }
   return { data: floodCells(period, [w, s, e, n], res, limit, data.ingestedAt()) };
+});
+
+route("GET", "/api/flood/near", ({ query }) => {
+  const period = floodPeriod(query);
+  const lat = num(query, "lat");
+  const lon = num(query, "lon");
+  if (!period || lat == null || lon == null || Math.abs(lat) > 90 || Math.abs(lon) > 180) {
+    return fail(400, "bad_request", "period, lat or lon is invalid");
+  }
+  return { data: floodNear(period, lat, lon, data.ingestedAt()) };
 });
 
 // --- chat ---------------------------------------------------------------------

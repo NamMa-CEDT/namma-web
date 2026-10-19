@@ -147,6 +147,9 @@ export interface FloodArea {
   /** Area-weighted centre of the cells, to fly the map there. */
   lat: number | null;
   lon: number | null;
+  /** Sums of GISTDA's counts in the cells; null when GISTDA sent none (unknown, not 0). Optional: older backends. */
+  buildings?: number | null;
+  population?: number | null;
 }
 
 export interface FloodAreas extends FloodLayer {
@@ -167,6 +170,21 @@ export interface FloodCell {
   amphoe?: string | null;
   tambon?: string | null;
   observed_at?: string | null;
+  /** res 9 only: GISTDA's counts in the cell, null when not sent. */
+  buildings?: number | null;
+  population?: number | null;
+  schools?: number | null;
+  hospitals?: number | null;
+}
+
+/** Flooding around one point (a saved place), from the same layer. */
+export interface FloodNear extends FloodLayer {
+  /** The point's own cell is flooded. */
+  at_point: boolean;
+  /** Nearest flooded cell; null when none within radius_km. */
+  nearest_km: number | null;
+  radius_km: number;
+  nearby: { cells: number; area_km2: number; area_rai: number };
 }
 
 export interface FloodCells extends FloodLayer {

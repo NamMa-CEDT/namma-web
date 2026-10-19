@@ -36,6 +36,18 @@ export function cellOpacity(share: number): number {
   return 0.35 + 0.5 * Math.sqrt(Math.min(1, Math.max(0, share)));
 }
 
+export type FloodAmount = "many" | "some" | "little";
+
+/** How much of a cell is under water, in words: most of it, part of it, a little of it. */
+export function floodAmount(share: number): FloodAmount {
+  return share >= 0.6 ? "many" : share >= 0.2 ? "some" : "little";
+}
+
+/** "1,120": a whole count of GISTDA's (buildings, people). */
+export function formatCount(n: number): string {
+  return Math.round(n).toLocaleString("en-US");
+}
+
 /** "12,345 ไร่" (rai is how Thai flood reports state area). */
 export function formatRai(rai: number): string {
   return `${Math.round(rai).toLocaleString("en-US")} ไร่`;
@@ -59,14 +71,19 @@ export function areaName(a: Pick<FloodArea, "province" | "amphoe" | "tambon" | "
   return `${bkk ? "แขวง" : "ต."}${name}`;
 }
 
-/** Where a res-9 cell is, most specific first: "ต.บ้านกุ่ม อ.บางบาล จ.พระนครศรีอยุธยา". */
-export function cellPlace(c: { province?: string | null; amphoe?: string | null; tambon?: string | null }): string {
+type Where = { province?: string | null; amphoe?: string | null; tambon?: string | null };
+
+/** Where a res-9 cell is, most specific first: ["ต.บ้านกุ่ม", "อ.บางบาล", "จ.พระนครศรีอยุธยา"]. */
+export function cellPlaceParts(c: Where): string[] {
   const bkk = isBangkok(c.province);
   return [
     c.tambon && `${bkk ? "แขวง" : "ต."}${c.tambon}`,
     c.amphoe && `${bkk ? "เขต" : "อ."}${c.amphoe}`,
     c.province && (bkk ? c.province : `จ.${c.province}`),
-  ]
-    .filter(Boolean)
-    .join(" ");
+  ].filter((x): x is string => Boolean(x));
+}
+
+/** "ต.บ้านกุ่ม อ.บางบาล จ.พระนครศรีอยุธยา". */
+export function cellPlace(c: Where): string {
+  return cellPlaceParts(c).join(" ");
 }

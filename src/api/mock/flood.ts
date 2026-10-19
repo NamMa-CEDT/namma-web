@@ -2,8 +2,8 @@
 // and rehearsed without a GISTDA key. It is not GISTDA data, and the page says so whenever the mock is on.
 // The queries mirror namma-backend api/flood.py: sums of res-9 cells, parents for zoomed-out views, largest first.
 import { cellArea, cellToParent, getResolution, gridDisk, gridDistance, latLngToCell, cellToLatLng } from "h3-js";
-import type { FloodArea, FloodAreas, FloodCell, FloodCells, FloodLevel, FloodPeriod } from "../types";
-import { toBangkokIso } from "./geo";
+import type { FloodArea, FloodAreas, FloodCell, FloodCells, FloodLevel, FloodNear, FloodPeriod } from "../types";
+import { haversineKm, toBangkokIso } from "./geo";
 
 interface SampleCell {
   h3: string;
@@ -15,6 +15,11 @@ interface SampleCell {
   tambon: string;
   /** Hours before "now" GISTDA would have dated it. */
   ageHours: number;
+  /** Made-up counts in GISTDA's shape (buildings, people, schools, hospitals in the cell). */
+  buildings: number;
+  population: number;
+  schools: number;
+  hospitals: number;
 }
 
 // [lat, lon, rings in the 3-day layer, province, amphoe, tambon]: low ground along the Chao Phraya and the Noi.
@@ -54,6 +59,7 @@ function sample(period: FloodPeriod): SampleCell[] {
       const in3 = within(rings);
       if (byCell.has(h3) || !(period === "3days" ? in3 : within(rings + EXTRA_RINGS_7DAYS))) continue;
       const [cLat, cLon] = cellToLatLng(h3);
+      const buildings = Math.round(40 * noise(`${h3}:b`) ** 2);
       byCell.set(h3, {
         h3,
         lat: cLat,
@@ -63,6 +69,10 @@ function sample(period: FloodPeriod): SampleCell[] {
         amphoe,
         tambon,
         ageHours: in3 ? 12 + 48 * noise(`${h3}:t`) : 72 + 96 * noise(`${h3}:t`),
+        buildings,
+        population: Math.round(buildings * 2.7),
+        schools: noise(`${h3}:s`) > 0.97 ? 1 : 0,
+        hospitals: noise(`${h3}:h`) > 0.995 ? 1 : 0,
       });
     }
   }
@@ -113,6 +123,8 @@ export function floodAreas(
       ...area(km2),
       lat: round(cs.reduce((s, c) => s + c.lat * c.area_km2, 0) / km2, 5),
       lon: round(cs.reduce((s, c) => s + c.lon * c.area_km2, 0) / km2, 5),
+      buildings: cs.reduce((s, c) => s + c.buildings, 0),
+      population: cs.reduce((s, c) => s + c.population, 0),
     };
   });
   areas.sort((a, b) => b.area_km2 - a.area_km2);
@@ -150,10 +162,30 @@ export function floodCells(
         amphoe: c.amphoe,
         tambon: c.tambon,
         observed_at: toBangkokIso((ingestedAt ? Date.parse(ingestedAt) : Date.now()) - c.ageHours * 3_600_000),
+        buildings: c.buildings,
+        population: c.population,
+        schools: c.schools,
+        hospitals: c.hospitals,
       });
     }
     return cell;
   });
   cells.sort((a, b) => b.area_km2 - a.area_km2 || a.h3.localeCompare(b.h3));
   return { ...layerInfo(period, ingestedAt, all), res, truncated: cells.length > limit, cells: cells.slice(0, limit) };
+}
+
+const NEAR_KM = 5;
+
+/** Mirrors agent/gistda.check_flood_extent for one period: own cell flooded, nearest flooded cell, area within 5 km. */
+export function floodNear(period: FloodPeriod, lat: number, lon: number, ingestedAt: string | null): FloodNear {
+  const all = sample(period);
+  const near = all.map((c) => ({ c, d: haversineKm(lat, lon, c.lat, c.lon) })).filter((x) => x.d <= NEAR_KM);
+  const here = latLngToCell(lat, lon, 9);
+  return {
+    ...layerInfo(period, ingestedAt, all),
+    at_point: near.some((x) => x.c.h3 === here),
+    nearest_km: near.length ? round(Math.min(...near.map((x) => x.d)), 1) : null,
+    radius_km: NEAR_KM,
+    nearby: { cells: near.length, ...area(near.reduce((s, x) => s + x.c.area_km2, 0)) },
+  };
 }

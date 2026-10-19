@@ -121,6 +121,16 @@ describe("flood (mock sample of GISTDA's layers)", () => {
     expect(empty.cells).toEqual([]);
   });
 
+  it("says how close the flooding is to a place", async () => {
+    const here = (await call("GET", "/api/flood/near?lat=14.415&lon=100.44&period=3days")).json.data;
+    expect(here.at_point).toBe(true);
+    expect(here.nearest_km).toBeLessThanOrEqual(0.2); // centre to centre: a res-9 cell is ~0.17 km across
+    expect(here.nearby.area_rai).toBeGreaterThan(0);
+    const far = (await call("GET", "/api/flood/near?lat=8.5&lon=98.5")).json.data;
+    expect(far).toMatchObject({ at_point: false, nearest_km: null, nearby: { cells: 0 } });
+    expect((await call("GET", "/api/flood/near?lat=99&lon=100")).status).toBe(400);
+  });
+
   it("has no staff login any more", async () => {
     expect((await call("POST", "/api/auth/line", { id_token: "demo:responder" })).status).toBe(401);
     const { json } = await call("POST", "/api/auth/line", { id_token: "demo:user" });
