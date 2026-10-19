@@ -1,0 +1,8 @@
+Province and tambon outlines for the flood map.
+
+Source: Thailand - Subnational Administrative Boundaries, Royal Thai Survey Department (กรมแผนที่ทหาร),
+published by OCHA on HDX: https://data.humdata.org/dataset/cod-ab-tha (tha_admin_boundaries.shp.zip, 2022-01-22 boundaries).
+Licence: Creative Commons Attribution for Intergovernmental Organisations (CC BY-IGO 3.0). Credited in the app.
+
+Simplified (~500 m provinces, ~80 m tambons) by scripts/build_boundaries.py. Regenerate with:
+  python scripts/build_boundaries.py <folder with the unzipped shapefiles>

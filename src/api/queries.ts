@@ -1,4 +1,5 @@
-import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { keepPreviousData, useMutation, useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
+import { fetchProvinces, fetchTambons } from "../lib/boundaries";
 import { api } from "./client";
 import type { FactKind, FloodLevel, FloodPeriod, Profile } from "./types";
 
@@ -16,7 +17,8 @@ export const keys = {
   profile: (chatSession: string) => ["profile", chatSession] as const,
   floodAreas: (period: FloodPeriod, level: FloodLevel, province: string | null, amphoe: string | null) =>
     ["flood-areas", period, level, province, amphoe] as const,
-  floodCells: (period: FloodPeriod, bbox: string, res: number) => ["flood-cells", period, bbox, res] as const,
+  provinceShapes: ["shapes", "provinces"] as const,
+  tambonShapes: (provinceCode: string) => ["shapes", "tambons", provinceCode] as const,
   floodNear: (period: FloodPeriod, lat: number, lon: number) => ["flood-near", period, lat, lon] as const,
 };
 
@@ -31,14 +33,31 @@ export function useFloodAreas(period: FloodPeriod, province: string | null = nul
   });
 }
 
-/** The flooded cells in the map's view. Keeps the last cells on screen while the next view loads. */
-export function useFloodCells(period: FloodPeriod, view: { bbox: string; res: number } | null) {
-  return useQuery({
-    queryKey: keys.floodCells(period, view?.bbox ?? "", view?.res ?? 0),
-    queryFn: () => api.floodCells({ period, bbox: view!.bbox, res: view!.res }),
-    enabled: view != null,
-    refetchInterval: FLOOD_REFRESH_MS,
-    placeholderData: keepPreviousData,
+/** Flooded area per tambon in each of these provinces (the tambons the map shades). */
+export function useFloodTambons(period: FloodPeriod, provinces: string[]) {
+  return useQueries({
+    queries: provinces.map((province) => ({
+      queryKey: keys.floodAreas(period, "tambon", province, null),
+      queryFn: () => api.floodAreas({ period, level: "tambon", province, limit: 1000 }),
+      refetchInterval: FLOOD_REFRESH_MS,
+    })),
+  });
+}
+
+/** Province outlines (static files: fetched once). */
+export function useProvinceShapes() {
+  return useQuery({ queryKey: keys.provinceShapes, queryFn: fetchProvinces, staleTime: Infinity, gcTime: Infinity });
+}
+
+/** Tambon outlines of each of these provinces, by RTSD province code. */
+export function useTambonShapes(provinceCodes: string[]) {
+  return useQueries({
+    queries: provinceCodes.map((code) => ({
+      queryKey: keys.tambonShapes(code),
+      queryFn: () => fetchTambons(code),
+      staleTime: Infinity,
+      gcTime: Infinity,
+    })),
   });
 }
 

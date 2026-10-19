@@ -411,6 +411,31 @@
 .leaflet-tooltip.station-code::before {
   display: none;
 }
+/* Flood map: Thai area names and saved-place names on the imagery. Dark chip, white text: reads on fields and water
+   alike, in both themes (the imagery doesn't change with the theme). */
+.leaflet-tooltip.nm-area-label {
+  background: rgba(6, 13, 24, 0.72);
+  border: 0;
+  border-radius: 4px;
+  box-shadow: none;
+  color: #ffffff;
+  font: 600 13px/18px var(--font-body);
+  padding: 0 4px;
+  white-space: nowrap;
+}
+.leaflet-tooltip.nm-area-label::before {
+  display: none;
+}
+.nm-home-pin {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  border-radius: 50%;
+  background: #ffffff;
+  color: #0b1a2e;
+  box-shadow: 0 0 0 3px #0b1a2e;
+}
 .leaflet-bar a {
   background: var(--surface-raised);
   color: var(--ink);

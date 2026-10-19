@@ -1,46 +1,34 @@
-// Flood tab helpers: which H3 resolution to ask for at a zoom, the view box to ask about, and area wording.
+// Flood tab helpers: how flooded an area is (its shade and words) and how areas are named.
 // Every number shown comes from /api/flood (GISTDA's cells); nothing here estimates.
 import type { FloodArea, FloodLevel } from "../api/types";
 
-/**
- * The finest H3 resolution whose cells are still at least ~5 px across at this zoom (latitude ~14°), so a
- * zoomed-out map asks for a few hundred parent cells instead of 100k of GISTDA's res-9 cells.
- * Edge lengths: res 5 8.5 km, 6 3.2 km, 7 1.2 km, 8 0.46 km, 9 0.17 km.
- */
-export function resForZoom(zoom: number): number {
-  if (zoom <= 7) return 5;
-  if (zoom <= 9) return 6;
-  if (zoom <= 10) return 7;
-  if (zoom <= 12) return 8;
-  return 9;
+export type FloodClass = "many" | "some" | "none";
+
+/** From about a quarter of the area under water, it is "ท่วมมาก". */
+export const MANY_SHARE = 0.25;
+
+/** The shade an area gets: flooded share of its whole area → ท่วมมาก / ท่วมบางส่วน / ไม่พบน้ำ. */
+export function floodClass(share: number): FloodClass {
+  return share >= MANY_SHARE ? "many" : share > 0 ? "some" : "none";
 }
 
-// Coarser grids for coarser cells: small pans then ask for the same box and hit the cache.
-const SNAP_DEG: Record<number, number> = { 5: 0.5, 6: 0.2, 7: 0.05, 8: 0.02, 9: 0.01 };
+// Fractions people say, largest first. A share falls to the nearest one below it ("about a third").
+const FRACTIONS: [number, string][] = [
+  [0.9, "เกือบทั้ง"],
+  [0.7, "ราว 3 ใน 4 ของ"],
+  [0.6, "ราว 2 ใน 3 ของ"],
+  [0.45, "ราวครึ่ง"],
+  [0.3, "ราว 1 ใน 3 ของ"],
+  [0.22, "ราว 1 ใน 4 ของ"],
+  [0.17, "ราว 1 ใน 5 ของ"],
+  [0.08, "ราว 1 ใน 10 ของ"],
+];
 
-/** "minLon,minLat,maxLon,maxLat", widened outwards to a grid that depends on the resolution. */
-export function viewBox(west: number, south: number, east: number, north: number, res: number): string {
-  const step = SNAP_DEG[res] ?? 0.01;
-  const down = (v: number) => Math.floor(v / step) * step;
-  const up = (v: number) => Math.ceil(v / step) * step;
-  const clamp = (v: number, lim: number) => Math.min(lim, Math.max(-lim, v));
-  const parts = [clamp(down(west), 180), clamp(down(south), 85), clamp(up(east), 180), clamp(up(north), 85)];
-  return parts.map((v) => Number(v.toFixed(3))).join(",");
-}
-
-/**
- * Fill opacity of a cell: even a sliver of flooding shows on satellite imagery, a full cell is clearly stronger.
- * Square root, because a zoomed-out parent cell is rarely more than a third flooded.
- */
-export function cellOpacity(share: number): number {
-  return 0.35 + 0.5 * Math.sqrt(Math.min(1, Math.max(0, share)));
-}
-
-export type FloodAmount = "many" | "some" | "little";
-
-/** How much of a cell is under water, in words: most of it, part of it, a little of it. */
-export function floodAmount(share: number): FloodAmount {
-  return share >= 0.6 ? "many" : share >= 0.2 ? "some" : "little";
+/** "ราวครึ่งตำบล", "ราว 1 ใน 3 ของจังหวัด", "ส่วนน้อยของตำบล": how much of the area, in words. */
+export function shareWords(share: number, unit: "ตำบล" | "จังหวัด"): string {
+  if (share <= 0) return "";
+  const hit = FRACTIONS.find(([min]) => share >= min);
+  return hit ? `${hit[1]}${unit}` : `ส่วนน้อยของ${unit}`;
 }
 
 /** "1,120": a whole count of GISTDA's (buildings, people). */
@@ -73,8 +61,8 @@ export function areaName(a: Pick<FloodArea, "province" | "amphoe" | "tambon" | "
 
 type Where = { province?: string | null; amphoe?: string | null; tambon?: string | null };
 
-/** Where a res-9 cell is, most specific first: ["ต.บ้านกุ่ม", "อ.บางบาล", "จ.พระนครศรีอยุธยา"]. */
-export function cellPlaceParts(c: Where): string[] {
+/** Where an area is, most specific first: ["ต.บ้านกุ่ม", "อ.บางบาล", "จ.พระนครศรีอยุธยา"]. */
+export function placeParts(c: Where): string[] {
   const bkk = isBangkok(c.province);
   return [
     c.tambon && `${bkk ? "แขวง" : "ต."}${c.tambon}`,
@@ -84,6 +72,6 @@ export function cellPlaceParts(c: Where): string[] {
 }
 
 /** "ต.บ้านกุ่ม อ.บางบาล จ.พระนครศรีอยุธยา". */
-export function cellPlace(c: Where): string {
-  return cellPlaceParts(c).join(" ");
+export function placeName(c: Where): string {
+  return placeParts(c).join(" ");
 }

@@ -1,21 +1,15 @@
-import { areaName, cellOpacity, cellPlace, formatKm2, formatRai, resForZoom, viewBox } from "./flood";
+import { areaName, floodClass, formatKm2, formatRai, placeName, shareWords } from "./flood";
 
-it("asks for coarser cells when zoomed out", () => {
-  expect([5, 7, 8, 9, 10, 11, 12, 13, 16].map(resForZoom)).toEqual([5, 5, 6, 6, 7, 8, 8, 9, 9]);
+it("shades an area by how much of it is under water", () => {
+  expect([0, 0.001, 0.24, 0.25, 0.9].map(floodClass)).toEqual(["none", "some", "some", "many", "many"]);
 });
 
-it("widens the view box outwards to a grid, so small pans reuse the same request", () => {
-  expect(viewBox(100.4312, 14.3301, 100.5277, 14.4199, 9)).toBe("100.43,14.33,100.53,14.42");
-  expect(viewBox(100.4312, 14.3301, 100.5277, 14.4199, 9)).toBe(viewBox(100.4388, 14.3345, 100.521, 14.415, 9));
-  expect(viewBox(99.1, 13.2, 101.7, 15.9, 5)).toBe("99,13,102,16");
-  expect(viewBox(-200, -89, 200, 89, 5)).toBe("-180,-85,180,85");
-});
-
-it("shows a sliver of flooding but makes a full cell stronger", () => {
-  expect(cellOpacity(0)).toBeCloseTo(0.35);
-  expect(cellOpacity(0.25)).toBeCloseTo(0.6);
-  expect(cellOpacity(1)).toBeCloseTo(0.85);
-  expect(cellOpacity(7)).toBeCloseTo(0.85);
+it("says the share the way people say it", () => {
+  expect(shareWords(0.5, "ตำบล")).toBe("ราวครึ่งตำบล");
+  expect(shareWords(0.34, "ตำบล")).toBe("ราว 1 ใน 3 ของตำบล");
+  expect(shareWords(0.95, "ตำบล")).toBe("เกือบทั้งตำบล");
+  expect(shareWords(0.01, "จังหวัด")).toBe("ส่วนน้อยของจังหวัด");
+  expect(shareWords(0, "ตำบล")).toBe("");
 });
 
 it("states area in rai and km²", () => {
@@ -37,6 +31,6 @@ it("names areas the Thai way, Bangkok included", () => {
   ]);
   expect(areaName({ province: null, amphoe: null, tambon: null, code: "14" }, "province")).toBe("รหัสพื้นที่ 14");
   expect(areaName({ ...a, tambon: null, code: null }, "tambon")).toBe("ไม่ระบุตำบล");
-  expect(cellPlace(a)).toBe("ต.บ้านกุ่ม อ.บางบาล จ.พระนครศรีอยุธยา");
-  expect(cellPlace({ province: "อ่างทอง", amphoe: null, tambon: null })).toBe("จ.อ่างทอง");
+  expect(placeName(a)).toBe("ต.บ้านกุ่ม อ.บางบาล จ.พระนครศรีอยุธยา");
+  expect(placeName({ province: "อ่างทอง", amphoe: null, tambon: null })).toBe("จ.อ่างทอง");
 });

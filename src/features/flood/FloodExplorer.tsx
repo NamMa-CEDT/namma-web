@@ -1,22 +1,27 @@
-import { lazy, Suspense, useCallback, useEffect, useRef, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router";
 import { API_MODE } from "../../api/client";
-import { useFloodAreas, useFloodCells, useFloodNear, useProfile } from "../../api/queries";
-import type { FloodArea, FloodAreas, FloodCell, FloodLevel, FloodPeriod, SavedPlace } from "../../api/types";
+import { useFloodAreas, useFloodNear, useFloodTambons, useProfile, useProvinceShapes, useTambonShapes } from "../../api/queries";
+import type { FloodArea, FloodAreas, FloodLevel, FloodPeriod, SavedPlace } from "../../api/types";
 import { ErrorState, Loading } from "../../components/States";
 import { copy, DDPM } from "../../copy";
+import { containsPoint, joinAreas, nameKey, provincesInView, type AreaShape } from "../../lib/boundaries";
 import { loadSessionId, type ChatHandoff } from "../../lib/chatSession";
-import { areaName, cellOpacity, cellPlaceParts, floodAmount, formatCount, formatKm2, formatRai } from "../../lib/flood";
+import { areaName, floodClass, formatCount, formatKm2, formatRai, placeName, shareWords, type FloodClass } from "../../lib/flood";
 import { formatDate, formatDateTime, formatDistance } from "../../lib/format";
-import type { Basemap, FlyTarget } from "./FloodMap";
+import type { Basemap, FlyTarget, MapArea, MapView } from "./FloodMap";
+import { FloodPatterns, Swatch } from "./patterns";
 
 const FloodMap = lazy(() => import("./FloodMap"));
 
 const PERIODS: FloodPeriod[] = ["3days", "7days"];
-// How close to fly when a row is tapped: a province fills the map at 9, a tambon at 13 (GISTDA's own cells).
-const FLY_ZOOM: Record<FloodLevel, number> = { province: 9, amphoe: 11, tambon: 13 };
+// How close to fly when a row is tapped: an amphoe at 11, a tambon at 12.
+const FLY_ZOOM: Record<FloodLevel, number> = { province: 9, amphoe: 11, tambon: 12 };
 const MAX_PLACES = 3;
-
+// From this zoom the map shades tambons (of the provinces in view, nearest first) instead of provinces.
+const TAMBON_ZOOM = 9;
+const MAX_PROVINCES = 6;
+const CLASSES: FloodClass[] = ["many", "some", "none"];
 export interface FloodScope {
   period: FloodPeriod;
   province: string | null;
@@ -27,22 +32,18 @@ function Legend() {
   return (
     <div className="rounded-sm border border-line bg-surface-raised px-3 py-2 shadow-float">
       <div className="text-caption font-semibold text-ink">{copy.flood.legend}</div>
-      <div className="mt-1 flex items-center gap-2 text-caption text-ink-muted">
-        {copy.flood.legendLow}
-        {[0.15, 0.5, 1].map((s) => (
-          <span
-            key={s}
-            aria-hidden="true"
-            className="inline-block size-4 border"
-            style={{ background: "var(--flood)", opacity: cellOpacity(s), borderColor: "var(--flood-edge)" }}
-          />
+      <ul className="m-0 mt-1 flex list-none flex-col gap-0.5 p-0 text-caption text-ink">
+        {CLASSES.map((c) => (
+          <li key={c} className="flex items-center gap-2">
+            <Swatch cls={c} />
+            {copy.flood.cls[c]}
+          </li>
         ))}
-        {copy.flood.legendHigh}
-      </div>
+      </ul>
+      <p className="m-0 mt-1 max-w-[14rem] text-caption text-ink-muted">{copy.flood.legendNote}</p>
     </div>
   );
 }
-
 function Segmented<T extends string>({
   label,
   options,
@@ -112,9 +113,7 @@ function PlaceFlood({ place, period, onAsk }: { place: SavedPlace; period: Flood
   );
 }
 
-function Places({ period, onAsk }: { period: FloodPeriod; onAsk: (text: string) => void }) {
-  const profile = useProfile(loadSessionId());
-  const places = profile.data?.places.slice(0, MAX_PLACES) ?? [];
+function Places({ places, period, onAsk }: { places: SavedPlace[]; period: FloodPeriod; onAsk: (text: string) => void }) {
   if (!places.length) return null;
   return (
     <div className="flex flex-col gap-2">
@@ -124,7 +123,6 @@ function Places({ period, onAsk }: { period: FloodPeriod; onAsk: (text: string) 
     </div>
   );
 }
-
 /** Total for the current scope, with the layer's dates. Before the first download it says so, never "no flooding". */
 function Summary({ data, period, onPeriod }: { data: FloodAreas; period: FloodPeriod; onPeriod: (p: FloodPeriod) => void }) {
   if (!data.fetched_at) {
@@ -145,7 +143,7 @@ function Summary({ data, period, onPeriod }: { data: FloodAreas; period: FloodPe
         <>
           <p className="num m-0 text-reading-lg font-semibold">{formatRai(data.total.area_rai)}</p>
           <p className="num m-0 text-body text-ink-muted">
-            {formatKm2(data.total.area_km2)} · {copy.flood.cells(data.total.cells)}
+            {formatKm2(data.total.area_km2)}
           </p>
         </>
       ) : (
@@ -250,74 +248,93 @@ function AreaList({ data, busy, onPick }: { data: FloodAreas; busy: boolean; onP
   );
 }
 
-/** One of GISTDA's cells, picked on the map: where, how much is under water, what's in it (DS option G panel). */
-function CellDetail({ cell, onClose, onAsk }: { cell: FloodCell; onClose: () => void; onAsk: (text: string) => void }) {
-  const parts = cellPlaceParts(cell);
-  const [head, ...rest] = parts;
-  const stats = (["buildings", "population", "schools", "hospitals"] as const)
-    .filter((k) => cell[k] != null)
-    .map((k) => [copy.flood.stats[k], `${k === "population" && cell[k]! > 0 ? "~" : ""}${formatCount(cell[k]!)}`] as const);
+interface Picked {
+  /** GISTDA's totals for it; null = no flooded cell in it. */
+  row: FloodArea | null;
+  /** Its outline once loaded (the card can show before it is, when picked from the list). */
+  shape: AreaShape | null;
+}
+
+/** The tambon picked on the map or in the list (DS option C card): how much of it is under water, in words. */
+function AreaCard({
+  picked,
+  observed,
+  places,
+  onClose,
+  onAsk,
+}: {
+  picked: Picked;
+  observed: string | null;
+  places: SavedPlace[];
+  onClose: () => void;
+  onAsk: (text: string) => void;
+}) {
+  const { row, shape } = picked;
+  const where = {
+    province: shape?.properties.province ?? row?.province ?? null,
+    amphoe: shape?.properties.amphoe ?? row?.amphoe ?? null,
+    tambon: shape?.properties.tambon ?? row?.tambon ?? null,
+  };
+  const [head, ...rest] = [
+    areaName({ ...where, code: row?.code ?? null }, "tambon"),
+    ...(where.amphoe ? [areaName({ ...where, tambon: null, code: null }, "amphoe")] : []),
+    ...(where.province ? [areaName({ ...where, amphoe: null, tambon: null, code: null }, "province")] : []),
+  ];
+  const share = row && shape ? Math.min(1, row.area_km2 / shape.properties.area_km2) : null;
+  const cls: FloodClass = row ? (share != null ? floodClass(share) : "some") : "none";
+  const home = shape ? places.find((p) => containsPoint(shape, p.lat, p.lon)) : undefined;
+  const stats = row
+    ? [
+        row.buildings != null && `${copy.flood.stats.buildings} ${formatCount(row.buildings)}`,
+        row.population != null && `${copy.flood.stats.population} ~${formatCount(row.population)}`,
+      ].filter(Boolean)
+    : [];
   return (
-    <section aria-labelledby="flood-cell-h" className="flex flex-col gap-4 px-4 py-4">
+    <section aria-labelledby="flood-area-h" className="flex flex-col gap-3 px-4 py-4">
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
-          <h2 id="flood-cell-h" className="m-0 text-heading font-semibold">
-            {head || copy.flood.legend}
+          <h2 id="flood-area-h" className="m-0 text-heading font-semibold">
+            {head}
           </h2>
           {rest.length > 0 && <p className="m-0 text-caption text-ink-muted">{rest.join(" · ")}</p>}
+          {home && (
+            <p className="m-0 mt-1 flex items-center gap-1.5 text-caption font-semibold text-ink">
+              <span className="nm-house text-home" aria-hidden="true" />
+              {copy.flood.homeHere(home.label)}
+            </p>
+          )}
         </div>
-        <button
-          type="button"
-          onClick={onClose}
-          aria-label={copy.flood.close}
-          title={copy.flood.close}
-          className="nm-icon-btn shrink-0"
-        >
+        <button type="button" onClick={onClose} aria-label={copy.flood.close} title={copy.flood.close} className="nm-icon-btn shrink-0">
           <span aria-hidden="true">✕</span>
         </button>
       </div>
 
-      <div className="flex flex-col gap-1">
-        <span
-          aria-hidden="true"
-          className="block h-1 w-12 rounded-pill"
-          style={{ background: "var(--flood)", opacity: cellOpacity(cell.share) }}
-        />
-        <p className="m-0 text-reading-lg font-semibold">{copy.flood.amount[floodAmount(cell.share)]}</p>
-        <p className="num m-0 text-body text-ink-muted">
-          {formatRai(cell.area_km2 * 625)} · {copy.flood.share(Math.round(cell.share * 100))}
-        </p>
+      <div className="flex items-center gap-2">
+        <Swatch cls={cls} />
+        <p className="m-0 text-reading-lg font-semibold">{copy.flood.clsLong[cls]}</p>
       </div>
-
+      <p className="num m-0 text-body">
+        {row
+          ? [formatRai(row.area_rai), share != null && shareWords(share, "ตำบล")].filter(Boolean).join(" · ")
+          : copy.flood.noneInArea}
+      </p>
       {stats.length > 0 && (
-        <dl className="m-0 grid grid-cols-2 gap-x-4 gap-y-2 border-t border-line pt-3">
-          {stats.map(([k, v]) => (
-            <div key={k} className="flex flex-col">
-              <dt className="text-caption text-ink-muted">{k}</dt>
-              <dd className="num m-0 text-body font-semibold">{v}</dd>
-            </div>
-          ))}
-        </dl>
+        <p className="num m-0 text-caption text-ink-muted">
+          {copy.flood.inFlooded} {stats.join(" · ")}
+        </p>
+      )}
+      {observed && (
+        <p className="m-0 text-caption text-ink-muted">
+          {copy.flood.imageDate} {formatDate(observed)}
+        </p>
       )}
 
-      <div className="flex flex-col border-t border-line pt-3 text-caption text-ink-muted">
-        {cell.observed_at && (
-          <span>
-            {copy.flood.imageDate} {formatDate(cell.observed_at)}
-          </span>
-        )}
-        <span>
-          {copy.flood.cellId} <span className="font-mono">{cell.h3}</span>
-        </span>
-      </div>
-
-      <button type="button" className="nm-btn nm-btn--primary nm-btn--block" onClick={() => onAsk(copy.flood.askCellText(parts.join(" ") || cell.h3))}>
-        {copy.flood.askCell}
+      <button type="button" className="nm-btn nm-btn--primary nm-btn--block" onClick={() => onAsk(copy.flood.askAreaText(placeName(where)))}>
+        {copy.flood.askArea}
       </button>
     </section>
   );
 }
-
 function Notes() {
   return (
     <div className="grid gap-2 border-t border-line px-4 pt-3 pb-4 text-caption text-ink-muted">
@@ -339,9 +356,10 @@ function Notes() {
 }
 
 /**
- * GISTDA's satellite flood cells (DS option G "น้ำท่วม"): saved places on top, the map, and beside it either the
- * cell picked on the map or the province → amphoe → tambon ranking. The /flood page fills the screen with it; the
- * home page embeds it as its first tab (`embedded`: fixed heights, the page scrolls instead of the panel).
+ * GISTDA's satellite flooding, area by area (DS option C on option A's satellite map): saved places on top, the map
+ * shading provinces (zoomed out) or tambons (zoomed in) by how much of each is under water, and beside it either the
+ * tambon picked or the province → amphoe → tambon ranking. The /flood page fills the screen with it; the home page
+ * embeds it as its first tab (`embedded`: fixed heights, the page scrolls instead of the panel).
  */
 export function FloodExplorer({
   scope,
@@ -355,49 +373,130 @@ export function FloodExplorer({
   const { period, province, amphoe } = scope;
   const navigate = useNavigate();
   const areas = useFloodAreas(period, province, amphoe);
-  const [view, setView] = useState<{ bbox: string; res: number } | null>(null);
-  const cells = useFloodCells(period, view);
+  const provinceRows = useFloodAreas(period);
+  const provinceShapes = useProvinceShapes();
+  const profile = useProfile(loadSessionId());
+  const places = useMemo(() => profile.data?.places.slice(0, MAX_PLACES) ?? [], [profile.data]);
+  const mapPlaces = useMemo(() => places.map((p) => ({ lat: p.lat, lon: p.lon, label: p.label })), [places]);
+
+  const [view, setView] = useState<MapView | null>(null);
   const [basemap, setBasemap] = useState<Basemap>("satellite");
   const [flyTo, setFlyTo] = useState<FlyTarget | null>(null);
   const [tilesFailed, setTilesFailed] = useState(false);
-  const [selected, setSelected] = useState<FloodCell | null>(null);
+  const [picked, setPicked] = useState<Picked | null>(null);
   const detail = useRef<HTMLDivElement>(null);
 
-  const onView = useCallback(
-    (v: { bbox: string; res: number }) => setView((old) => (old?.bbox === v.bbox && old.res === v.res ? old : v)),
-    [],
+  // Zoomed in: the tambons of the provinces in view, with GISTDA's totals for each.
+  const zoomedIn = view != null && view.zoom >= TAMBON_ZOOM;
+  const inView = useMemo(
+    () => (view && zoomedIn && provinceShapes.data ? provincesInView(provinceShapes.data.features, view.bbox, MAX_PROVINCES) : []),
+    [zoomedIn, provinceShapes.data, view],
   );
+  const tambonShapes = useTambonShapes(inView.map((p) => p.properties.code));
+  const tambonRows = useFloodTambons(period, inView.map((p) => p.properties.province));
+
+  // useQueries hands back new arrays every render: rebuild only when some result's data changed.
+  const shapesKey = tambonShapes.map((q) => q.dataUpdatedAt).join();
+  const rowsKey = tambonRows.map((q) => q.dataUpdatedAt).join();
+  const tambons = useMemo(() => {
+    const out: { shape: AreaShape; row: FloodArea | null }[] = [];
+    tambonShapes.forEach((q, i) => {
+      if (!q.data) return;
+      const joined = joinAreas(q.data.features, tambonRows[i]?.data?.areas ?? [], "tambon");
+      for (const shape of q.data.features) out.push({ shape, row: joined.get(shape.properties.code) ?? null });
+    });
+    return out;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [shapesKey, rowsKey]);
+
+  const mapAreas: MapArea[] = useMemo(() => {
+    if (zoomedIn) {
+      return tambons.map(({ shape, row }) => ({
+        shape,
+        cls: row ? floodClass(row.area_km2 / shape.properties.area_km2) : "none",
+        label: shape.properties.tambon,
+      }));
+    }
+    const shapes = provinceShapes.data?.features ?? [];
+    const joined = joinAreas(shapes, provinceRows.data?.areas ?? [], "province");
+    return shapes.map((shape) => {
+      const row = joined.get(shape.properties.code);
+      return {
+        shape,
+        cls: row ? floodClass(row.area_km2 / shape.properties.area_km2) : "none",
+        label: row ? shape.properties.province : null,
+      };
+    });
+  }, [zoomedIn, tambons, provinceShapes.data, provinceRows.data]);
+
+  const onView = useCallback((v: MapView) => setView(v), []);
   const onTilesFailed = useCallback(() => setTilesFailed(true), []);
-  // Another period is another layer: the picked cell may not be in it.
+  // Another period is another layer: the picked tambon's numbers change.
   useEffect(() => {
-    setSelected(null);
+    setPicked(null);
   }, [period]);
-  // On a phone the panel is under the map: bring the picked cell's details into view.
+  // A tambon picked from the list before its outline loaded: attach the outline once it has.
   useEffect(() => {
-    if (selected) detail.current?.scrollIntoView({ block: "nearest", behavior: "smooth" });
-  }, [selected]);
+    if (!picked?.row || picked.shape) return;
+    const r = picked.row;
+    const key = nameKey(r.province, r.amphoe, r.tambon);
+    const hit = tambons.find(
+      (t) =>
+        (r.code != null && t.shape.properties.code === r.code) ||
+        nameKey(t.shape.properties.province, t.shape.properties.amphoe, t.shape.properties.tambon) === key,
+    );
+    if (hit) setPicked({ row: r, shape: hit.shape });
+  }, [tambons, picked]);
+  // On a phone the panel is under the map: bring the picked tambon into view.
+  useEffect(() => {
+    if (picked) detail.current?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+  }, [picked]);
 
   const ask = (text: string) => navigate("/chat", { state: { send: text } satisfies ChatHandoff });
   const goTo = (p: string | null, a: string | null) => onScope({ province: p, amphoe: a });
-  const pick = (a: FloodArea) => {
-    setSelected(null);
-    if (a.lat != null && a.lon != null) setFlyTo({ lat: a.lat, lon: a.lon, zoom: FLY_ZOOM[areas.data!.level] });
-    const name = (n: string | null) => n ?? a.code;
-    if (areas.data!.level === "province") goTo(name(a.province), null);
-    else if (areas.data!.level === "amphoe") goTo(province, name(a.amphoe));
+
+  /** A tap on the map: a province zooms in to its tambons, a tambon opens its card. */
+  const pickOnMap = (code: string) => {
+    if (zoomedIn) {
+      const t = tambons.find((x) => x.shape.properties.code === code);
+      if (t) setPicked({ row: t.row, shape: t.shape });
+      return;
+    }
+    const shape = provinceShapes.data?.features.find((f) => f.properties.code === code);
+    if (!shape) return;
+    if (shape.properties.bbox) setFlyTo({ bounds: shape.properties.bbox });
+    goTo(shape.properties.province, null);
   };
 
-  const shown = cells.data;
-  const status =
-    (cells.isFetching && !shown) || cells.isError || shown?.truncated || tilesFailed
-      ? tilesFailed
-        ? copy.flood.tilesFailed
-        : cells.isError
-          ? copy.flood.cellsFailed
-          : shown?.truncated
-            ? copy.flood.truncated
-            : copy.flood.loadingCells
-      : null;
+  /** A row in the ranking: provinces and amphoes drill down, a tambon opens its card. */
+  const pickRow = (a: FloodArea) => {
+    const level = areas.data!.level;
+    const name = (n: string | null) => n ?? a.code;
+    if (level === "province") {
+      const shape = provinceShapes.data?.features.find(
+        (f) => (a.code != null && f.properties.code === a.code) || nameKey(f.properties.province) === nameKey(a.province),
+      );
+      if (shape?.properties.bbox) setFlyTo({ bounds: shape.properties.bbox });
+      else if (a.lat != null && a.lon != null) setFlyTo({ lat: a.lat, lon: a.lon, zoom: FLY_ZOOM.province });
+      goTo(name(a.province), null);
+      return;
+    }
+    if (a.lat != null && a.lon != null) setFlyTo({ lat: a.lat, lon: a.lon, zoom: FLY_ZOOM[level] });
+    if (level === "amphoe") goTo(province, name(a.amphoe));
+    else setPicked({ row: a, shape: null });
+  };
+
+  const loadingShapes = provinceShapes.isPending || tambonShapes.some((q) => q.isPending);
+  const failedShapes = provinceShapes.isError || tambonShapes.some((q) => q.isError) || tambonRows.some((q) => q.isError);
+  const status = tilesFailed
+    ? copy.flood.tilesFailed
+    : failedShapes
+      ? copy.flood.areasFailed
+      : loadingShapes
+        ? copy.flood.loadingAreas
+        : !zoomedIn
+          ? copy.flood.zoomForTambons
+          : null;
 
   const map = (
     <div
@@ -409,12 +508,12 @@ export function FloodExplorer({
     >
       <Suspense fallback={<Loading className="h-full" />}>
         <FloodMap
-          cells={shown?.cells ?? []}
-          res={shown?.res ?? 9}
+          areas={mapAreas}
+          selected={picked?.shape?.properties.code ?? null}
+          onPick={pickOnMap}
           basemap={basemap}
           flyTo={flyTo}
-          selected={selected?.h3 ?? null}
-          onSelect={setSelected}
+          places={mapPlaces}
           onView={onView}
           onTilesFailed={onTilesFailed}
           scrollWheelZoom={!embedded}
@@ -439,7 +538,7 @@ export function FloodExplorer({
             name={(b) => copy.flood[b]}
           />
           {status && (
-            <p role="status" className="pointer-events-auto m-0 max-w-xs rounded-sm border border-line bg-surface-raised px-3 py-2 text-caption text-ink shadow-float">
+            <p role="status" className="pointer-events-auto m-0 max-w-[15rem] rounded-sm border border-line bg-surface-raised px-3 py-2 text-caption text-ink shadow-float">
               {status}
             </p>
           )}
@@ -471,8 +570,8 @@ export function FloodExplorer({
       )}
 
       <div ref={detail} className="scroll-mt-4">
-        {selected ? (
-          <CellDetail cell={selected} onClose={() => setSelected(null)} onAsk={ask} />
+        {picked ? (
+          <AreaCard picked={picked} observed={areas.data?.observed_to ?? null} places={places} onClose={() => setPicked(null)} onAsk={ask} />
         ) : areas.isPending ? (
           <Loading />
         ) : areas.isError ? (
@@ -481,7 +580,7 @@ export function FloodExplorer({
           <>
             <Breadcrumb province={province} amphoe={amphoe} onGo={goTo} />
             <Summary data={areas.data} period={period} onPeriod={(p) => onScope({ period: p })} />
-            <AreaList data={areas.data} busy={areas.isPlaceholderData} onPick={pick} />
+            <AreaList data={areas.data} busy={areas.isPlaceholderData} onPick={pickRow} />
             {areas.data.total.cells > 0 && <p className="m-0 px-4 pb-3 text-caption text-ink-muted">{copy.flood.selectHint}</p>}
           </>
         )}
@@ -493,8 +592,9 @@ export function FloodExplorer({
 
   return (
     <div className={embedded ? "flex flex-col gap-3" : "flex h-full flex-col"}>
+      <FloodPatterns />
       <div className={embedded ? "" : "shrink-0 border-b border-line px-4 py-2 empty:hidden"}>
-        <Places period={period} onAsk={ask} />
+        <Places places={places} period={period} onAsk={ask} />
       </div>
       <div className={embedded ? "flex flex-col gap-3 lg:h-[640px] lg:flex-row" : "flex min-h-0 flex-1 flex-col lg:flex-row"}>
         {map}
