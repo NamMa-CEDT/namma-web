@@ -5,6 +5,8 @@ import type { FactKind, FloodLevel, FloodPeriod, Profile } from "./types";
 
 // ThaiWater updates every 10 min (HII) / hourly (RID); no need to poll faster than a minute.
 const STATION_REFRESH_MS = 60_000;
+// Every river at watch or worse: the chart folds them to a few itself, so none is cut by the server's limit.
+const RIVERS_LIMIT = 50;
 // GISTDA publishes a few layers a day and the backend checks every 3 h.
 const FLOOD_REFRESH_MS = 10 * 60_000;
 
@@ -119,8 +121,20 @@ export function useRivers(near: { lat: number; lon: number } | null, q = "") {
   const query = q.trim();
   return useQuery({
     queryKey: keys.rivers(near?.lat ?? null, near?.lon ?? null, query),
-    queryFn: () => api.rivers(query ? { q: query } : { lat: near?.lat, lon: near?.lon }),
+    queryFn: () =>
+      api.rivers(query ? { q: query, limit: RIVERS_LIMIT } : { lat: near?.lat, lon: near?.lon, limit: RIVERS_LIMIT }),
     refetchInterval: STATION_REFRESH_MS,
+    placeholderData: keepPreviousData,
+  });
+}
+
+/** Up to 8 rivers for the suggestions under the search box, as the user types. */
+export function useRiverSuggestions(q: string) {
+  const query = q.trim();
+  return useQuery({
+    queryKey: ["river-suggestions", query],
+    queryFn: () => api.rivers({ q: query, limit: 8 }),
+    enabled: query !== "",
     placeholderData: keepPreviousData,
   });
 }

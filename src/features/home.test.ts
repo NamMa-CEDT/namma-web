@@ -1,5 +1,5 @@
 import type { Profile, River, StationSummary } from "../api/types";
-import { fromApi, staffFill } from "../components/RiverProfile";
+import { FOLDED_RIVERS, fromApi, staffFill, visibleRivers } from "../components/RiverProfile";
 import { setupSteps } from "./chat/ProfilePanel";
 
 function st(p: Partial<StationSummary>): StationSummary {
@@ -39,6 +39,16 @@ describe("RiverProfile", () => {
     expect(atRisk.note).toBe("มีสถานีล้นตลิ่ง");
     expect(near.note).toBe("ใกล้ที่ที่คุณบันทึกไว้ 1.5 กม.");
     expect(plain.note).toBeNull();
+    expect([atRisk.pinned, near.pinned, plain.pinned]).toEqual([false, true, false]);
+  });
+
+  it("folds a long list to the worst few, but keeps the river by the saved place", () => {
+    const atRisk = Array.from({ length: 10 }, (_, i) => river({ key: `r${i}`, reason: "at_risk", worst_tier: "danger" }));
+    const all = fromApi([...atRisk, river({ key: "home", reason: "near_you" })]);
+    const folded = visibleRivers(all, false).map((r) => r.key);
+    expect(folded).toEqual([...atRisk.slice(0, FOLDED_RIVERS).map((r) => r.key), "home"]);
+    expect(visibleRivers(all, true)).toHaveLength(11);
+    expect(visibleRivers(all.slice(0, 4), false)).toHaveLength(4);
   });
 });
 

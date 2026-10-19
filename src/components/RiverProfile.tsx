@@ -22,6 +22,8 @@ export interface River {
   name: string;
   /** Why it is shown ("มีสถานีล้นตลิ่ง", "ใกล้ที่ที่คุณบันทึกไว้"); null when that says nothing. */
   note: string | null;
+  /** The river by the saved place: shown even when the list is folded. */
+  pinned: boolean;
   stations: StationSummary[];
 }
 
@@ -37,9 +39,20 @@ export function fromApi(rivers: ApiRiver[]): River[] {
           : r.reason === "near_you"
             ? copy.river.reason.nearYou(formatDistance(r.distance_km))
             : null,
+      pinned: r.reason === "near_you",
       stations: r.stations.filter((s) => s.latest?.diff_wl_bank != null),
     }))
     .filter((r) => r.stations.length > 0);
+}
+
+/** Rivers shown before "แสดงอีก": on a bad day a dozen rivers can be over the bank. */
+export const FOLDED_RIVERS = 6;
+
+/** The first FOLDED_RIVERS in the server's order (worst first), plus the pinned one wherever it falls. */
+export function visibleRivers(rivers: River[], expanded: boolean): River[] {
+  if (expanded || rivers.length <= FOLDED_RIVERS) return rivers;
+  const first = rivers.filter((r) => !r.pinned).slice(0, FOLDED_RIVERS);
+  return rivers.filter((r) => first.includes(r) || r.pinned);
 }
 
 /** The note beside a river's name, if any. */
@@ -149,7 +162,10 @@ function ViewToggle({ view, onChange }: { view: RiverView; onChange: (v: RiverVi
 
 export function RiverProfile({ rivers: fromServer }: { rivers: ApiRiver[] }) {
   const [view, setView] = useState(readRiverView);
-  const rivers = fromApi(fromServer);
+  const [expanded, setExpanded] = useState(false);
+  const all = fromApi(fromServer);
+  const rivers = visibleRivers(all, expanded);
+  const hidden = all.length - rivers.length;
   if (!rivers.length) return <p className="m-0 text-body text-ink-muted">{copy.river.empty}</p>;
   const latest = rivers
     .flatMap((r) => r.stations.map((s) => s.latest?.ts))
@@ -170,6 +186,16 @@ export function RiverProfile({ rivers: fromServer }: { rivers: ApiRiver[] }) {
         <RiverSections rivers={rivers} />
       ) : (
         <StaffGauges rivers={rivers} />
+      )}
+      {(hidden > 0 || expanded) && all.length > FOLDED_RIVERS && (
+        <button
+          type="button"
+          aria-expanded={expanded}
+          onClick={() => setExpanded((e) => !e)}
+          className="min-h-11 justify-self-start font-semibold text-river"
+        >
+          {expanded ? copy.river.showLess : copy.river.showMore(hidden)}
+        </button>
       )}
       <figcaption className="nm-source">
         {copy.river.sourceLead(agencies)} · <span className="num">{formatDateTime(latest)}</span> · {copy.river.estimated}
