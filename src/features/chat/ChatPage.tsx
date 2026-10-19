@@ -1,10 +1,11 @@
 import { useQueryClient } from "@tanstack/react-query";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router";
 import { api } from "../../api/client";
 import { keys } from "../../api/queries";
 import type { ChatRequest, ChatResponse, QuickReply, Source } from "../../api/types";
 import { Composer } from "../../components/Composer";
+import { SidebarIcon } from "../../components/icons";
 import { HotlineNotice } from "../../components/HotlineNotice";
 import { copy, type Starter } from "../../copy";
 import { load, loadSessionId, newId, save, saveSessionId, type ChatHandoff } from "../../lib/chatSession";
@@ -36,6 +37,9 @@ export default function ChatPage() {
   const [text, setText] = useState("");
   const [pending, setPending] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
+  // Phones: the remembered-info panel is a drawer over the chat.
+  const [drawer, setDrawer] = useState(false);
+  const closeDrawer = useCallback(() => setDrawer(false), []);
   const bottom = useRef<HTMLDivElement>(null);
   const input = useRef<HTMLTextAreaElement | HTMLInputElement>(null);
   const qc = useQueryClient();
@@ -134,9 +138,21 @@ export default function ChatPage() {
 
   return (
     <div className="flex h-full flex-col lg:flex-row">
-      <ProfilePanel chatSession={sessionId} />
+      <ProfilePanel chatSession={sessionId} onAsk={(start) => fill(`${start} `)} drawerOpen={drawer} onCloseDrawer={closeDrawer} />
 
       <section aria-label={copy.chat.title} className="flex min-h-0 min-w-0 flex-1 flex-col">
+        <div className="flex items-center border-b border-line px-2 lg:hidden">
+          <button
+            type="button"
+            aria-haspopup="dialog"
+            aria-expanded={drawer}
+            onClick={() => setDrawer(true)}
+            className="inline-flex min-h-12 items-center gap-2 rounded-md px-2 text-label font-semibold text-ink hover:bg-surface-sunken"
+          >
+            <SidebarIcon className="text-[22px]" />
+            {copy.profile.openDrawer}
+          </button>
+        </div>
         <div className="min-h-0 flex-1 overflow-y-auto" aria-live="polite">
           <div className="mx-auto flex max-w-3xl flex-col gap-8 px-4 pt-6 pb-4 sm:px-6">
             <div className="flex items-start justify-between gap-3">

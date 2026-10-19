@@ -5,21 +5,28 @@ import {
   ArrowDown,
   ArrowUp,
   ArrowRight,
+  Bell,
+  Buildings,
   CaretLeft,
+  CaretRight,
   ChatCircleText,
   Crosshair,
   Desktop,
+  House,
   MapPin,
   MapTrifold,
   Microphone,
   Minus,
   Moon,
   PaperPlaneRight,
+  SidebarSimple,
   Sun,
   Trash,
   UserCircle,
+  Users,
   Warning,
   Waves,
+  X,
   type Icon as PhosphorIcon,
   type IconProps,
 } from "@phosphor-icons/react";
@@ -51,6 +58,13 @@ export const MoonIcon = wrap(Moon);
 export const AutoThemeIcon = wrap(Desktop);
 
 /** LINE's speech-bubble glyph, only on LINE buttons and the @1784DDPM link (swap for the official asset). */
+export const SidebarIcon = wrap(SidebarSimple);
+export const HouseIcon = wrap(House);
+export const UsersIcon = wrap(Users);
+export const BuildingsIcon = wrap(Buildings);
+export const BellIcon = wrap(Bell);
+export const CaretRightIcon = wrap(CaretRight);
+export const CloseIcon = wrap(X);
 export const LineIcon = (p: SVGProps<SVGSVGElement>) => (
   <svg viewBox="0 0 24 24" width="1em" height="1em" fill="currentColor" aria-hidden="true" {...p}>
     <path d="M12 3C6.5 3 2 6.6 2 11c0 3.9 3.5 7.2 8.3 7.9.3.1.8.2.9.5.1.3.1.7 0 1l-.1.9c0 .3-.2 1 .9.5s5.9-3.5 8-6C21.4 14.2 22 12.7 22 11c0-4.4-4.5-8-10-8z" />
