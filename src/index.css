@@ -370,6 +370,19 @@
   /* A staff gauge that is a button (river profile → station on the map). */
   .nm-profile__station > a { color: inherit; text-decoration: none; display: flex; flex-direction: column; gap: var(--space-1); }
   .nm-profile__station > a:hover .nm-profile__place { text-decoration: underline; }
+  /* River line (Home, "แนวลำน้ำ"): the water surface through each station against one bank line. The SVG is
+     stretched to the width; markers and labels are HTML so they keep their shape. */
+  .nm-riverline { position: relative; border-radius: var(--radius-sm); overflow: hidden; box-shadow: inset 0 0 0 1px var(--line); }
+  .nm-riverline > svg { display: block; width: 100%; height: 100%; }
+  .nm-riverline__bank { position: absolute; left: 0; right: 0; height: 2px; margin-top: -1px; background: var(--bank); }
+  .nm-riverline__label { position: absolute; font: 400 14px/22px var(--font-body); color: var(--ink-muted); }
+  .nm-riverline__label.is-bank { color: var(--ink); font-weight: 600; }
+  .nm-riverline__mark { position: absolute; width: 16px; height: 16px; box-sizing: border-box; transform: translate(-50%, -50%); }
+  .nm-riverline__mark--normal { border-radius: 50%; background: var(--surface-raised); border: 3px solid var(--water); }
+  .nm-riverline__mark--watch { border-radius: 50%; background: var(--surface-raised); border: 3px solid var(--tier-watch); }
+  .nm-riverline__mark--warning { width: 18px; background: var(--tier-warning); clip-path: polygon(50% 0, 100% 100%, 0 100%); }
+  .nm-riverline__mark--danger { width: 14px; height: 14px; border-radius: 2px; background: var(--tier-danger); box-shadow: 0 0 0 2px var(--bank); transform: translate(-50%, -50%) rotate(45deg); }
+  .nm-riverline__mark--unknown { border-radius: 50%; background: var(--surface-raised); border: 2px dashed var(--ink-muted); }
 }
 
 /* Leaflet's own CSS is unlayered, so these overrides and the pins stay unlayered too. */

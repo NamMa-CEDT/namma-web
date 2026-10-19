@@ -1,9 +1,11 @@
-import type { CSSProperties } from "react";
+import { useState, type CSSProperties } from "react";
 import { Link } from "react-router";
 import type { StationSummary } from "../api/types";
 import { copy } from "../copy";
 import { formatBankGap, formatDateTime } from "../lib/format";
 import { stationTier, tierInfo } from "../lib/tiers";
+import { RiverLine } from "./RiverLine";
+import { RiverSections } from "./RiverSections";
 import { TierBadge } from "./TierBadge";
 
 // DS RiverProfile: the track covers 4 m below the bank to 2 m above it; --bank (66.667) is set by nm-profile.
@@ -14,7 +16,7 @@ export function staffFill(diff: number): number {
   return Math.max(0, Math.min(100, ((diff + BELOW_M) / RANGE_M) * 100));
 }
 
-interface River {
+export interface River {
   name: string;
   stations: StationSummary[];
 }
@@ -58,16 +60,11 @@ function Staff({ s }: { s: StationSummary }) {
   );
 }
 
-export function RiverProfile({ stations }: { stations: StationSummary[] }) {
-  const rivers = riverGroups(stations);
-  if (!rivers.length) return <p className="m-0 text-body text-ink-muted">{copy.river.empty}</p>;
-  const latest = rivers
-    .flatMap((r) => r.stations.map((s) => s.latest?.ts))
-    .filter((t): t is string => !!t)
-    .sort()
-    .at(-1);
+/** The original chart: one staff gauge per station, side by side, one shared bank line. Scrolls sideways. */
+function StaffGauges({ rivers }: { rivers: River[] }) {
   return (
-    <figure className="m-0 grid gap-4">
+    <div className="grid gap-2">
+      <p className="m-0 text-caption text-ink-muted sm:hidden">{copy.home.scrollHint}</p>
       <div className="nm-profile">
         <div className="nm-profile__axis" aria-hidden="true">
           <span style={{ bottom: "83.333%" }}>{copy.river.axisOver1}</span>
@@ -92,8 +89,79 @@ export function RiverProfile({ stations }: { stations: StationSummary[] }) {
           </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+/** The three ways to draw the same readings (River Now redesign): staff gauges, river line (E), cross-sections (F). */
+export type RiverView = "staff" | "line" | "sections";
+export const RIVER_VIEWS: RiverView[] = ["staff", "line", "sections"];
+const VIEW_KEY = "namma.riverView";
+
+/** The last chart this browser picked; a convenience only, so any storage failure falls back to the gauges. */
+export function readRiverView(): RiverView {
+  try {
+    const v = localStorage.getItem(VIEW_KEY);
+    return RIVER_VIEWS.includes(v as RiverView) ? (v as RiverView) : "staff";
+  } catch {
+    return "staff";
+  }
+}
+
+function saveRiverView(v: RiverView): void {
+  try {
+    localStorage.setItem(VIEW_KEY, v);
+  } catch {
+    // Private mode or blocked storage: the choice lasts for this visit only.
+  }
+}
+
+function ViewToggle({ view, onChange }: { view: RiverView; onChange: (v: RiverView) => void }) {
+  return (
+    <div role="group" aria-label={copy.river.views.label} className="flex rounded-md border border-line-strong p-0.5 sm:inline-flex sm:self-start">
+      {RIVER_VIEWS.map((v) => (
+        <button
+          key={v}
+          type="button"
+          aria-pressed={v === view}
+          onClick={() => onChange(v)}
+          className={`min-h-11 flex-1 rounded-[8px] px-1 text-caption font-semibold sm:flex-none sm:px-4 sm:text-label ${
+            v === view ? "bg-river text-on-river" : "text-ink-muted hover:text-ink"
+          }`}
+        >
+          {copy.river.views[v]}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+export function RiverProfile({ stations }: { stations: StationSummary[] }) {
+  const [view, setView] = useState(readRiverView);
+  const rivers = riverGroups(stations);
+  if (!rivers.length) return <p className="m-0 text-body text-ink-muted">{copy.river.empty}</p>;
+  const latest = rivers
+    .flatMap((r) => r.stations.map((s) => s.latest?.ts))
+    .filter((t): t is string => !!t)
+    .sort()
+    .at(-1);
+  const choose = (v: RiverView) => {
+    setView(v);
+    saveRiverView(v);
+  };
+  return (
+    <figure className="m-0 grid gap-4">
+      <ViewToggle view={view} onChange={choose} />
+      {view === "line" ? (
+        <RiverLine rivers={rivers} />
+      ) : view === "sections" ? (
+        <RiverSections rivers={rivers} />
+      ) : (
+        <StaffGauges rivers={rivers} />
+      )}
       <figcaption className="nm-source">
         {copy.river.sourceLead} · <span className="num">{formatDateTime(latest)}</span> · {copy.river.estimated}
+        {view !== "staff" && ` · ${copy.river.notes[view]}`}
       </figcaption>
     </figure>
   );

@@ -16,7 +16,7 @@ export function TierShape({ tier, className = "" }: { tier: TierKey; className?:
 }
 
 /** Text colour for a shape sitting on surface/surface-raised (the "-ink" token: 4.5:1). */
-const TIER_INK: Record<TierKey, string> = {
+export const TIER_INK: Record<TierKey, string> = {
   danger: "text-tier-danger-ink",
   warning: "text-tier-warning-ink",
   watch: "text-tier-watch-ink",

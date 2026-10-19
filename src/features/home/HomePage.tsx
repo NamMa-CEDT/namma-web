@@ -12,7 +12,8 @@ import { StarterChips } from "../chat/parts";
 
 /**
  * DS new-user page: the question, the composer and starter chips above the bank line; below it, what the
- * river and NamMa know (the live RiverProfile) and the three setup steps. Sending opens the chat.
+ * river and NamMa know (the live RiverProfile, drawn three ways: staff gauges, river line, cross-sections) and the
+ * three setup steps. Sending opens the chat.
  */
 export default function HomePage() {
   const [text, setText] = useState("");
@@ -54,7 +55,6 @@ export default function HomePage() {
               {copy.home.seeMap}
             </Link>
           </div>
-          <p className="m-0 text-caption text-ink-muted sm:hidden">{copy.home.scrollHint}</p>
           <div className="rounded-md border border-line bg-surface p-4 sm:p-6">
             {stations.isPending ? (
               <Loading />

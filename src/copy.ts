@@ -66,6 +66,26 @@ export const copy = {
     sourceLead: "ที่มา: กรมชลประทาน ผ่าน ThaiWater (สสน.)",
     estimated: "ระดับเสี่ยงประเมินโดยน้ำมา จากระดับตลิ่งและสถานีต้นน้ำ",
     empty: "ยังไม่มีข้อมูลระดับน้ำ",
+    // Home chart switcher: three drawings of the same readings.
+    views: { label: "แสดงเป็น", staff: "เกจวัดน้ำ", line: "แนวลำน้ำ", sections: "ภาพตัดขวาง" },
+    landSide: "ริมน้ำ · บ้านเรือน",
+    bank: "ตลิ่ง",
+    fromTo: (from: string, to: string) => `ต้นน้ำ ${from} → ปลายน้ำ ${to}`,
+    upstreamFirst: "เรียงจากต้นน้ำ",
+    othersNormal: (n: number) => `อีก ${n} สถานีปกติ`,
+    allNormal: (n: number) => `ทุกสถานีปกติ (${n} สถานี)`,
+    sectionsKey: {
+      lead: "ภาพตัดขวางแม่น้ำที่แต่ละสถานี",
+      land: "สีเทา",
+      landIs: "คือตลิ่ง",
+      water: "สีฟ้า",
+      waterIs: "คือน้ำตอนนี้",
+      over: "ถ้าน้ำสูงกว่าตลิ่ง จะเห็นน้ำล้นออกไปด้านข้าง",
+    },
+    notes: {
+      line: "ภาพเทียบระดับน้ำกับตลิ่งของแต่ละสถานี ไม่ใช่ความลึกจริง",
+      sections: "ภาพเทียบระดับน้ำกับตลิ่ง ไม่ใช่รูปร่างลำน้ำจริง",
+    },
   },
 
   composer: {
