@@ -3,7 +3,7 @@ import { copy } from "../copy";
 import { formatBankGap } from "../lib/format";
 import { crossSection } from "../lib/riverShapes";
 import { stationTier, tierInfo, type TierKey } from "../lib/tiers";
-import type { River } from "./RiverProfile";
+import { RiverNote, type River } from "./RiverProfile";
 import { TIER_INK, TierShape } from "./TierBadge";
 
 const W = 100;
@@ -47,9 +47,10 @@ export function RiverSections({ rivers }: { rivers: River[] }) {
       </div>
 
       {rivers.map((r) => (
-        <section key={r.name} className="flex flex-col gap-2">
+        <section key={r.key} className="flex flex-col gap-2">
           <h3 className="m-0 text-heading font-semibold text-river">
             {r.name} <span className="text-caption font-normal text-ink-muted">· {copy.river.upstreamFirst}</span>
+            <RiverNote river={r} />
           </h3>
           <ol className="m-0 grid list-none grid-cols-3 gap-2 p-0 sm:grid-cols-4 lg:grid-cols-6">
             {r.stations.map((s) => {

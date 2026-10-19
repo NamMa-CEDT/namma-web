@@ -66,8 +66,8 @@ export const copy = {
     axisBank: "ระดับตลิ่ง",
     axisBelow2: "ต่ำกว่าตลิ่ง 2 ม.",
     axisBelow4: "ต่ำกว่าตลิ่ง 4 ม.",
-    main: "แม่น้ำเจ้าพระยา",
-    sourceLead: "ที่มา: กรมชลประทาน และ สสน. ผ่าน ThaiWater",
+    /** The agencies whose stations the chart shows, by agencyName(). */
+    sourceLead: (agencies: string[]) => `ที่มา: ${agencies.join(", ")} ผ่าน ThaiWater`,
     estimated: "ระดับเสี่ยงประเมินโดยน้ำมา จากระดับตลิ่งและสถานีต้นน้ำ",
     empty: "ยังไม่มีข้อมูลระดับน้ำ",
     // Home chart switcher: three drawings of the same readings.
@@ -75,6 +75,17 @@ export const copy = {
     landSide: "ริมน้ำ · บ้านเรือน",
     bank: "ตลิ่ง",
     fromTo: (from: string, to: string) => `ต้นน้ำ ${from} → ปลายน้ำ ${to}`,
+    // Why /api/rivers listed a river (RiverNote).
+    reason: {
+      atRisk: (tierLabel: string) => `มีสถานี${tierLabel}`,
+      nearYou: (distance: string | null) => (distance ? `ใกล้ที่ที่คุณบันทึกไว้ ${distance}` : "ใกล้ที่ที่คุณบันทึกไว้"),
+    },
+    search: {
+      label: "ค้นหาแม่น้ำ",
+      placeholder: "ชื่อแม่น้ำ เช่น ยม น่าน ชี",
+      none: (q: string) => `ไม่พบแม่น้ำที่ชื่อมีคำว่า “${q}”`,
+      clear: "ล้างคำค้น",
+    },
     upstreamFirst: "เรียงจากต้นน้ำ",
     othersNormal: (n: number) => `อีก ${n} สถานีปกติ`,
     allNormal: (n: number) => `ทุกสถานีปกติ (${n} สถานี)`,

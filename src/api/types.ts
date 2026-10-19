@@ -68,6 +68,24 @@ export interface NearbyStation extends StationSummary {
   distance_km: number;
 }
 
+/** Why /api/rivers listed a river: over or near its bank, the one by the given point, a fallback, or a search hit. */
+export type RiverReason = "at_risk" | "near_you" | "largest" | "match";
+
+/** One river, each gauged place once, upstream first (docs/api.md → Rivers). */
+export interface River {
+  /** The river name, or "<name>@<lowest station id>" for a second river of the same name. */
+  key: string;
+  name_th: string;
+  basins: string[];
+  /** Upstream first; tells two same-named rivers apart. */
+  provinces: string[];
+  worst_tier: RiskTier | null;
+  reason: RiverReason;
+  /** To its nearest station, when the request gave lat/lon. */
+  distance_km: number | null;
+  stations: StationSummary[];
+}
+
 export interface StationLink {
   station: StationSummary;
   approx_travel_hours: number | null;

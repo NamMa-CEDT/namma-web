@@ -15,6 +15,7 @@ import type {
   Provider,
   NearbyStation,
   Profile,
+  River,
   SessionUser,
   Shelter,
   StationDetail,
@@ -100,6 +101,10 @@ export const api = {
   nearestStations: (lat: number, lon: number, k = 3) =>
     request<NearbyStation[]>("GET", "/api/stations/nearest", { query: { lat, lon, k } }),
   station: (id: number) => request<StationDetail>("GET", `/api/stations/${id}`),
+  /** q: search by name. Without q: rivers at watch or worse, then the one nearest lat/lon. */
+  rivers: (q: { lat?: number; lon?: number; q?: string; limit?: number } = {}) =>
+    request<River[]>("GET", "/api/rivers", { query: q }),
+  river: (key: string) => request<River>("GET", `/api/rivers/${encodeURIComponent(key)}`),
   readings: (id: number, hours = 72) =>
     request<StationReadings>("GET", `/api/stations/${id}/readings`, { query: { hours } }),
   shelters: (q: { lat?: number; lon?: number; patients?: boolean; pets?: boolean } = {}) =>

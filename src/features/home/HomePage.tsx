@@ -1,18 +1,42 @@
-import { useState, type KeyboardEvent } from "react";
+import { useEffect, useState, type KeyboardEvent } from "react";
 import { Link, useNavigate } from "react-router";
-import { useStations } from "../../api/queries";
+import { useProfile, useRivers } from "../../api/queries";
 import { Composer } from "../../components/Composer";
 import { HotlineNotice } from "../../components/HotlineNotice";
 import { RiverProfile } from "../../components/RiverProfile";
 import { ErrorState, Loading } from "../../components/States";
 import { copy, type Starter } from "../../copy";
-import type { ChatHandoff } from "../../lib/chatSession";
+import { loadSessionId, type ChatHandoff } from "../../lib/chatSession";
 import { LINE_OA_URL } from "../../lib/line";
 import { StarterChips } from "../chat/parts";
 import { FloodExplorer, type FloodScope } from "../flood/FloodExplorer";
 
 const TABS = ["flood", "river"] as const;
 type Tab = (typeof TABS)[number];
+
+/** Find any river by name; empty shows the rivers at risk and the one near the saved place. */
+function RiverSearch({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  return (
+    <div className="flex items-center gap-2">
+      <label htmlFor="river-search" className="sr-only">
+        {copy.river.search.label}
+      </label>
+      <input
+        id="river-search"
+        type="search"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={copy.river.search.placeholder}
+        className="min-h-11 w-56 rounded-md border border-line bg-surface px-3 text-body"
+      />
+      {value && (
+        <button type="button" className="min-h-11 px-2 font-semibold text-river" onClick={() => onChange("")}>
+          {copy.river.search.clear}
+        </button>
+      )}
+    </div>
+  );
+}
 
 /**
  * DS new-user page: the question, the composer and starter chips above the bank line; below it, what the water is
@@ -24,7 +48,15 @@ export default function HomePage() {
   const navigate = useNavigate();
   const [tab, setTab] = useState<Tab>("flood");
   const [floodScope, setFloodScope] = useState<FloodScope>({ period: "3days", province: null, amphoe: null });
-  const stations = useStations();
+  const [riverInput, setRiverInput] = useState("");
+  const [riverQuery, setRiverQuery] = useState("");
+  useEffect(() => {
+    const t = setTimeout(() => setRiverQuery(riverInput), 250); // one request per pause, not per keystroke
+    return () => clearTimeout(t);
+  }, [riverInput]);
+  // The first saved place picks the river "near you"; without one the list is only the rivers at risk.
+  const place = useProfile(loadSessionId()).data?.places[0];
+  const rivers = useRivers(place ? { lat: place.lat, lon: place.lon } : null, riverQuery);
   const go = (handoff: ChatHandoff) => navigate("/chat", { state: handoff });
   const pick = (s: Starter) => go(s.send ? { send: s.send } : { fill: `${s.fill ?? s.label} ` });
   // ARIA tabs: arrows move between the two tabs and open the one they land on.
@@ -93,14 +125,19 @@ export default function HomePage() {
               <FloodExplorer embedded scope={floodScope} onScope={(c) => setFloodScope((s) => ({ ...s, ...c }))} />
             ) : (
               <div className="flex flex-col gap-3">
-                <p className="m-0 text-body text-ink-muted">{copy.home.riverSubtitle}</p>
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <p className="m-0 text-body text-ink-muted">{copy.home.riverSubtitle}</p>
+                  <RiverSearch value={riverInput} onChange={setRiverInput} />
+                </div>
                 <div className="rounded-md border border-line bg-surface p-4 sm:p-6">
-                  {stations.isPending ? (
+                  {rivers.isPending ? (
                     <Loading />
-                  ) : stations.isError ? (
-                    <ErrorState error={stations.error} onRetry={() => stations.refetch()} />
+                  ) : rivers.isError ? (
+                    <ErrorState error={rivers.error} onRetry={() => rivers.refetch()} />
+                  ) : riverQuery.trim() && !rivers.data.length ? (
+                    <p className="m-0 text-body text-ink-muted">{copy.river.search.none(riverQuery.trim())}</p>
                   ) : (
-                    <RiverProfile stations={stations.data} />
+                    <RiverProfile rivers={rivers.data} />
                   )}
                 </div>
               </div>

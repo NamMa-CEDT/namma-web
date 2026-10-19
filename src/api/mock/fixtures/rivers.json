@@ -1,0 +1,3130 @@
+{
+ "meta": {
+  "generated_at": "2026-10-20T00:13:24+07:00",
+  "ingested_at": "2026-10-20T00:00:00+07:00",
+  "source": "ThaiWater (HII) waterlevel_load + waterlevel_graph",
+  "risk": "provisional, see ingest/export_web_fixtures.py"
+ },
+ "rivers": [
+  {
+   "key": "คลองบางบาล",
+   "name_th": "คลองบางบาล",
+   "basins": [
+    "ลุ่มน้ำเจ้าพระยา"
+   ],
+   "provinces": [
+    "พระนครศรีอยุธยา"
+   ],
+   "stations": [
+    {
+     "id": 47,
+     "oldcode": "CPY010",
+     "name_th": "คลองบางบาล",
+     "name_en": "Chao Phraya 10",
+     "lat": 14.42303,
+     "lon": 100.48186,
+     "river": "คลองบางบาล",
+     "province": "พระนครศรีอยุธยา",
+     "amphoe": "บางบาล",
+     "agency": "HII",
+     "is_key_station": false,
+     "stem_order": null,
+     "role": null,
+     "latest": {
+      "ts": "2026-10-20T00:00:00+07:00",
+      "level_msl": 6.3,
+      "diff_wl_bank": 0.46,
+      "situation_level": 5,
+      "discharge": null
+     },
+     "risk": {
+      "tier": "danger",
+      "trend_cm_per_hr": null,
+      "hours_to_bank": null,
+      "computed_at": "2026-10-20T00:00:00+07:00"
+     }
+    },
+    {
+     "id": 2608,
+     "oldcode": "C.37",
+     "name_th": "บ้านบางบาล",
+     "name_en": null,
+     "lat": 14.36319,
+     "lon": 100.484833,
+     "river": "คลองบางบาล",
+     "province": "พระนครศรีอยุธยา",
+     "amphoe": "บางบาล",
+     "agency": "RID",
+     "is_key_station": true,
+     "stem_order": null,
+     "role": "branch",
+     "latest": {
+      "ts": "2026-10-19T23:00:00+07:00",
+      "level_msl": 3.8,
+      "diff_wl_bank": -0.34,
+      "situation_level": 4,
+      "discharge": 83.0
+     },
+     "risk": {
+      "tier": "normal",
+      "trend_cm_per_hr": 0.0,
+      "hours_to_bank": null,
+      "computed_at": "2026-10-19T23:00:00+07:00"
+     }
+    }
+   ]
+  },
+  {
+   "key": "แม่น้ำน้อย",
+   "name_th": "แม่น้ำน้อย",
+   "basins": [
+    "ลุ่มน้ำเจ้าพระยา"
+   ],
+   "provinces": [
+    "พระนครศรีอยุธยา"
+   ],
+   "stations": [
+    {
+     "id": 1105332,
+     "oldcode": "TCP006",
+     "name_th": "ปตร กุฎิ (ทุ่งป่าโมก)",
+     "name_en": "Ku Ti",
+     "lat": 14.412405,
+     "lon": 100.40116,
+     "river": "แม่น้ำน้อย",
+     "province": "พระนครศรีอยุธยา",
+     "amphoe": "ผักไห่",
+     "agency": "HII",
+     "is_key_station": false,
+     "stem_order": null,
+     "role": null,
+     "latest": {
+      "ts": "2026-10-20T00:00:00+07:00",
+      "level_msl": 5.61,
+      "diff_wl_bank": -1.39,
+      "situation_level": 4,
+      "discharge": null
+     },
+     "risk": {
+      "tier": "normal",
+      "trend_cm_per_hr": null,
+      "hours_to_bank": null,
+      "computed_at": "2026-10-20T00:00:00+07:00"
+     }
+    },
+    {
+     "id": 1106451,
+     "oldcode": "TCP005",
+     "name_th": "ปตร.บางแก้ว (ทุ่งผักไห่)",
+     "name_en": "BangKaeo",
+     "lat": 14.436604,
+     "lon": 100.37149,
+     "river": "แม่น้ำน้อย",
+     "province": "พระนครศรีอยุธยา",
+     "amphoe": "ผักไห่",
+     "agency": "HII",
+     "is_key_station": false,
+     "stem_order": null,
+     "role": null,
+     "latest": {
+      "ts": "2026-10-20T00:00:00+07:00",
+      "level_msl": 3.72,
+      "diff_wl_bank": -1.28,
+      "situation_level": 4,
+      "discharge": null
+     },
+     "risk": {
+      "tier": "normal",
+      "trend_cm_per_hr": null,
+      "hours_to_bank": null,
+      "computed_at": "2026-10-20T00:00:00+07:00"
+     }
+    },
+    {
+     "id": 2611,
+     "oldcode": "C.36",
+     "name_th": "บ้านบางหลวงโดด",
+     "name_en": null,
+     "lat": 14.41588,
+     "lon": 100.440804,
+     "river": "แม่น้ำน้อย",
+     "province": "พระนครศรีอยุธยา",
+     "amphoe": "บางบาล",
+     "agency": "RID",
+     "is_key_station": true,
+     "stem_order": null,
+     "role": "branch",
+     "latest": {
+      "ts": "2026-10-19T23:00:00+07:00",
+      "level_msl": 5.67,
+      "diff_wl_bank": 1.37,
+      "situation_level": 5,
+      "discharge": 663.0
+     },
+     "risk": {
+      "tier": "danger",
+      "trend_cm_per_hr": -0.33,
+      "hours_to_bank": null,
+      "computed_at": "2026-10-19T23:00:00+07:00"
+     }
+    },
+    {
+     "id": 57,
+     "oldcode": "CPY017",
+     "name_th": "เสนา",
+     "name_en": "Sena",
+     "lat": 14.31976,
+     "lon": 100.37952,
+     "river": "แม่น้ำน้อย",
+     "province": "พระนครศรีอยุธยา",
+     "amphoe": "เสนา",
+     "agency": "HII",
+     "is_key_station": false,
+     "stem_order": null,
+     "role": null,
+     "latest": {
+      "ts": "2026-10-20T00:00:00+07:00",
+      "level_msl": 3.36,
+      "diff_wl_bank": -0.22,
+      "situation_level": 4,
+      "discharge": null
+     },
+     "risk": {
+      "tier": "normal",
+      "trend_cm_per_hr": null,
+      "hours_to_bank": null,
+      "computed_at": "2026-10-20T00:00:00+07:00"
+     }
+    }
+   ]
+  },
+  {
+   "key": "แม่น้ำป่าสัก",
+   "name_th": "แม่น้ำป่าสัก",
+   "basins": [
+    "ลุ่มน้ำป่าสัก",
+    "ลุ่มน้ำเจ้าพระยา"
+   ],
+   "provinces": [
+    "เพชรบูรณ์",
+    "ลพบุรี",
+    "สระบุรี",
+    "พระนครศรีอยุธยา"
+   ],
+   "stations": [
+    {
+     "id": 2985,
+     "oldcode": "S.33",
+     "name_th": "ต.ตาดกลอย",
+     "name_en": null,
+     "lat": 17.004061,
+     "lon": 101.352898,
+     "river": "แม่น้ำป่าสัก",
+     "province": "เพชรบูรณ์",
+     "amphoe": "หล่มเก่า",
+     "agency": "RID",
+     "is_key_station": true,
+     "stem_order": null,
+     "role": null,
+     "latest": {
+      "ts": "2026-10-19T23:00:00+07:00",
+      "level_msl": 192.85,
+      "diff_wl_bank": -6.08,
+      "situation_level": 2,
+      "discharge": 2.89
+     },
+     "risk": {
+      "tier": "normal",
+      "trend_cm_per_hr": null,
+      "hours_to_bank": null,
+      "computed_at": "2026-10-19T23:00:00+07:00"
+     }
+    },
+    {
+     "id": 2576,
+     "oldcode": "S.3",
+     "name_th": "ต.ตาลเดี่ยว",
+     "name_en": null,
+     "lat": 16.78157,
+     "lon": 101.246689,
+     "river": "แม่น้ำป่าสัก",
+     "province": "เพชรบูรณ์",
+     "amphoe": "หล่มสัก",
+     "agency": "RID",
+     "is_key_station": true,
+     "stem_order": null,
+     "role": null,
+     "latest": {
+      "ts": "2026-10-19T23:00:00+07:00",
+      "level_msl": 141.28,
+      "diff_wl_bank": -3.65,
+      "situation_level": 3,
+      "discharge": 7.71
+     },
+     "risk": {
+      "tier": "normal",
+      "trend_cm_per_hr": null,
+      "hours_to_bank": null,
+      "computed_at": "2026-10-19T23:00:00+07:00"
+     }
+    },
+    {
+     "id": 2881,
+     "oldcode": "S.4B",
+     "name_th": "ต.ในเมือง",
+     "name_en": null,
+     "lat": 16.42322,
+     "lon": 101.162079,
+     "river": "แม่น้ำป่าสัก",
+     "province": "เพชรบูรณ์",
+     "amphoe": "เมืองเพชรบูรณ์",
+     "agency": "RID",
+     "is_key_station": true,
+     "stem_order": null,
+     "role": null,
+     "latest": {
+      "ts": "2026-10-19T23:00:00+07:00",
+      "level_msl": 111.33,
+      "diff_wl_bank": -4.37,
+      "situation_level": 3,
+      "discharge": 16.63
+     },
+     "risk": {
+      "tier": "normal",
+      "trend_cm_per_hr": null,
+      "hours_to_bank": null,
+      "computed_at": "2026-10-19T23:00:00+07:00"
+     }
+    },
+    {
+     "id": 700,
+     "oldcode": "PAS003",
+     "name_th": "หนองไผ่",
+     "name_en": "Pa Sak 3",
+     "lat": 16.11497,
+     "lon": 101.09709,
+     "river": "แม่น้ำป่าสัก",
+     "province": "เพชรบูรณ์",
+     "amphoe": "หนองไผ่",
+     "agency": "HII",
+     "is_key_station": false,
+     "stem_order": null,
+     "role": null,
+     "latest": {
+      "ts": "2026-10-20T00:00:00+07:00",
+      "level_msl": 91.83,
+      "diff_wl_bank": -1.71,
+      "situation_level": 3,
+      "discharge": null
+     },
+     "risk": {
+      "tier": "normal",
+      "trend_cm_per_hr": null,
+      "hours_to_bank": null,
+      "computed_at": "2026-10-20T00:00:00+07:00"
+     }
+    },
+    {
+     "id": 2799,
+     "oldcode": "S.42",
+     "name_th": "บ้านบ่อวัง",
+     "name_en": null,
+     "lat": 15.5783,
+     "lon": 101.088623,
+     "river": "แม่น้ำป่าสัก",
+     "province": "เพชรบูรณ์",
+     "amphoe": "วิเชียรบุรี",
+     "agency": "RID",
+     "is_key_station": true,
+     "stem_order": null,
+     "role": null,
+     "latest": {
+      "ts": "2026-10-19T23:00:00+07:00",
+      "level_msl": 56.48,
+      "diff_wl_bank": -6.31,
+      "situation_level": 2,
+      "discharge": 16.69
+     },
+     "risk": {
+      "tier": "normal",
+      "trend_cm_per_hr": null,
+      "hours_to_bank": null,
+      "computed_at": "2026-10-19T23:00:00+07:00"
+     }
+    },
+    {
+     "id": 504982,
+     "oldcode": "S.43",
+     "name_th": "บ้านพูลทรัพย์",
+     "name_en": null,
+     "lat": 15.32743,
+     "lon": 101.212402,
+     "river": "แม่น้ำป่าสัก",
+     "province": "ลพบุรี",
+     "amphoe": "ชัยบาดาล",
+     "agency": "RID",
+     "is_key_station": true,
+     "stem_order": null,
+     "role": null,
+     "latest": {
+      "ts": "2026-10-19T23:00:00+07:00",
+      "level_msl": 42.36,
+      "diff_wl_bank": -9.54,
+      "situation_level": 3,
+      "discharge": 137.0
+     },
+     "risk": {
+      "tier": "normal",
+      "trend_cm_per_hr": null,
+      "hours_to_bank": null,
+      "computed_at": "2026-10-19T23:00:00+07:00"
+     }
+    },
+    {
+     "id": 2712,
+     "oldcode": "S.28",
+     "name_th": "ท้ายเขื่อนป่าสักชลสิทธิ์",
+     "name_en": null,
+     "lat": 14.83464,
+     "lon": 101.084297,
+     "river": "แม่น้ำป่าสัก",
+     "province": "ลพบุรี",
+     "amphoe": "พัฒนานิคม",
+     "agency": "RID",
+     "is_key_station": true,
+     "stem_order": null,
+     "role": null,
+     "latest": {
+      "ts": "2026-10-16T12:00:00+07:00",
+      "level_msl": 21.07,
+      "diff_wl_bank": -10.39,
+      "situation_level": 3,
+      "discharge": 166.0
+     },
+     "risk": {
+      "tier": "normal",
+      "trend_cm_per_hr": null,
+      "hours_to_bank": null,
+      "computed_at": "2026-10-16T12:00:00+07:00"
+     }
+    },
+    {
+     "id": 2632,
+     "oldcode": "S.9",
+     "name_th": "บ้านป่า",
+     "name_en": null,
+     "lat": 14.62918,
+     "lon": 101.014427,
+     "river": "แม่น้ำป่าสัก",
+     "province": "สระบุรี",
+     "amphoe": "แก่งคอย",
+     "agency": "RID",
+     "is_key_station": false,
+     "stem_order": null,
+     "role": null,
+     "latest": {
+      "ts": "2026-10-19T23:00:00+07:00",
+      "level_msl": 9.17,
+      "diff_wl_bank": -10.78,
+      "situation_level": 2,
+      "discharge": 46.0
+     },
+     "risk": {
+      "tier": "normal",
+      "trend_cm_per_hr": null,
+      "hours_to_bank": null,
+      "computed_at": "2026-10-19T23:00:00+07:00"
+     }
+    },
+    {
+     "id": 2623,
+     "oldcode": "S.32",
+     "name_th": "สถานีแพดับเพลิง",
+     "name_en": null,
+     "lat": 14.55752,
+     "lon": 100.924217,
+     "river": "แม่น้ำป่าสัก",
+     "province": "สระบุรี",
+     "amphoe": "เมืองสระบุรี",
+     "agency": "RID",
+     "is_key_station": false,
+     "stem_order": null,
+     "role": null,
+     "latest": {
+      "ts": "2026-10-19T23:00:00+07:00",
+      "level_msl": 8.1,
+      "diff_wl_bank": -4.7,
+      "situation_level": 3,
+      "discharge": 229.0
+     },
+     "risk": {
+      "tier": "normal",
+      "trend_cm_per_hr": null,
+      "hours_to_bank": null,
+      "computed_at": "2026-10-19T23:00:00+07:00"
+     }
+    },
+    {
+     "id": 2624,
+     "oldcode": "S.26",
+     "name_th": "ท้ายเขื่อนพระรามหก",
+     "name_en": null,
+     "lat": 14.56012,
+     "lon": 100.71994,
+     "river": "แม่น้ำป่าสัก",
+     "province": "พระนครศรีอยุธยา",
+     "amphoe": "ท่าเรือ",
+     "agency": "RID",
+     "is_key_station": true,
+     "stem_order": null,
+     "role": "tributary",
+     "latest": {
+      "ts": "2026-10-19T23:00:00+07:00",
+      "level_msl": 3.96,
+      "diff_wl_bank": -3.24,
+      "situation_level": 4,
+      "discharge": 264.0
+     },
+     "risk": {
+      "tier": "normal",
+      "trend_cm_per_hr": 0.33,
+      "hours_to_bank": null,
+      "computed_at": "2026-10-19T23:00:00+07:00"
+     }
+    },
+    {
+     "id": 2607,
+     "oldcode": "S.5",
+     "name_th": "สะพานปรีดี-ธำรง",
+     "name_en": null,
+     "lat": 14.35872,
+     "lon": 100.580452,
+     "river": "แม่น้ำป่าสัก",
+     "province": "พระนครศรีอยุธยา",
+     "amphoe": "พระนครศรีอยุธยา",
+     "agency": "RID",
+     "is_key_station": true,
+     "stem_order": null,
+     "role": "tributary",
+     "latest": {
+      "ts": "2026-10-19T23:00:00+07:00",
+      "level_msl": 3.32,
+      "diff_wl_bank": -1.38,
+      "situation_level": 4,
+      "discharge": null
+     },
+     "risk": {
+      "tier": "normal",
+      "trend_cm_per_hr": 0.33,
+      "hours_to_bank": null,
+      "computed_at": "2026-10-19T23:00:00+07:00"
+     }
+    },
+    {
+     "id": 44,
+     "oldcode": "PAS009",
+     "name_th": "นครหลวง",
+     "name_en": "Pa Sak 9",
+     "lat": 14.40269,
+     "lon": 100.5864,
+     "river": "แม่น้ำป่าสัก",
+     "province": "พระนครศรีอยุธยา",
+     "amphoe": "นครหลวง",
+     "agency": "HII",
+     "is_key_station": false,
+     "stem_order": null,
+     "role": null,
+     "latest": {
+      "ts": "2026-10-20T00:00:00+07:00",
+      "level_msl": 3.04,
+      "diff_wl_bank": -0.84,
+      "situation_level": 4,
+      "discharge": null
+     },
+     "risk": {
+      "tier": "normal",
+      "trend_cm_per_hr": null,
+      "hours_to_bank": null,
+      "computed_at": "2026-10-20T00:00:00+07:00"
+     }
+    }
+   ]
+  },
+  {
+   "key": "แม่น้ำเจ้าพระยา",
+   "name_th": "แม่น้ำเจ้าพระยา",
+   "basins": [
+    "ลุ่มน้ำเจ้าพระยา"
+   ],
+   "provinces": [
+    "นครสวรรค์",
+    "ชัยนาท",
+    "สิงห์บุรี",
+    "อ่างทอง",
+    "พระนครศรีอยุธยา",
+    "นนทบุรี",
+    "กรุงเทพมหานคร",
+    "สมุทรปราการ"
+   ],
+   "stations": [
+    {
+     "id": 2795,
+     "oldcode": "C.2",
+     "name_th": "ค่ายจิรประวัติ",
+     "name_en": null,
+     "lat": 15.67059,
+     "lon": 100.10936,
+     "river": "แม่น้ำเจ้าพระยา",
+     "province": "นครสวรรค์",
+     "amphoe": "เมืองนครสวรรค์",
+     "agency": "RID",
+     "is_key_station": true,
+     "stem_order": 1,
+     "role": "main",
+     "latest": {
+      "ts": "2026-10-19T23:00:00+07:00",
+      "level_msl": 21.22,
+      "diff_wl_bank": -4.48,
+      "situation_level": 3,
+      "discharge": 1476.0
+     },
+     "risk": {
+      "tier": "normal",
+      "trend_cm_per_hr": -0.67,
+      "hours_to_bank": null,
+      "computed_at": "2026-10-19T23:00:00+07:00"
+     }
+    },
+    {
+     "id": 584,
+     "oldcode": "CPY002",
+     "name_th": "พยุหะคีรี",
+     "name_en": "Chao Phraya 2",
+     "lat": 15.42655,
+     "lon": 100.13471,
+     "river": "แม่น้ำเจ้าพระยา",
+     "province": "นครสวรรค์",
+     "amphoe": "พยุหะคีรี",
+     "agency": "HII",
+     "is_key_station": false,
+     "stem_order": 2,
+     "role": "main",
+     "latest": {
+      "ts": "2026-10-20T00:00:00+07:00",
+      "level_msl": 17.84,
+      "diff_wl_bank": -3.49,
+      "situation_level": 3,
+      "discharge": null
+     },
+     "risk": {
+      "tier": "normal",
+      "trend_cm_per_hr": -0.73,
+      "hours_to_bank": null,
+      "computed_at": "2026-10-20T00:00:00+07:00"
+     }
+    },
+    {
+     "id": 83,
+     "oldcode": "CPY003",
+     "name_th": "ปตร.มโนรมย์",
+     "name_en": "Chao Phraya 3",
+     "lat": 15.3277,
+     "lon": 100.10913,
+     "river": "แม่น้ำเจ้าพระยา",
+     "province": "ชัยนาท",
+     "amphoe": "มโนรมย์",
+     "agency": "HII",
+     "is_key_station": false,
+     "stem_order": 3,
+     "role": "main",
+     "latest": {
+      "ts": "2026-10-20T00:00:00+07:00",
+      "level_msl": 13.98,
+      "diff_wl_bank": -5.62,
+      "situation_level": 3,
+      "discharge": null
+     },
+     "risk": {
+      "tier": "normal",
+      "trend_cm_per_hr": -3.97,
+      "hours_to_bank": null,
+      "computed_at": "2026-10-20T00:00:00+07:00"
+     }
+    },
+    {
+     "id": 80,
+     "oldcode": "CPY004",
+     "name_th": "สะพานธรรมจักร(วัดธรรมามูล)",
+     "name_en": "Chao Phraya 4",
+     "lat": 15.25029,
+     "lon": 100.08347,
+     "river": "แม่น้ำเจ้าพระยา",
+     "province": "ชัยนาท",
+     "amphoe": "เมืองชัยนาท",
+     "agency": "HII",
+     "is_key_station": false,
+     "stem_order": 4,
+     "role": "main",
+     "latest": {
+      "ts": "2026-10-20T00:00:00+07:00",
+      "level_msl": 16.83,
+      "diff_wl_bank": -0.71,
+      "situation_level": 4,
+      "discharge": null
+     },
+     "risk": {
+      "tier": "normal",
+      "trend_cm_per_hr": -1.33,
+      "hours_to_bank": null,
+      "computed_at": "2026-10-20T00:00:00+07:00"
+     }
+    },
+    {
+     "id": 2744,
+     "oldcode": "C.13",
+     "name_th": "ท้ายเขื่อนเจ้าพระยา",
+     "name_en": null,
+     "lat": 15.16384,
+     "lon": 100.18792,
+     "river": "แม่น้ำเจ้าพระยา",
+     "province": "ชัยนาท",
+     "amphoe": "สรรพยา",
+     "agency": "RID",
+     "is_key_station": true,
+     "stem_order": 5,
+     "role": "main",
+     "latest": {
+      "ts": "2026-10-19T23:00:00+07:00",
+      "level_msl": 14.05,
+      "diff_wl_bank": -2.29,
+      "situation_level": 4,
+      "discharge": 1800.0
+     },
+     "risk": {
+      "tier": "normal",
+      "trend_cm_per_hr": 0.0,
+      "hours_to_bank": null,
+      "computed_at": "2026-10-19T23:00:00+07:00"
+     }
+    },
+    {
+     "id": 89,
+     "oldcode": "CPY005",
+     "name_th": "สรรพยา",
+     "name_en": "Chao Phraya 5",
+     "lat": 15.10907,
+     "lon": 100.26785,
+     "river": "แม่น้ำเจ้าพระยา",
+     "province": "ชัยนาท",
+     "amphoe": "สรรพยา",
+     "agency": "HII",
+     "is_key_station": false,
+     "stem_order": 5,
+     "role": "main",
+     "latest": {
+      "ts": "2026-10-20T00:00:00+07:00",
+      "level_msl": 13.19,
+      "diff_wl_bank": -2.08,
+      "situation_level": 4,
+      "discharge": null
+     },
+     "risk": {
+      "tier": "normal",
+      "trend_cm_per_hr": 0.1,
+      "hours_to_bank": null,
+      "computed_at": "2026-10-20T00:00:00+07:00"
+     }
+    },
+    {
+     "id": 71,
+     "oldcode": "CPY006",
+     "name_th": "อินทร์บุรี",
+     "name_en": "Chao Phraya 6",
+     "lat": 15.00602,
+     "lon": 100.33088,
+     "river": "แม่น้ำเจ้าพระยา",
+     "province": "สิงห์บุรี",
+     "amphoe": "อินทร์บุรี",
+     "agency": "HII",
+     "is_key_station": false,
+     "stem_order": 6,
+     "role": "main",
+     "latest": {
+      "ts": "2026-10-20T00:00:00+07:00",
+      "level_msl": 12.11,
+      "diff_wl_bank": -2.99,
+      "situation_level": 4,
+      "discharge": null
+     },
+     "risk": {
+      "tier": "normal",
+      "trend_cm_per_hr": 0.8,
+      "hours_to_bank": 373.8,
+      "computed_at": "2026-10-20T00:00:00+07:00"
+     }
+    },
+    {
+     "id": 2723,
+     "oldcode": "C.3",
+     "name_th": "บ้านบางพุทรา",
+     "name_en": null,
+     "lat": 14.89868,
+     "lon": 100.401863,
+     "river": "แม่น้ำเจ้าพระยา",
+     "province": "สิงห์บุรี",
+     "amphoe": "เมืองสิงห์บุรี",
+     "agency": "RID",
+     "is_key_station": true,
+     "stem_order": 7,
+     "role": "main",
+     "latest": {
+      "ts": "2026-10-19T23:00:00+07:00",
+      "level_msl": 10.68,
+      "diff_wl_bank": -2.52,
+      "situation_level": 4,
+      "discharge": 1934.0
+     },
+     "risk": {
+      "tier": "normal",
+      "trend_cm_per_hr": 0.33,
+      "hours_to_bank": null,
+      "computed_at": "2026-10-19T23:00:00+07:00"
+     }
+    },
+    {
+     "id": 68,
+     "oldcode": "CPY007",
+     "name_th": "พรหมบุรี",
+     "name_en": "Chao Phraya 7",
+     "lat": 14.79091,
+     "lon": 100.45184,
+     "river": "แม่น้ำเจ้าพระยา",
+     "province": "สิงห์บุรี",
+     "amphoe": "พรหมบุรี",
+     "agency": "HII",
+     "is_key_station": false,
+     "stem_order": 8,
+     "role": "main",
+     "latest": {
+      "ts": "2026-10-20T00:00:00+07:00",
+      "level_msl": 9.12,
+      "diff_wl_bank": -1.81,
+      "situation_level": 4,
+      "discharge": null
+     },
+     "risk": {
+      "tier": "normal",
+      "trend_cm_per_hr": 0.1,
+      "hours_to_bank": null,
+      "computed_at": "2026-10-20T00:00:00+07:00"
+     }
+    },
+    {
+     "id": 2626,
+     "oldcode": "C.7A",
+     "name_th": "บ้านบางแก้ว",
+     "name_en": null,
+     "lat": 14.59044,
+     "lon": 100.453293,
+     "river": "แม่น้ำเจ้าพระยา",
+     "province": "อ่างทอง",
+     "amphoe": "เมืองอ่างทอง",
+     "agency": "RID",
+     "is_key_station": true,
+     "stem_order": 9,
+     "role": "main",
+     "latest": {
+      "ts": "2026-10-19T23:00:00+07:00",
+      "level_msl": 7.59,
+      "diff_wl_bank": -2.31,
+      "situation_level": 4,
+      "discharge": 1884.0
+     },
+     "risk": {
+      "tier": "normal",
+      "trend_cm_per_hr": 0.0,
+      "hours_to_bank": null,
+      "computed_at": "2026-10-19T23:00:00+07:00"
+     }
+    },
+    {
+     "id": 2609,
+     "oldcode": "C.35",
+     "name_th": "บ้านป้อม",
+     "name_en": null,
+     "lat": 14.3691,
+     "lon": 100.528732,
+     "river": "แม่น้ำเจ้าพระยา",
+     "province": "พระนครศรีอยุธยา",
+     "amphoe": "พระนครศรีอยุธยา",
+     "agency": "RID",
+     "is_key_station": true,
+     "stem_order": 10,
+     "role": "main",
+     "latest": {
+      "ts": "2026-10-19T23:00:00+07:00",
+      "level_msl": 4.47,
+      "diff_wl_bank": 0.12,
+      "situation_level": 5,
+      "discharge": 1190.0
+     },
+     "risk": {
+      "tier": "danger",
+      "trend_cm_per_hr": 0.33,
+      "hours_to_bank": null,
+      "computed_at": "2026-10-19T23:00:00+07:00"
+     }
+    },
+    {
+     "id": 49,
+     "oldcode": "CPY012",
+     "name_th": "บางปะอิน",
+     "name_en": "Chao Phraya 12",
+     "lat": 14.30455,
+     "lon": 100.56645,
+     "river": "แม่น้ำเจ้าพระยา",
+     "province": "พระนครศรีอยุธยา",
+     "amphoe": "บางปะอิน",
+     "agency": "HII",
+     "is_key_station": false,
+     "stem_order": 12,
+     "role": "main",
+     "latest": {
+      "ts": "2026-10-20T00:00:00+07:00",
+      "level_msl": 2.67,
+      "diff_wl_bank": 0.05,
+      "situation_level": 5,
+      "discharge": null
+     },
+     "risk": {
+      "tier": "danger",
+      "trend_cm_per_hr": 0.27,
+      "hours_to_bank": null,
+      "computed_at": "2026-10-20T00:00:00+07:00"
+     }
+    },
+    {
+     "id": 26,
+     "oldcode": "CPY014",
+     "name_th": "สะพานนวลฉวี",
+     "name_en": "Chao Phraya 14",
+     "lat": 13.94749,
+     "lon": 100.53507,
+     "river": "แม่น้ำเจ้าพระยา",
+     "province": "นนทบุรี",
+     "amphoe": "ปากเกร็ด",
+     "agency": "HII",
+     "is_key_station": false,
+     "stem_order": 13,
+     "role": "main",
+     "latest": {
+      "ts": "2026-10-20T00:00:00+07:00",
+      "level_msl": 2.04,
+      "diff_wl_bank": -0.46,
+      "situation_level": 4,
+      "discharge": null
+     },
+     "risk": {
+      "tier": "normal",
+      "trend_cm_per_hr": -1.67,
+      "hours_to_bank": null,
+      "computed_at": "2026-10-20T00:00:00+07:00"
+     }
+    },
+    {
+     "id": 2599,
+     "oldcode": "C.12",
+     "name_th": "กรมชลประทานสามเสน",
+     "name_en": null,
+     "lat": 13.78815,
+     "lon": 100.509148,
+     "river": "แม่น้ำเจ้าพระยา",
+     "province": "กรุงเทพมหานคร",
+     "amphoe": "ดุสิต",
+     "agency": "RID",
+     "is_key_station": true,
+     "stem_order": 14,
+     "role": "main",
+     "latest": {
+      "ts": "2026-10-19T23:00:00+07:00",
+      "level_msl": 1.45,
+      "diff_wl_bank": -0.81,
+      "situation_level": 4,
+      "discharge": null
+     },
+     "risk": {
+      "tier": "warning",
+      "trend_cm_per_hr": -3.67,
+      "hours_to_bank": null,
+      "computed_at": "2026-10-19T23:00:00+07:00"
+     }
+    },
+    {
+     "id": 4,
+     "oldcode": "CPY015",
+     "name_th": "สะพานกรุงเทพ",
+     "name_en": "Chao Phraya 15",
+     "lat": 13.700301,
+     "lon": 100.49277,
+     "river": "แม่น้ำเจ้าพระยา",
+     "province": "กรุงเทพมหานคร",
+     "amphoe": "ธนบุรี",
+     "agency": "HII",
+     "is_key_station": false,
+     "stem_order": 15,
+     "role": "main",
+     "latest": {
+      "ts": "2026-10-20T00:00:00+07:00",
+      "level_msl": 0.72,
+      "diff_wl_bank": -1.44,
+      "situation_level": 4,
+      "discharge": null
+     },
+     "risk": {
+      "tier": "normal",
+      "trend_cm_per_hr": -11.0,
+      "hours_to_bank": null,
+      "computed_at": "2026-10-20T00:00:00+07:00"
+     }
+    },
+    {
+     "id": 575567,
+     "oldcode": "BKC003",
+     "name_th": "ปตร. คลองลัดบางยอ 1",
+     "name_en": "Khlong Lat Bang Yo 1 Gate",
+     "lat": 13.676162,
+     "lon": 100.553085,
+     "river": "แม่น้ำเจ้าพระยา",
+     "province": "สมุทรปราการ",
+     "amphoe": "พระประแดง",
+     "agency": "HII",
+     "is_key_station": false,
+     "stem_order": null,
+     "role": null,
+     "latest": {
+      "ts": "2026-10-20T00:00:00+07:00",
+      "level_msl": 0.86,
+      "diff_wl_bank": -0.65,
+      "situation_level": 4,
+      "discharge": null
+     },
+     "risk": {
+      "tier": "normal",
+      "trend_cm_per_hr": null,
+      "hours_to_bank": null,
+      "computed_at": "2026-10-20T00:00:00+07:00"
+     }
+    }
+   ]
+  },
+  {
+   "key": "แม่น้ำน่าน",
+   "name_th": "แม่น้ำน่าน",
+   "basins": [
+    "ลุ่มน้ำน่าน",
+    "ลุ่มน้ำยม"
+   ],
+   "provinces": [
+    "น่าน",
+    "อุตรดิตถ์",
+    "พิษณุโลก",
+    "พิจิตร",
+    "นครสวรรค์"
+   ],
+   "stations": [
+    {
+     "id": 1113290,
+     "oldcode": "SKU02",
+     "name_th": "อ.ท่าวังผา (N.64)",
+     "name_en": null,
+     "lat": 19.015332,
+     "lon": 100.780161,
+     "river": "แม่น้ำน่าน",
+     "province": "น่าน",
+     "amphoe": "เมืองน่าน",
+     "agency": "EGAT",
+     "is_key_station": false,
+     "stem_order": null,
+     "role": null,
+     "latest": {
+      "ts": "2026-10-19T23:00:00+07:00",
+      "level_msl": 212.12,
+      "diff_wl_bank": -11.99,
+      "situation_level": 2,
+      "discharge": null
+     },
+     "risk": {
+      "tier": "normal",
+      "trend_cm_per_hr": null,
+      "hours_to_bank": null,
+      "computed_at": "2026-10-19T23:00:00+07:00"
+     }
+    },
+    {
+     "id": 510,
+     "oldcode": "NAN001",
+     "name_th": "ท่าวังผา",
+     "name_en": "Nan 1",
+     "lat": 19.09611,
+     "lon": 100.80258,
+     "river": "แม่น้ำน่าน",
+     "province": "น่าน",
+     "amphoe": "ท่าวังผา",
+     "agency": "HII",
+     "is_key_station": false,
+     "stem_order": null,
+     "role": null,
+     "latest": {
+      "ts": "2026-10-20T00:00:00+07:00",
+      "level_msl": 218.1,
+      "diff_wl_bank": -5.21,
+      "situation_level": 2,
+      "discharge": null
+     },
+     "risk": {
+      "tier": "normal",
+      "trend_cm_per_hr": null,
+      "hours_to_bank": null,
+      "computed_at": "2026-10-20T00:00:00+07:00"
+     }
+    },
+    {
+     "id": 522,
+     "oldcode": "NAN002",
+     "name_th": "ภูเพียง",
+     "name_en": "Nan 2",
+     "lat": 18.85971,
+     "lon": 100.8171,
+     "river": "แม่น้ำน่าน",
+     "province": "น่าน",
+     "amphoe": "ภูเพียง",
+     "agency": "HII",
+     "is_key_station": false,
+     "stem_order": null,
+     "role": null,
+     "latest": {
+      "ts": "2026-10-20T00:00:00+07:00",
+      "level_msl": 196.9,
+      "diff_wl_bank": -8.75,
+      "situation_level": 2,
+      "discharge": null
+     },
+     "risk": {
+      "tier": "normal",
+      "trend_cm_per_hr": null,
+      "hours_to_bank": null,
+      "computed_at": "2026-10-20T00:00:00+07:00"
+     }
+    },
+    {
+     "id": 1113291,
+     "oldcode": "SKU03",
+     "name_th": "อ.เมืองน่าน (N.1)",
+     "name_en": null,
+     "lat": 18.77485,
+     "lon": 100.77974,
+     "river": "แม่น้ำน่าน",
+     "province": "น่าน",
+     "amphoe": "ภูเพียง",
+     "agency": "EGAT",
+     "is_key_station": false,
+     "stem_order": null,
+     "role": null,
+     "latest": {
+      "ts": "2026-10-19T23:00:00+07:00",
+      "level_msl": 192.87,
+      "diff_wl_bank": -11.28,
+      "situation_level": 2,
+      "discharge": null
+     },
+     "risk": {
+      "tier": "normal",
+      "trend_cm_per_hr": null,
+      "hours_to_bank": null,
+      "computed_at": "2026-10-19T23:00:00+07:00"
+     }
+    },
+    {
+     "id": 523,
+     "oldcode": "NAN003",
+     "name_th": "เมืองน่าน",
+     "name_en": "Nan 3",
+     "lat": 18.73796,
+     "lon": 100.75609,
+     "river": "แม่น้ำน่าน",
+     "province": "น่าน",
+     "amphoe": "ภูเพียง",
+     "agency": "HII",
+     "is_key_station": false,
+     "stem_order": null,
+     "role": null,
+     "latest": {
+      "ts": "2026-10-20T00:00:00+07:00",
+      "level_msl": 190.48,
+      "diff_wl_bank": -4.95,
+      "situation_level": 3,
+      "discharge": null
+     },
+     "risk": {
+      "tier": "normal",
+      "trend_cm_per_hr": null,
+      "hours_to_bank": null,
+      "computed_at": "2026-10-20T00:00:00+07:00"
+     }
+    },
+    {
+     "id": 512,
+     "oldcode": "NAN009",
+     "name_th": "เวียงสา",
+     "name_en": "Wieng Sa",
+     "lat": 18.54992,
+     "lon": 100.76151,
+     "river": "แม่น้ำน่าน",
+     "province": "น่าน",
+     "amphoe": "เวียงสา",
+     "agency": "HII",
+     "is_key_station": false,
+     "stem_order": null,
+     "role": null,
+     "latest": {
+      "ts": "2026-10-20T00:00:00+07:00",
+      "level_msl": 179.39,
+      "diff_wl_bank": -5.62,
+      "situation_level": 3,
+      "discharge": null
+     },
+     "risk": {
+      "tier": "normal",
+      "trend_cm_per_hr": null,
+      "hours_to_bank": null,
+      "computed_at": "2026-10-20T00:00:00+07:00"
+     }
+    },
+    {
+     "id": 3107,
+     "oldcode": "N.12A",
+     "name_th": "บ้านหาดไผ่",
+     "name_en": null,
+     "lat": 17.73687,
+     "lon": 100.531586,
+     "river": "แม่น้ำน่าน",
+     "province": "อุตรดิตถ์",
+     "amphoe": "ท่าปลา",
+     "agency": "RID",
+     "is_key_station": false,
+     "stem_order": null,
+     "role": null,
+     "latest": {
+      "ts": "2026-10-19T23:00:00+07:00",
+      "level_msl": 72.5,
+      "diff_wl_bank": -8.96,
+      "situation_level": 3,
+      "discharge": 376.9
+     },
+     "risk": {
+      "tier": "normal",
+      "trend_cm_per_hr": null,
+      "hours_to_bank": null,
+      "computed_at": "2026-10-19T23:00:00+07:00"
+     }
+    },
+    {
+     "id": 1113280,
+     "oldcode": "SKD02",
+     "name_th": "บ้านผาจุก",
+     "name_en": null,
+     "lat": 17.668222,
+     "lon": 100.21413,
+     "river": "แม่น้ำน่าน",
+     "province": "อุตรดิตถ์",
+     "amphoe": "เมืองอุตรดิตถ์",
+     "agency": "EGAT",
+     "is_key_station": false,
+     "stem_order": null,
+     "role": null,
+     "latest": {
+      "ts": "2026-10-19T23:00:00+07:00",
+      "level_msl": 55.86,
+      "diff_wl_bank": -13.09,
+      "situation_level": 2,
+      "discharge": null
+     },
+     "risk": {
+      "tier": "normal",
+      "trend_cm_per_hr": null,
+      "hours_to_bank": null,
+      "computed_at": "2026-10-19T23:00:00+07:00"
+     }
+    },
+    {
+     "id": 3095,
+     "oldcode": "N.2B",
+     "name_th": "ต.ในเมือง",
+     "name_en": null,
+     "lat": 17.609871,
+     "lon": 100.099609,
+     "river": "แม่น้ำน่าน",
+     "province": "อุตรดิตถ์",
+     "amphoe": "เมืองอุตรดิตถ์",
+     "agency": "RID",
+     "is_key_station": true,
+     "stem_order": null,
+     "role": null,
+     "latest": {
+      "ts": "2026-10-19T23:00:00+07:00",
+      "level_msl": 52.75,
+      "diff_wl_bank": -6.55,
+      "situation_level": 3,
+      "discharge": 122.45
+     },
+     "risk": {
+      "tier": "normal",
+      "trend_cm_per_hr": null,
+      "hours_to_bank": null,
+      "computed_at": "2026-10-19T23:00:00+07:00"
+     }
+    },
+    {
+     "id": 3065,
+     "oldcode": "N.60",
+     "name_th": "บ้านเด่นสำโรง",
+     "name_en": null,
+     "lat": 17.418329,
+     "lon": 100.130913,
+     "river": "แม่น้ำน่าน",
+     "province": "อุตรดิตถ์",
+     "amphoe": "ตรอน",
+     "agency": "RID",
+     "is_key_station": true,
+     "stem_order": null,
+     "role": null,
+     "latest": {
+      "ts": "2026-10-19T23:00:00+07:00",
+      "level_msl": 49.19,
+      "diff_wl_bank": -7.31,
+      "situation_level": 3,
+      "discharge": 96.95
+     },
+     "risk": {
+      "tier": "normal",
+      "trend_cm_per_hr": null,
+      "hours_to_bank": null,
+      "computed_at": "2026-10-19T23:00:00+07:00"
+     }
+    },
+    {
+     "id": 482,
+     "oldcode": "NAN004",
+     "name_th": "พิชัย",
+     "name_en": "Nan 4",
+     "lat": 17.29433,
+     "lon": 100.08282,
+     "river": "แม่น้ำน่าน",
+     "province": "อุตรดิตถ์",
+     "amphoe": "พิชัย",
+     "agency": "HII",
+     "is_key_station": false,
+     "stem_order": null,
+     "role": null,
+     "latest": {
+      "ts": "2026-10-20T00:00:00+07:00",
+      "level_msl": 47.05,
+      "diff_wl_bank": -4.48,
+      "situation_level": 3,
+      "discharge": null
+     },
+     "risk": {
+      "tier": "normal",
+      "trend_cm_per_hr": null,
+      "hours_to_bank": null,
+      "computed_at": "2026-10-20T00:00:00+07:00"
+     }
+    },
+    {
+     "id": 2993,
+     "oldcode": "N.27A",
+     "name_th": "ท้ายเขื่อนนเรศวร",
+     "name_en": null,
+     "lat": 17.033621,
+     "lon": 100.197968,
+     "river": "แม่น้ำน่าน",
+     "province": "พิษณุโลก",
+     "amphoe": "พรหมพิราม",
+     "agency": "RID",
+     "is_key_station": true,
+     "stem_order": null,
+     "role": null,
+     "latest": {
+      "ts": "2026-10-19T23:00:00+07:00",
+      "level_msl": 39.13,
+      "diff_wl_bank": -9.1,
+      "situation_level": 3,
+      "discharge": 74.42
+     },
+     "risk": {
+      "tier": "normal",
+      "trend_cm_per_hr": null,
+      "hours_to_bank": null,
+      "computed_at": "2026-10-19T23:00:00+07:00"
+     }
+    },
+    {
+     "id": 657,
+     "oldcode": "NAN012",
+     "name_th": "เมืองพิษณุโลก",
+     "name_en": "Nan 12",
+     "lat": 16.86469,
+     "lon": 100.24476,
+     "river": "แม่น้ำน่าน",
+     "province": "พิษณุโลก",
+     "amphoe": "เมืองพิษณุโลก",
+     "agency": "HII",
+     "is_key_station": false,
+     "stem_order": null,
+     "role": null,
+     "latest": {
+      "ts": "2026-10-20T00:00:00+07:00",
+      "level_msl": 36.17,
+      "diff_wl_bank": -9.16,
+      "situation_level": 2,
+      "discharge": null
+     },
+     "risk": {
+      "tier": "normal",
+      "trend_cm_per_hr": null,
+      "hours_to_bank": null,
+      "computed_at": "2026-10-20T00:00:00+07:00"
+     }
+    },
+    {
+     "id": 2953,
+     "oldcode": "N.5A",
+     "name_th": "สะพานสุพรรณกัลยา ",
+     "name_en": null,
+     "lat": 16.80608,
+     "lon": 100.245827,
+     "river": "แม่น้ำน่าน",
+     "province": "พิษณุโลก",
+     "amphoe": "เมืองพิษณุโลก",
+     "agency": "RID",
+     "is_key_station": true,
+     "stem_order": null,
+     "role": null,
+     "latest": {
+      "ts": "2026-10-19T23:00:00+07:00",
+      "level_msl": 35.59,
+      "diff_wl_bank": -9.28,
+      "situation_level": 3,
+      "discharge": 95.02
+     },
+     "risk": {
+      "tier": "normal",
+      "trend_cm_per_hr": null,
+      "hours_to_bank": null,
+      "computed_at": "2026-10-19T23:00:00+07:00"
+     }
+    },
+    {
+     "id": 658,
+     "oldcode": "DIV004",
+     "name_th": "คลองผันน้ำยม-น่าน4",
+     "name_en": "Yom-Nan4",
+     "lat": 16.67167,
+     "lon": 100.24581,
+     "river": "แม่น้ำน่าน",
+     "province": "พิษณุโลก",
+     "amphoe": "เมืองพิษณุโลก",
+     "agency": "HII",
+     "is_key_station": false,
+     "stem_order": null,
+     "role": null,
+     "latest": {
+      "ts": "2026-10-20T00:00:00+07:00",
+      "level_msl": 36.91,
+      "diff_wl_bank": -6.29,
+      "situation_level": 2,
+      "discharge": null
+     },
+     "risk": {
+      "tier": "normal",
+      "trend_cm_per_hr": null,
+      "hours_to_bank": null,
+      "computed_at": "2026-10-20T00:00:00+07:00"
+     }
+    },
+    {
+     "id": 667,
+     "oldcode": "NAN006",
+     "name_th": "บางกระทุ่ม",
+     "name_en": "Nan 6",
+     "lat": 16.58046,
+     "lon": 100.23858,
+     "river": "แม่น้ำน่าน",
+     "province": "พิษณุโลก",
+     "amphoe": "บางกระทุ่ม",
+     "agency": "HII",
+     "is_key_station": false,
+     "stem_order": null,
+     "role": null,
+     "latest": {
+      "ts": "2026-10-20T00:00:00+07:00",
+      "level_msl": 31.9,
+      "diff_wl_bank": -7.95,
+      "situation_level": 2,
+      "discharge": null
+     },
+     "risk": {
+      "tier": "normal",
+      "trend_cm_per_hr": null,
+      "hours_to_bank": null,
+      "computed_at": "2026-10-20T00:00:00+07:00"
+     }
+    },
+    {
+     "id": 2895,
+     "oldcode": "N.7A",
+     "name_th": "บ้านราชช้างขวัญ",
+     "name_en": null,
+     "lat": 16.4695,
+     "lon": 100.330872,
+     "river": "แม่น้ำน่าน",
+     "province": "พิจิตร",
+     "amphoe": "เมืองพิจิตร",
+     "agency": "RID",
+     "is_key_station": true,
+     "stem_order": null,
+     "role": null,
+     "latest": {
+      "ts": "2026-10-19T23:00:00+07:00",
+      "level_msl": 29.74,
+      "diff_wl_bank": -6.13,
+      "situation_level": 3,
+      "discharge": 296.5
+     },
+     "risk": {
+      "tier": "normal",
+      "trend_cm_per_hr": null,
+      "hours_to_bank": null,
+      "computed_at": "2026-10-19T23:00:00+07:00"
+     }
+    },
+    {
+     "id": 683,
+     "oldcode": "NAN007",
+     "name_th": "ตะพานหิน",
+     "name_en": "Nan 7",
+     "lat": 16.27034,
+     "lon": 100.41396,
+     "river": "แม่น้ำน่าน",
+     "province": "พิจิตร",
+     "amphoe": "ตะพานหิน",
+     "agency": "HII",
+     "is_key_station": false,
+     "stem_order": null,
+     "role": null,
+     "latest": {
+      "ts": "2026-10-20T00:00:00+07:00",
+      "level_msl": 28.05,
+      "diff_wl_bank": -6.11,
+      "situation_level": 3,
+      "discharge": null
+     },
+     "risk": {
+      "tier": "normal",
+      "trend_cm_per_hr": null,
+      "hours_to_bank": null,
+      "computed_at": "2026-10-20T00:00:00+07:00"
+     }
+    },
+    {
+     "id": 2821,
+     "oldcode": "N.67",
+     "name_th": "วัดเกยไชยเหนือ",
+     "name_en": null,
+     "lat": 15.86918,
+     "lon": 100.264732,
+     "river": "แม่น้ำน่าน",
+     "province": "นครสวรรค์",
+     "amphoe": "ชุมแสง",
+     "agency": "RID",
+     "is_key_station": true,
+     "stem_order": null,
+     "role": null,
+     "latest": {
+      "ts": "2026-10-19T23:00:00+07:00",
+      "level_msl": 23.82,
+      "diff_wl_bank": -4.39,
+      "situation_level": 4,
+      "discharge": 711.0
+     },
+     "risk": {
+      "tier": "normal",
+      "trend_cm_per_hr": null,
+      "hours_to_bank": null,
+      "computed_at": "2026-10-19T23:00:00+07:00"
+     }
+    }
+   ]
+  },
+  {
+   "key": "แม่น้ำยม",
+   "name_th": "แม่น้ำยม",
+   "basins": [
+    "ลุ่มน้ำยม"
+   ],
+   "provinces": [
+    "พะเยา",
+    "แพร่",
+    "สุโขทัย",
+    "พิษณุโลก",
+    "พิจิตร"
+   ],
+   "stations": [
+    {
+     "id": 3243,
+     "oldcode": "Y.31",
+     "name_th": "บ้านทุ่งหนอง",
+     "name_en": null,
+     "lat": 18.94628,
+     "lon": 100.258949,
+     "river": "แม่น้ำยม",
+     "province": "พะเยา",
+     "amphoe": "เชียงม่วน",
+     "agency": "RID",
+     "is_key_station": true,
+     "stem_order": null,
+     "role": null,
+     "latest": {
+      "ts": "2026-10-19T18:00:00+07:00",
+      "level_msl": 258.45,
+      "diff_wl_bank": -4.55,
+      "situation_level": 2,
+      "discharge": 17.55
+     },
+     "risk": {
+      "tier": "normal",
+      "trend_cm_per_hr": null,
+      "hours_to_bank": null,
+      "computed_at": "2026-10-19T18:00:00+07:00"
+     }
+    },
+    {
+     "id": 1140845,
+     "oldcode": "YOM013",
+     "name_th": "ศาลเจ้าพ่อพญาอ้น",
+     "name_en": "Chao Pho Phaya On Shrine",
+     "lat": 18.599714,
+     "lon": 100.1496,
+     "river": "แม่น้ำยม",
+     "province": "แพร่",
+     "amphoe": "สอง",
+     "agency": "HII",
+     "is_key_station": false,
+     "stem_order": null,
+     "role": null,
+     "latest": {
+      "ts": "2026-10-20T00:00:00+07:00",
+      "level_msl": 183.17,
+      "diff_wl_bank": -7.68,
+      "situation_level": 2,
+      "discharge": null
+     },
+     "risk": {
+      "tier": "normal",
+      "trend_cm_per_hr": null,
+      "hours_to_bank": null,
+      "computed_at": "2026-10-20T00:00:00+07:00"
+     }
+    },
+    {
+     "id": 1198760,
+     "oldcode": "YOM014",
+     "name_th": "สะพานหนองจันทร์",
+     "name_en": "Nong Chan Bridge",
+     "lat": 18.46601,
+     "lon": 100.151665,
+     "river": "แม่น้ำยม",
+     "province": "แพร่",
+     "amphoe": "สอง",
+     "agency": "HII",
+     "is_key_station": false,
+     "stem_order": null,
+     "role": null,
+     "latest": {
+      "ts": "2026-10-20T00:00:00+07:00",
+      "level_msl": 171.34,
+      "diff_wl_bank": -7.1,
+      "situation_level": 2,
+      "discharge": null
+     },
+     "risk": {
+      "tier": "normal",
+      "trend_cm_per_hr": null,
+      "hours_to_bank": null,
+      "computed_at": "2026-10-20T00:00:00+07:00"
+     }
+    },
+    {
+     "id": 499,
+     "oldcode": "YOM003",
+     "name_th": "หนองม่วงไข่",
+     "name_en": "Yom 3",
+     "lat": 18.26591,
+     "lon": 100.17706,
+     "river": "แม่น้ำยม",
+     "province": "แพร่",
+     "amphoe": "หนองม่วงไข่",
+     "agency": "HII",
+     "is_key_station": false,
+     "stem_order": null,
+     "role": null,
+     "latest": {
+      "ts": "2026-10-20T00:00:00+07:00",
+      "level_msl": 153.69,
+      "diff_wl_bank": -5.94,
+      "situation_level": 2,
+      "discharge": null
+     },
+     "risk": {
+      "tier": "normal",
+      "trend_cm_per_hr": null,
+      "hours_to_bank": null,
+      "computed_at": "2026-10-20T00:00:00+07:00"
+     }
+    },
+    {
+     "id": 489,
+     "oldcode": "YOM010",
+     "name_th": "เมืองแพร่",
+     "name_en": "Yom 10",
+     "lat": 18.13367,
+     "lon": 100.12458,
+     "river": "แม่น้ำยม",
+     "province": "แพร่",
+     "amphoe": "เมืองแพร่",
+     "agency": "HII",
+     "is_key_station": false,
+     "stem_order": null,
+     "role": null,
+     "latest": {
+      "ts": "2026-10-20T00:00:00+07:00",
+      "level_msl": 144.84,
+      "diff_wl_bank": -6.97,
+      "situation_level": 3,
+      "discharge": null
+     },
+     "risk": {
+      "tier": "normal",
+      "trend_cm_per_hr": null,
+      "hours_to_bank": null,
+      "computed_at": "2026-10-20T00:00:00+07:00"
+     }
+    },
+    {
+     "id": 493,
+     "oldcode": "YOM004",
+     "name_th": "เด่นชัย",
+     "name_en": "Yom 4",
+     "lat": 18.0208,
+     "lon": 100.0588,
+     "river": "แม่น้ำยม",
+     "province": "แพร่",
+     "amphoe": "เด่นชัย",
+     "agency": "HII",
+     "is_key_station": false,
+     "stem_order": null,
+     "role": null,
+     "latest": {
+      "ts": "2026-10-20T00:00:00+07:00",
+      "level_msl": 138.72,
+      "diff_wl_bank": -8.9,
+      "situation_level": 2,
+      "discharge": null
+     },
+     "risk": {
+      "tier": "normal",
+      "trend_cm_per_hr": null,
+      "hours_to_bank": null,
+      "computed_at": "2026-10-20T00:00:00+07:00"
+     }
+    },
+    {
+     "id": 3127,
+     "oldcode": "Y.37",
+     "name_th": "บ้านวังชิ้น",
+     "name_en": null,
+     "lat": 17.90118,
+     "lon": 99.605652,
+     "river": "แม่น้ำยม",
+     "province": "แพร่",
+     "amphoe": "วังชิ้น",
+     "agency": "RID",
+     "is_key_station": true,
+     "stem_order": null,
+     "role": null,
+     "latest": {
+      "ts": "2026-10-19T18:00:00+07:00",
+      "level_msl": 94.86,
+      "diff_wl_bank": -8.42,
+      "situation_level": 2,
+      "discharge": 36.0
+     },
+     "risk": {
+      "tier": "normal",
+      "trend_cm_per_hr": null,
+      "hours_to_bank": null,
+      "computed_at": "2026-10-19T18:00:00+07:00"
+     }
+    },
+    {
+     "id": 647,
+     "oldcode": "YOM005",
+     "name_th": "ศรีสัชนาลัย",
+     "name_en": "Yom 5",
+     "lat": 17.51715,
+     "lon": 99.75877,
+     "river": "แม่น้ำยม",
+     "province": "สุโขทัย",
+     "amphoe": "ศรีสัชนาลัย",
+     "agency": "HII",
+     "is_key_station": false,
+     "stem_order": null,
+     "role": null,
+     "latest": {
+      "ts": "2026-10-20T00:00:00+07:00",
+      "level_msl": 60.14,
+      "diff_wl_bank": -11.79,
+      "situation_level": 2,
+      "discharge": null
+     },
+     "risk": {
+      "tier": "normal",
+      "trend_cm_per_hr": null,
+      "hours_to_bank": null,
+      "computed_at": "2026-10-20T00:00:00+07:00"
+     }
+    },
+    {
+     "id": 3041,
+     "oldcode": "Y.3A",
+     "name_th": "บ้านวังขอนไม้",
+     "name_en": null,
+     "lat": 17.302389,
+     "lon": 99.830307,
+     "river": "แม่น้ำยม",
+     "province": "สุโขทัย",
+     "amphoe": "สวรรคโลก",
+     "agency": "RID",
+     "is_key_station": true,
+     "stem_order": null,
+     "role": null,
+     "latest": {
+      "ts": "2026-10-19T23:00:00+07:00",
+      "level_msl": 52.39,
+      "diff_wl_bank": -9.61,
+      "situation_level": 2,
+      "discharge": 65.51
+     },
+     "risk": {
+      "tier": "normal",
+      "trend_cm_per_hr": null,
+      "hours_to_bank": null,
+      "computed_at": "2026-10-19T23:00:00+07:00"
+     }
+    },
+    {
+     "id": 653,
+     "oldcode": "YOM006",
+     "name_th": "สวรรคโลก",
+     "name_en": "Yom 6",
+     "lat": 17.2019,
+     "lon": 99.86388,
+     "river": "แม่น้ำยม",
+     "province": "สุโขทัย",
+     "amphoe": "สวรรคโลก",
+     "agency": "HII",
+     "is_key_station": false,
+     "stem_order": null,
+     "role": null,
+     "latest": {
+      "ts": "2026-10-20T00:00:00+07:00",
+      "level_msl": 49.61,
+      "diff_wl_bank": -8.8,
+      "situation_level": 2,
+      "discharge": null
+     },
+     "risk": {
+      "tier": "normal",
+      "trend_cm_per_hr": null,
+      "hours_to_bank": null,
+      "computed_at": "2026-10-20T00:00:00+07:00"
+     }
+    },
+    {
+     "id": 3017,
+     "oldcode": "Y.33",
+     "name_th": "บ้านคลองตาล",
+     "name_en": null,
+     "lat": 17.16888,
+     "lon": 99.860977,
+     "river": "แม่น้ำยม",
+     "province": "สุโขทัย",
+     "amphoe": "ศรีสำโรง",
+     "agency": "RID",
+     "is_key_station": true,
+     "stem_order": null,
+     "role": null,
+     "latest": {
+      "ts": "2026-10-19T23:00:00+07:00",
+      "level_msl": 49.01,
+      "diff_wl_bank": -7.98,
+      "situation_level": 3,
+      "discharge": 82.14
+     },
+     "risk": {
+      "tier": "normal",
+      "trend_cm_per_hr": null,
+      "hours_to_bank": null,
+      "computed_at": "2026-10-19T23:00:00+07:00"
+     }
+    },
+    {
+     "id": 2986,
+     "oldcode": "Y.4",
+     "name_th": "ต.ธานี",
+     "name_en": null,
+     "lat": 17.006359,
+     "lon": 99.822113,
+     "river": "แม่น้ำยม",
+     "province": "สุโขทัย",
+     "amphoe": "เมืองสุโขทัย",
+     "agency": "RID",
+     "is_key_station": true,
+     "stem_order": null,
+     "role": null,
+     "latest": {
+      "ts": "2026-10-19T23:00:00+07:00",
+      "level_msl": 48.19,
+      "diff_wl_bank": -3.4,
+      "situation_level": 3,
+      "discharge": 172.2
+     },
+     "risk": {
+      "tier": "normal",
+      "trend_cm_per_hr": null,
+      "hours_to_bank": null,
+      "computed_at": "2026-10-19T23:00:00+07:00"
+     }
+    },
+    {
+     "id": 2972,
+     "oldcode": "Y.15",
+     "name_th": "บ้านกง",
+     "name_en": null,
+     "lat": 16.927441,
+     "lon": 99.959427,
+     "river": "แม่น้ำยม",
+     "province": "สุโขทัย",
+     "amphoe": "กงไกรลาศ",
+     "agency": "RID",
+     "is_key_station": false,
+     "stem_order": null,
+     "role": null,
+     "latest": {
+      "ts": "2026-10-19T23:00:00+07:00",
+      "level_msl": 42.52,
+      "diff_wl_bank": -3.12,
+      "situation_level": 4,
+      "discharge": 174.9
+     },
+     "risk": {
+      "tier": "normal",
+      "trend_cm_per_hr": null,
+      "hours_to_bank": null,
+      "computed_at": "2026-10-19T23:00:00+07:00"
+     }
+    },
+    {
+     "id": 664,
+     "oldcode": "YOM008",
+     "name_th": "บางระกำ",
+     "name_en": "Yom 8",
+     "lat": 16.70818,
+     "lon": 100.17179,
+     "river": "แม่น้ำยม",
+     "province": "พิษณุโลก",
+     "amphoe": "บางระกำ",
+     "agency": "HII",
+     "is_key_station": false,
+     "stem_order": null,
+     "role": null,
+     "latest": {
+      "ts": "2026-10-20T00:00:00+07:00",
+      "level_msl": 33.35,
+      "diff_wl_bank": -7.85,
+      "situation_level": 3,
+      "discharge": null
+     },
+     "risk": {
+      "tier": "normal",
+      "trend_cm_per_hr": null,
+      "hours_to_bank": null,
+      "computed_at": "2026-10-20T00:00:00+07:00"
+     }
+    },
+    {
+     "id": 665,
+     "oldcode": "VLGE13",
+     "name_th": "ชุมแสงสงคราม",
+     "name_en": "Chum Saeng Songkhram Communuty",
+     "lat": 16.8586,
+     "lon": 100.05965,
+     "river": "แม่น้ำยม",
+     "province": "พิษณุโลก",
+     "amphoe": "บางระกำ",
+     "agency": "HII",
+     "is_key_station": false,
+     "stem_order": null,
+     "role": null,
+     "latest": {
+      "ts": "2026-10-20T00:00:00+07:00",
+      "level_msl": 41.01,
+      "diff_wl_bank": 0.47,
+      "situation_level": 5,
+      "discharge": null
+     },
+     "risk": {
+      "tier": "danger",
+      "trend_cm_per_hr": null,
+      "hours_to_bank": null,
+      "computed_at": "2026-10-20T00:00:00+07:00"
+     }
+    },
+    {
+     "id": 2941,
+     "oldcode": "Y.16",
+     "name_th": "บางระกำ",
+     "name_en": null,
+     "lat": 16.757919,
+     "lon": 100.115578,
+     "river": "แม่น้ำยม",
+     "province": "พิษณุโลก",
+     "amphoe": "บางระกำ",
+     "agency": "RID",
+     "is_key_station": true,
+     "stem_order": null,
+     "role": null,
+     "latest": {
+      "ts": "2026-10-19T23:00:00+07:00",
+      "level_msl": 38.97,
+      "diff_wl_bank": 0.04,
+      "situation_level": 5,
+      "discharge": null
+     },
+     "risk": {
+      "tier": "danger",
+      "trend_cm_per_hr": null,
+      "hours_to_bank": null,
+      "computed_at": "2026-10-19T23:00:00+07:00"
+     }
+    },
+    {
+     "id": 2906,
+     "oldcode": "Y.17",
+     "name_th": "สามง่าม",
+     "name_en": null,
+     "lat": 16.507441,
+     "lon": 100.204086,
+     "river": "แม่น้ำยม",
+     "province": "พิจิตร",
+     "amphoe": "สามง่าม",
+     "agency": "RID",
+     "is_key_station": false,
+     "stem_order": null,
+     "role": null,
+     "latest": {
+      "ts": "2026-10-19T23:00:00+07:00",
+      "level_msl": 35.45,
+      "diff_wl_bank": -2.8,
+      "situation_level": 3,
+      "discharge": null
+     },
+     "risk": {
+      "tier": "normal",
+      "trend_cm_per_hr": null,
+      "hours_to_bank": null,
+      "computed_at": "2026-10-19T23:00:00+07:00"
+     }
+    },
+    {
+     "id": 680,
+     "oldcode": "YOM009",
+     "name_th": "โพธิ์ประทับช้าง",
+     "name_en": "Yom 9",
+     "lat": 16.31077,
+     "lon": 100.27173,
+     "river": "แม่น้ำยม",
+     "province": "พิจิตร",
+     "amphoe": "โพธิ์ประทับช้าง",
+     "agency": "HII",
+     "is_key_station": false,
+     "stem_order": null,
+     "role": null,
+     "latest": {
+      "ts": "2026-10-20T00:00:00+07:00",
+      "level_msl": 31.43,
+      "diff_wl_bank": -3.35,
+      "situation_level": 3,
+      "discharge": null
+     },
+     "risk": {
+      "tier": "normal",
+      "trend_cm_per_hr": null,
+      "hours_to_bank": null,
+      "computed_at": "2026-10-20T00:00:00+07:00"
+     }
+    },
+    {
+     "id": 2851,
+     "oldcode": "Y.5",
+     "name_th": "หน้าอำเภอโพทะเล",
+     "name_en": null,
+     "lat": 16.09481,
+     "lon": 100.259903,
+     "river": "แม่น้ำยม",
+     "province": "พิจิตร",
+     "amphoe": "โพทะเล",
+     "agency": "RID",
+     "is_key_station": true,
+     "stem_order": null,
+     "role": null,
+     "latest": {
+      "ts": "2026-10-19T23:00:00+07:00",
+      "level_msl": 28.09,
+      "diff_wl_bank": -2.06,
+      "situation_level": 3,
+      "discharge": null
+     },
+     "risk": {
+      "tier": "normal",
+      "trend_cm_per_hr": null,
+      "hours_to_bank": null,
+      "computed_at": "2026-10-19T23:00:00+07:00"
+     }
+    }
+   ]
+  },
+  {
+   "key": "แม่น้ำชี",
+   "name_th": "แม่น้ำชี",
+   "basins": [
+    "ลุ่มน้ำชี"
+   ],
+   "provinces": [
+    "ชัยภูมิ",
+    "ขอนแก่น",
+    "มหาสารคาม",
+    "ร้อยเอ็ด",
+    "ยโสธร",
+    "อุบลราชธานี"
+   ],
+   "stations": [
+    {
+     "id": 298,
+     "oldcode": "CHI001",
+     "name_th": "บ้านเขว้า",
+     "name_en": "Chi 1",
+     "lat": 15.93316,
+     "lon": 101.69951,
+     "river": "แม่น้ำชี",
+     "province": "ชัยภูมิ",
+     "amphoe": "บ้านเขว้า",
+     "agency": "HII",
+     "is_key_station": false,
+     "stem_order": null,
+     "role": null,
+     "latest": {
+      "ts": "2026-10-20T00:00:00+07:00",
+      "level_msl": 201.0,
+      "diff_wl_bank": -11.86,
+      "situation_level": 2,
+      "discharge": null
+     },
+     "risk": {
+      "tier": "normal",
+      "trend_cm_per_hr": null,
+      "hours_to_bank": null,
+      "computed_at": "2026-10-20T00:00:00+07:00"
+     }
+    },
+    {
+     "id": 2828,
+     "oldcode": "E.32A",
+     "name_th": "บ้านหนองอ้อ",
+     "name_en": null,
+     "lat": 15.9074,
+     "lon": 101.708229,
+     "river": "แม่น้ำชี",
+     "province": "ชัยภูมิ",
+     "amphoe": "บ้านเขว้า",
+     "agency": "RID",
+     "is_key_station": false,
+     "stem_order": null,
+     "role": null,
+     "latest": {
+      "ts": "2026-10-19T23:00:00+07:00",
+      "level_msl": 199.53,
+      "diff_wl_bank": -10.47,
+      "situation_level": 2,
+      "discharge": 9.04
+     },
+     "risk": {
+      "tier": "normal",
+      "trend_cm_per_hr": null,
+      "hours_to_bank": null,
+      "computed_at": "2026-10-19T23:00:00+07:00"
+     }
+    },
+    {
+     "id": 2809,
+     "oldcode": "E.5",
+     "name_th": "บ้านโนนเชือก",
+     "name_en": null,
+     "lat": 15.7325,
+     "lon": 101.830048,
+     "river": "แม่น้ำชี",
+     "province": "ชัยภูมิ",
+     "amphoe": "จัตุรัส",
+     "agency": "RID",
+     "is_key_station": true,
+     "stem_order": null,
+     "role": null,
+     "latest": {
+      "ts": "2026-10-19T23:00:00+07:00",
+      "level_msl": 188.52,
+      "diff_wl_bank": -7.98,
+      "situation_level": 3,
+      "discharge": 14.52
+     },
+     "risk": {
+      "tier": "normal",
+      "trend_cm_per_hr": null,
+      "hours_to_bank": null,
+      "computed_at": "2026-10-19T23:00:00+07:00"
+     }
+    },
+    {
+     "id": 2797,
+     "oldcode": "E.23",
+     "name_th": "บ้านค่าย",
+     "name_en": null,
+     "lat": 15.68176,
+     "lon": 102.009552,
+     "river": "แม่น้ำชี",
+     "province": "ชัยภูมิ",
+     "amphoe": "เนินสง่า",
+     "agency": "RID",
+     "is_key_station": true,
+     "stem_order": null,
+     "role": null,
+     "latest": {
+      "ts": "2026-10-19T23:00:00+07:00",
+      "level_msl": 181.43,
+      "diff_wl_bank": -3.77,
+      "situation_level": 3,
+      "discharge": 67.81
+     },
+     "risk": {
+      "tier": "normal",
+      "trend_cm_per_hr": null,
+      "hours_to_bank": null,
+      "computed_at": "2026-10-19T23:00:00+07:00"
+     }
+    },
+    {
+     "id": 2808,
+     "oldcode": "E.21",
+     "name_th": "บ้านแก่งโก",
+     "name_en": null,
+     "lat": 15.75292,
+     "lon": 102.252609,
+     "river": "แม่น้ำชี",
+     "province": "ชัยภูมิ",
+     "amphoe": "เมืองชัยภูมิ",
+     "agency": "RID",
+     "is_key_station": true,
+     "stem_order": null,
+     "role": null,
+     "latest": {
+      "ts": "2026-10-19T23:00:00+07:00",
+      "level_msl": 168.35,
+      "diff_wl_bank": -6.15,
+      "situation_level": 3,
+      "discharge": 45.75
+     },
+     "risk": {
+      "tier": "normal",
+      "trend_cm_per_hr": null,
+      "hours_to_bank": null,
+      "computed_at": "2026-10-19T23:00:00+07:00"
+     }
+    },
+    {
+     "id": 2852,
+     "oldcode": "E.9",
+     "name_th": "บ้านท่านางเลื่อน",
+     "name_en": null,
+     "lat": 16.096939,
+     "lon": 102.570023,
+     "river": "แม่น้ำชี",
+     "province": "ขอนแก่น",
+     "amphoe": "ชนบท",
+     "agency": "RID",
+     "is_key_station": true,
+     "stem_order": null,
+     "role": null,
+     "latest": {
+      "ts": "2026-10-19T23:00:00+07:00",
+      "level_msl": 156.34,
+      "diff_wl_bank": -5.76,
+      "situation_level": 3,
+      "discharge": 45.96
+     },
+     "risk": {
+      "tier": "normal",
+      "trend_cm_per_hr": null,
+      "hours_to_bank": null,
+      "computed_at": "2026-10-19T23:00:00+07:00"
+     }
+    },
+    {
+     "id": 3525,
+     "oldcode": "URTD05",
+     "name_th": "แม่น้ำชี บ้านหินกอง",
+     "name_en": null,
+     "lat": 16.250316,
+     "lon": 102.743923,
+     "river": "แม่น้ำชี",
+     "province": "ขอนแก่น",
+     "amphoe": "พระยืน",
+     "agency": "EGAT",
+     "is_key_station": false,
+     "stem_order": null,
+     "role": null,
+     "latest": {
+      "ts": "2026-10-19T23:00:00+07:00",
+      "level_msl": 147.59,
+      "diff_wl_bank": -7.66,
+      "situation_level": 3,
+      "discharge": 177.31
+     },
+     "risk": {
+      "tier": "normal",
+      "trend_cm_per_hr": null,
+      "hours_to_bank": null,
+      "computed_at": "2026-10-19T23:00:00+07:00"
+     }
+    },
+    {
+     "id": 333,
+     "oldcode": "CHI006",
+     "name_th": "เมืองขอนแก่น",
+     "name_en": "Chi 6",
+     "lat": 16.3259,
+     "lon": 102.78601,
+     "river": "แม่น้ำชี",
+     "province": "ขอนแก่น",
+     "amphoe": "เมืองขอนแก่น",
+     "agency": "HII",
+     "is_key_station": false,
+     "stem_order": null,
+     "role": null,
+     "latest": {
+      "ts": "2026-10-20T00:00:00+07:00",
+      "level_msl": 146.88,
+      "diff_wl_bank": -6.16,
+      "situation_level": 3,
+      "discharge": null
+     },
+     "risk": {
+      "tier": "normal",
+      "trend_cm_per_hr": null,
+      "hours_to_bank": null,
+      "computed_at": "2026-10-20T00:00:00+07:00"
+     }
+    },
+    {
+     "id": 2874,
+     "oldcode": "E.16A",
+     "name_th": "บ้านกุดกว้าง",
+     "name_en": null,
+     "lat": 16.356001,
+     "lon": 102.804291,
+     "river": "แม่น้ำชี",
+     "province": "ขอนแก่น",
+     "amphoe": "เมืองขอนแก่น",
+     "agency": "RID",
+     "is_key_station": true,
+     "stem_order": null,
+     "role": null,
+     "latest": {
+      "ts": "2026-10-19T23:00:00+07:00",
+      "level_msl": 146.99,
+      "diff_wl_bank": -5.31,
+      "situation_level": 3,
+      "discharge": 68.5
+     },
+     "risk": {
+      "tier": "normal",
+      "trend_cm_per_hr": null,
+      "hours_to_bank": null,
+      "computed_at": "2026-10-19T23:00:00+07:00"
+     }
+    },
+    {
+     "id": 2875,
+     "oldcode": "E.91",
+     "name_th": "บ้านดอนขนวน",
+     "name_en": null,
+     "lat": 16.36607,
+     "lon": 102.949753,
+     "river": "แม่น้ำชี",
+     "province": "มหาสารคาม",
+     "amphoe": "โกสุมพิสัย",
+     "agency": "RID",
+     "is_key_station": true,
+     "stem_order": null,
+     "role": null,
+     "latest": {
+      "ts": "2026-10-19T23:00:00+07:00",
+      "level_msl": 141.27,
+      "diff_wl_bank": -8.43,
+      "situation_level": 2,
+      "discharge": 86.66
+     },
+     "risk": {
+      "tier": "normal",
+      "trend_cm_per_hr": null,
+      "hours_to_bank": null,
+      "computed_at": "2026-10-19T23:00:00+07:00"
+     }
+    },
+    {
+     "id": 2863,
+     "oldcode": "E.8A",
+     "name_th": "บ้านดินดำ",
+     "name_en": null,
+     "lat": 16.231939,
+     "lon": 103.271019,
+     "river": "แม่น้ำชี",
+     "province": "มหาสารคาม",
+     "amphoe": "เมืองมหาสารคาม",
+     "agency": "RID",
+     "is_key_station": true,
+     "stem_order": null,
+     "role": null,
+     "latest": {
+      "ts": "2026-10-19T23:00:00+07:00",
+      "level_msl": 137.8,
+      "diff_wl_bank": -4.9,
+      "situation_level": 2,
+      "discharge": 131.0
+     },
+     "risk": {
+      "tier": "normal",
+      "trend_cm_per_hr": null,
+      "hours_to_bank": null,
+      "computed_at": "2026-10-19T23:00:00+07:00"
+     }
+    },
+    {
+     "id": 2857,
+     "oldcode": "E.66A",
+     "name_th": "บ้านม่วงลาด",
+     "name_en": null,
+     "lat": 16.20825,
+     "lon": 103.527641,
+     "river": "แม่น้ำชี",
+     "province": "ร้อยเอ็ด",
+     "amphoe": "จังหาร",
+     "agency": "RID",
+     "is_key_station": false,
+     "stem_order": null,
+     "role": null,
+     "latest": {
+      "ts": "2026-10-19T14:00:00+07:00",
+      "level_msl": 126.9,
+      "diff_wl_bank": -11.6,
+      "situation_level": 1,
+      "discharge": null
+     },
+     "risk": {
+      "tier": "normal",
+      "trend_cm_per_hr": null,
+      "hours_to_bank": null,
+      "computed_at": "2026-10-19T14:00:00+07:00"
+     }
+    },
+    {
+     "id": 1119854,
+     "oldcode": "E.95A",
+     "name_th": "บ้านธวัชดินแดง",
+     "name_en": null,
+     "lat": 16.115801,
+     "lon": 103.846603,
+     "river": "แม่น้ำชี",
+     "province": "ร้อยเอ็ด",
+     "amphoe": "ธวัชบุรี",
+     "agency": "RID",
+     "is_key_station": false,
+     "stem_order": null,
+     "role": null,
+     "latest": {
+      "ts": "2026-10-19T23:00:00+07:00",
+      "level_msl": 125.4,
+      "diff_wl_bank": -6.7,
+      "situation_level": 3,
+      "discharge": null
+     },
+     "risk": {
+      "tier": "normal",
+      "trend_cm_per_hr": null,
+      "hours_to_bank": null,
+      "computed_at": "2026-10-19T23:00:00+07:00"
+     }
+    },
+    {
+     "id": 2845,
+     "oldcode": "E.18",
+     "name_th": "บ้านท่าสะแบง",
+     "name_en": null,
+     "lat": 16.034149,
+     "lon": 103.906937,
+     "river": "แม่น้ำชี",
+     "province": "ร้อยเอ็ด",
+     "amphoe": "ทุ่งเขาหลวง",
+     "agency": "RID",
+     "is_key_station": true,
+     "stem_order": null,
+     "role": null,
+     "latest": {
+      "ts": "2026-10-19T23:00:00+07:00",
+      "level_msl": 125.27,
+      "diff_wl_bank": -6.73,
+      "situation_level": 3,
+      "discharge": 137.0
+     },
+     "risk": {
+      "tier": "normal",
+      "trend_cm_per_hr": null,
+      "hours_to_bank": null,
+      "computed_at": "2026-10-19T23:00:00+07:00"
+     }
+    },
+    {
+     "id": 2575,
+     "oldcode": "E.2A",
+     "name_th": "ประปายโสธร",
+     "name_en": null,
+     "lat": 15.79962,
+     "lon": 104.134857,
+     "river": "แม่น้ำชี",
+     "province": "ยโสธร",
+     "amphoe": "เมืองยโสธร",
+     "agency": "RID",
+     "is_key_station": true,
+     "stem_order": null,
+     "role": null,
+     "latest": {
+      "ts": "2026-10-19T23:00:00+07:00",
+      "level_msl": 124.51,
+      "diff_wl_bank": -1.49,
+      "situation_level": 4,
+      "discharge": null
+     },
+     "risk": {
+      "tier": "normal",
+      "trend_cm_per_hr": null,
+      "hours_to_bank": null,
+      "computed_at": "2026-10-19T23:00:00+07:00"
+     }
+    },
+    {
+     "id": 2782,
+     "oldcode": "E.20A",
+     "name_th": "บ้านฟ้าหยาด",
+     "name_en": null,
+     "lat": 15.52481,
+     "lon": 104.249657,
+     "river": "แม่น้ำชี",
+     "province": "ยโสธร",
+     "amphoe": "มหาชนะชัย",
+     "agency": "RID",
+     "is_key_station": true,
+     "stem_order": null,
+     "role": null,
+     "latest": {
+      "ts": "2026-10-19T23:00:00+07:00",
+      "level_msl": 116.36,
+      "diff_wl_bank": -5.64,
+      "situation_level": 3,
+      "discharge": 175.8
+     },
+     "risk": {
+      "tier": "normal",
+      "trend_cm_per_hr": null,
+      "hours_to_bank": null,
+      "computed_at": "2026-10-19T23:00:00+07:00"
+     }
+    },
+    {
+     "id": 504940,
+     "oldcode": "E.98",
+     "name_th": "บ้านเขื่องใน",
+     "name_en": null,
+     "lat": 15.30323,
+     "lon": 104.50032,
+     "river": "แม่น้ำชี",
+     "province": "อุบลราชธานี",
+     "amphoe": "เขื่องใน",
+     "agency": "RID",
+     "is_key_station": true,
+     "stem_order": null,
+     "role": null,
+     "latest": {
+      "ts": "2026-10-19T22:00:00+07:00",
+      "level_msl": 110.54,
+      "diff_wl_bank": -8.26,
+      "situation_level": 3,
+      "discharge": 87.8
+     },
+     "risk": {
+      "tier": "normal",
+      "trend_cm_per_hr": null,
+      "hours_to_bank": null,
+      "computed_at": "2026-10-19T22:00:00+07:00"
+     }
+    },
+    {
+     "id": 269,
+     "oldcode": "CHI011",
+     "name_th": "เขื่องใน",
+     "name_en": "Chi 11",
+     "lat": 15.32248,
+     "lon": 104.54649,
+     "river": "แม่น้ำชี",
+     "province": "อุบลราชธานี",
+     "amphoe": "เขื่องใน",
+     "agency": "HII",
+     "is_key_station": false,
+     "stem_order": null,
+     "role": null,
+     "latest": {
+      "ts": "2026-10-20T00:00:00+07:00",
+      "level_msl": 110.33,
+      "diff_wl_bank": -6.47,
+      "situation_level": 3,
+      "discharge": null
+     },
+     "risk": {
+      "tier": "normal",
+      "trend_cm_per_hr": null,
+      "hours_to_bank": null,
+      "computed_at": "2026-10-20T00:00:00+07:00"
+     }
+    }
+   ]
+  },
+  {
+   "key": "แม่น้ำปิง",
+   "name_th": "แม่น้ำปิง",
+   "basins": [
+    "ลุ่มน้ำปิง"
+   ],
+   "provinces": [
+    "เชียงใหม่",
+    "ตาก",
+    "กำแพงเพชร",
+    "นครสวรรค์"
+   ],
+   "stations": [
+    {
+     "id": 414,
+     "oldcode": "CHM004",
+     "name_th": "เชียงดาว",
+     "name_en": "Chiang Mai 4",
+     "lat": 19.36728,
+     "lon": 98.96884,
+     "river": "แม่น้ำปิง",
+     "province": "เชียงใหม่",
+     "amphoe": "เชียงดาว",
+     "agency": "HII",
+     "is_key_station": false,
+     "stem_order": null,
+     "role": null,
+     "latest": {
+      "ts": "2026-10-20T00:00:00+07:00",
+      "level_msl": 379.02,
+      "diff_wl_bank": -2.7,
+      "situation_level": 2,
+      "discharge": null
+     },
+     "risk": {
+      "tier": "normal",
+      "trend_cm_per_hr": null,
+      "hours_to_bank": null,
+      "computed_at": "2026-10-20T00:00:00+07:00"
+     }
+    },
+    {
+     "id": 430,
+     "oldcode": "CHM001",
+     "name_th": "สันทราย",
+     "name_en": "Chiang Mai 1",
+     "lat": 19.00979,
+     "lon": 98.95975,
+     "river": "แม่น้ำปิง",
+     "province": "เชียงใหม่",
+     "amphoe": "สันทราย",
+     "agency": "HII",
+     "is_key_station": false,
+     "stem_order": null,
+     "role": null,
+     "latest": {
+      "ts": "2026-10-20T00:00:00+07:00",
+      "level_msl": 314.29,
+      "diff_wl_bank": -6.98,
+      "situation_level": 2,
+      "discharge": null
+     },
+     "risk": {
+      "tier": "normal",
+      "trend_cm_per_hr": null,
+      "hours_to_bank": null,
+      "computed_at": "2026-10-20T00:00:00+07:00"
+     }
+    },
+    {
+     "id": 504679,
+     "oldcode": "P.103",
+     "name_th": "สะพานวงแหวนรอบ 3",
+     "name_en": null,
+     "lat": 18.86651,
+     "lon": 98.978188,
+     "river": "แม่น้ำปิง",
+     "province": "เชียงใหม่",
+     "amphoe": "แม่ริม",
+     "agency": "RID",
+     "is_key_station": false,
+     "stem_order": null,
+     "role": null,
+     "latest": {
+      "ts": "2026-10-19T18:00:00+07:00",
+      "level_msl": 302.68,
+      "diff_wl_bank": -5.01,
+      "situation_level": 3,
+      "discharge": 48.9
+     },
+     "risk": {
+      "tier": "normal",
+      "trend_cm_per_hr": null,
+      "hours_to_bank": null,
+      "computed_at": "2026-10-19T18:00:00+07:00"
+     }
+    },
+    {
+     "id": 3226,
+     "oldcode": "P.1",
+     "name_th": "สะพานนวรัฐ",
+     "name_en": null,
+     "lat": 18.786961,
+     "lon": 99.005089,
+     "river": "แม่น้ำปิง",
+     "province": "เชียงใหม่",
+     "amphoe": "เมืองเชียงใหม่",
+     "agency": "RID",
+     "is_key_station": true,
+     "stem_order": null,
+     "role": null,
+     "latest": {
+      "ts": "2026-10-19T18:00:00+07:00",
+      "level_msl": 301.78,
+      "diff_wl_bank": -2.42,
+      "situation_level": 3,
+      "discharge": 53.9
+     },
+     "risk": {
+      "tier": "normal",
+      "trend_cm_per_hr": null,
+      "hours_to_bank": null,
+      "computed_at": "2026-10-19T18:00:00+07:00"
+     }
+    },
+    {
+     "id": 3164,
+     "oldcode": "P.73",
+     "name_th": "บ้านสบสอย",
+     "name_en": null,
+     "lat": 18.29126,
+     "lon": 98.64756,
+     "river": "แม่น้ำปิง",
+     "province": "เชียงใหม่",
+     "amphoe": "จอมทอง",
+     "agency": "RID",
+     "is_key_station": false,
+     "stem_order": null,
+     "role": null,
+     "latest": {
+      "ts": "2026-10-19T18:00:00+07:00",
+      "level_msl": 265.16,
+      "diff_wl_bank": -2.89,
+      "situation_level": 4,
+      "discharge": null
+     },
+     "risk": {
+      "tier": "normal",
+      "trend_cm_per_hr": null,
+      "hours_to_bank": null,
+      "computed_at": "2026-10-19T18:00:00+07:00"
+     }
+    },
+    {
+     "id": 504708,
+     "oldcode": "P.73A",
+     "name_th": "บ้านสบแปะ",
+     "name_en": null,
+     "lat": 18.25341,
+     "lon": 98.641411,
+     "river": "แม่น้ำปิง",
+     "province": "เชียงใหม่",
+     "amphoe": "จอมทอง",
+     "agency": "RID",
+     "is_key_station": false,
+     "stem_order": null,
+     "role": null,
+     "latest": {
+      "ts": "2026-10-19T18:00:00+07:00",
+      "level_msl": 258.48,
+      "diff_wl_bank": -6.99,
+      "situation_level": 3,
+      "discharge": 69.0
+     },
+     "risk": {
+      "tier": "normal",
+      "trend_cm_per_hr": null,
+      "hours_to_bank": null,
+      "computed_at": "2026-10-19T18:00:00+07:00"
+     }
+    },
+    {
+     "id": 434,
+     "oldcode": "CHM002",
+     "name_th": "ฮอด",
+     "name_en": "Chiang Mai 2",
+     "lat": 18.17859,
+     "lon": 98.63017,
+     "river": "แม่น้ำปิง",
+     "province": "เชียงใหม่",
+     "amphoe": "ฮอด",
+     "agency": "HII",
+     "is_key_station": false,
+     "stem_order": null,
+     "role": null,
+     "latest": {
+      "ts": "2026-10-20T00:00:00+07:00",
+      "level_msl": 255.65,
+      "diff_wl_bank": -5.19,
+      "situation_level": 2,
+      "discharge": null
+     },
+     "risk": {
+      "tier": "normal",
+      "trend_cm_per_hr": null,
+      "hours_to_bank": null,
+      "computed_at": "2026-10-20T00:00:00+07:00"
+     }
+    },
+    {
+     "id": 3025,
+     "oldcode": "P.12C",
+     "name_th": "บ้านย่านรี",
+     "name_en": null,
+     "lat": 17.23818,
+     "lon": 99.02626,
+     "river": "แม่น้ำปิง",
+     "province": "ตาก",
+     "amphoe": "สามเงา",
+     "agency": "RID",
+     "is_key_station": false,
+     "stem_order": null,
+     "role": null,
+     "latest": {
+      "ts": "2026-10-19T23:00:00+07:00",
+      "level_msl": 129.88,
+      "diff_wl_bank": -4.56,
+      "situation_level": 3,
+      "discharge": 129.2
+     },
+     "risk": {
+      "tier": "normal",
+      "trend_cm_per_hr": null,
+      "hours_to_bank": null,
+      "computed_at": "2026-10-19T23:00:00+07:00"
+     }
+    },
+    {
+     "id": 628,
+     "oldcode": "PIN001",
+     "name_th": "บ้านตาก",
+     "name_en": "Ping 1",
+     "lat": 17.04066,
+     "lon": 99.06628,
+     "river": "แม่น้ำปิง",
+     "province": "ตาก",
+     "amphoe": "บ้านตาก",
+     "agency": "HII",
+     "is_key_station": false,
+     "stem_order": null,
+     "role": null,
+     "latest": {
+      "ts": "2026-10-20T00:00:00+07:00",
+      "level_msl": 118.41,
+      "diff_wl_bank": -3.19,
+      "situation_level": 2,
+      "discharge": null
+     },
+     "risk": {
+      "tier": "normal",
+      "trend_cm_per_hr": null,
+      "hours_to_bank": null,
+      "computed_at": "2026-10-20T00:00:00+07:00"
+     }
+    },
+    {
+     "id": 2963,
+     "oldcode": "P.2A",
+     "name_th": "บ้านท่าแค",
+     "name_en": null,
+     "lat": 16.855261,
+     "lon": 99.124489,
+     "river": "แม่น้ำปิง",
+     "province": "ตาก",
+     "amphoe": "เมืองตาก",
+     "agency": "RID",
+     "is_key_station": true,
+     "stem_order": null,
+     "role": null,
+     "latest": {
+      "ts": "2026-10-19T23:00:00+07:00",
+      "level_msl": 104.31,
+      "diff_wl_bank": -5.47,
+      "situation_level": 2,
+      "discharge": 125.2
+     },
+     "risk": {
+      "tier": "normal",
+      "trend_cm_per_hr": null,
+      "hours_to_bank": null,
+      "computed_at": "2026-10-19T23:00:00+07:00"
+     }
+    },
+    {
+     "id": 638,
+     "oldcode": "PIN002",
+     "name_th": "เมืองตาก",
+     "name_en": "Ping 2",
+     "lat": 16.78657,
+     "lon": 99.18398,
+     "river": "แม่น้ำปิง",
+     "province": "ตาก",
+     "amphoe": "วังเจ้า",
+     "agency": "HII",
+     "is_key_station": false,
+     "stem_order": null,
+     "role": null,
+     "latest": {
+      "ts": "2026-10-20T00:00:00+07:00",
+      "level_msl": 99.03,
+      "diff_wl_bank": -2.3,
+      "situation_level": 2,
+      "discharge": null
+     },
+     "risk": {
+      "tier": "normal",
+      "trend_cm_per_hr": null,
+      "hours_to_bank": null,
+      "computed_at": "2026-10-20T00:00:00+07:00"
+     }
+    },
+    {
+     "id": 610,
+     "oldcode": "PIN003",
+     "name_th": "สะพานลานดอกไม้",
+     "name_en": "Ping 3",
+     "lat": 16.6282,
+     "lon": 99.43257,
+     "river": "แม่น้ำปิง",
+     "province": "กำแพงเพชร",
+     "amphoe": "เมืองกำแพงเพชร",
+     "agency": "HII",
+     "is_key_station": false,
+     "stem_order": null,
+     "role": null,
+     "latest": {
+      "ts": "2026-10-20T00:00:00+07:00",
+      "level_msl": 80.51,
+      "diff_wl_bank": -4.13,
+      "situation_level": 1,
+      "discharge": null
+     },
+     "risk": {
+      "tier": "normal",
+      "trend_cm_per_hr": null,
+      "hours_to_bank": null,
+      "computed_at": "2026-10-20T00:00:00+07:00"
+     }
+    },
+    {
+     "id": 2900,
+     "oldcode": "P.7A",
+     "name_th": "ต.ในเมือง",
+     "name_en": null,
+     "lat": 16.47772,
+     "lon": 99.517921,
+     "river": "แม่น้ำปิง",
+     "province": "กำแพงเพชร",
+     "amphoe": "เมืองกำแพงเพชร",
+     "agency": "RID",
+     "is_key_station": true,
+     "stem_order": null,
+     "role": null,
+     "latest": {
+      "ts": "2026-10-19T23:00:00+07:00",
+      "level_msl": 72.94,
+      "diff_wl_bank": -4.13,
+      "situation_level": 3,
+      "discharge": 229.6
+     },
+     "risk": {
+      "tier": "normal",
+      "trend_cm_per_hr": null,
+      "hours_to_bank": null,
+      "computed_at": "2026-10-19T23:00:00+07:00"
+     }
+    },
+    {
+     "id": 2860,
+     "oldcode": "P.15",
+     "name_th": "หน้าวัดศรีภิรมย์",
+     "name_en": null,
+     "lat": 16.21414,
+     "lon": 99.722328,
+     "river": "แม่น้ำปิง",
+     "province": "กำแพงเพชร",
+     "amphoe": "คลองขลุง",
+     "agency": "RID",
+     "is_key_station": false,
+     "stem_order": null,
+     "role": null,
+     "latest": {
+      "ts": "2026-10-19T23:00:00+07:00",
+      "level_msl": 52.77,
+      "diff_wl_bank": -4.88,
+      "situation_level": 3,
+      "discharge": 283.88
+     },
+     "risk": {
+      "tier": "normal",
+      "trend_cm_per_hr": null,
+      "hours_to_bank": null,
+      "computed_at": "2026-10-19T23:00:00+07:00"
+     }
+    },
+    {
+     "id": 2847,
+     "oldcode": "P.16",
+     "name_th": "บ้านแสนตอ",
+     "name_en": null,
+     "lat": 16.064671,
+     "lon": 99.860191,
+     "river": "แม่น้ำปิง",
+     "province": "กำแพงเพชร",
+     "amphoe": "ขาณุวรลักษบุรี",
+     "agency": "RID",
+     "is_key_station": false,
+     "stem_order": null,
+     "role": null,
+     "latest": {
+      "ts": "2026-10-19T23:00:00+07:00",
+      "level_msl": 41.03,
+      "diff_wl_bank": -5.42,
+      "situation_level": 3,
+      "discharge": 174.5
+     },
+     "risk": {
+      "tier": "normal",
+      "trend_cm_per_hr": null,
+      "hours_to_bank": null,
+      "computed_at": "2026-10-19T23:00:00+07:00"
+     }
+    },
+    {
+     "id": 2832,
+     "oldcode": "P.17",
+     "name_th": "บ้านท่างิ้ว",
+     "name_en": null,
+     "lat": 15.93539,
+     "lon": 99.976089,
+     "river": "แม่น้ำปิง",
+     "province": "นครสวรรค์",
+     "amphoe": "บรรพตพิสัย",
+     "agency": "RID",
+     "is_key_station": true,
+     "stem_order": null,
+     "role": null,
+     "latest": {
+      "ts": "2026-10-19T23:00:00+07:00",
+      "level_msl": 34.62,
+      "diff_wl_bank": -3.63,
+      "situation_level": 3,
+      "discharge": 233.0
+     },
+     "risk": {
+      "tier": "normal",
+      "trend_cm_per_hr": null,
+      "hours_to_bank": null,
+      "computed_at": "2026-10-19T23:00:00+07:00"
+     }
+    },
+    {
+     "id": 577,
+     "oldcode": "PIN005",
+     "name_th": "เก้าเลี้ยว",
+     "name_en": "Ping 5",
+     "lat": 15.85051,
+     "lon": 100.05206,
+     "river": "แม่น้ำปิง",
+     "province": "นครสวรรค์",
+     "amphoe": "เก้าเลี้ยว",
+     "agency": "HII",
+     "is_key_station": false,
+     "stem_order": null,
+     "role": null,
+     "latest": {
+      "ts": "2026-10-20T00:00:00+07:00",
+      "level_msl": 27.4,
+      "diff_wl_bank": -4.13,
+      "situation_level": 2,
+      "discharge": null
+     },
+     "risk": {
+      "tier": "normal",
+      "trend_cm_per_hr": null,
+      "hours_to_bank": null,
+      "computed_at": "2026-10-20T00:00:00+07:00"
+     }
+    }
+   ]
+  }
+ ]
+}

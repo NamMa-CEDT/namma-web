@@ -10,6 +10,7 @@ const FLOOD_REFRESH_MS = 10 * 60_000;
 
 export const keys = {
   stations: ["stations"] as const,
+  rivers: (lat: number | null, lon: number | null, q: string) => ["rivers", lat, lon, q] as const,
   station: (id: number) => ["station", id] as const,
   readings: (id: number, hours: number) => ["readings", id, hours] as const,
   nearest: (lat: number, lon: number, k: number) => ["nearest", lat, lon, k] as const,
@@ -111,6 +112,17 @@ export function useFloodNear(period: FloodPeriod, point: { lat: number; lon: num
 
 export function useStations() {
   return useQuery({ queryKey: keys.stations, queryFn: api.stations, refetchInterval: STATION_REFRESH_MS });
+}
+
+/** The rivers worth showing now (at risk, then the one by `near`), or the ones matching `q`. */
+export function useRivers(near: { lat: number; lon: number } | null, q = "") {
+  const query = q.trim();
+  return useQuery({
+    queryKey: keys.rivers(near?.lat ?? null, near?.lon ?? null, query),
+    queryFn: () => api.rivers(query ? { q: query } : { lat: near?.lat, lon: near?.lon }),
+    refetchInterval: STATION_REFRESH_MS,
+    placeholderData: keepPreviousData,
+  });
 }
 
 export function useStation(id: number | null) {
