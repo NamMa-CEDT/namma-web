@@ -6,6 +6,52 @@ import { copy, type Starter } from "../../copy";
 import { looksLikeEmergency } from "../../lib/danger";
 import { formatDistance, formatTime } from "../../lib/format";
 
+type ReplyPart = { kind: "line" | "label"; text: string } | { kind: "list"; items: string[] };
+
+/** One paragraph of a reply: runs of "• " lines become a list, and the line just before a list is its label. */
+export function replyParts(lines: string[]): ReplyPart[] {
+  const parts: ReplyPart[] = [];
+  lines.forEach((line, i) => {
+    const last = parts[parts.length - 1];
+    if (line.startsWith("• ")) {
+      if (last?.kind === "list") last.items.push(line.slice(2));
+      else parts.push({ kind: "list", items: [line.slice(2)] });
+    } else {
+      parts.push({ kind: lines[i + 1]?.startsWith("• ") ? "label" : "line", text: line });
+    }
+  });
+  return parts;
+}
+
+/** NamMa's reply text (DS nm-msg): paragraphs at blank lines, with "สิ่งที่ควรทำตอนนี้" and its bullets as a list. */
+export function ReplyText({ text }: { text: string }) {
+  const paragraphs = text
+    .split(/\n\s*\n/)
+    .map((p) => p.split("\n").map((l) => l.trim()).filter(Boolean))
+    .filter((p) => p.length);
+  return (
+    <div className="nm-msg">
+      {paragraphs.map((lines, i) => (
+        <div key={i} className="nm-msg__block">
+          {replyParts(lines).map((part, j) =>
+            part.kind === "list" ? (
+              <ul key={j} className="nm-msg__list">
+                {part.items.map((item, k) => (
+                  <li key={k}>{item}</li>
+                ))}
+              </ul>
+            ) : (
+              <span key={j} className={part.kind === "label" ? "nm-msg__label" : "block"}>
+                {part.text}
+              </span>
+            ),
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
+
 /** Rescue reply: the hotline comes first, before any questions (DS HotlineNotice, CLAUDE.md §6). */
 export function EmergencyCard() {
   return (

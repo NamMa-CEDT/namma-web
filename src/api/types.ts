@@ -243,6 +243,18 @@ export type Source =
       shelter_id: number;
       name: string;
       distance_km: number | null;
+      /** What the ShelterCard draws. Optional: older backends send only the fields above. */
+      lat?: number;
+      lon?: number;
+      district?: string | null;
+      province?: string | null;
+      /** DDPM live status: null = DDPM doesn't say. */
+      is_open?: boolean | null;
+      capacity?: number | null;
+      current_residents?: number | null;
+      /** Present only when it says something: known, or the household needs it. null = DDPM doesn't say. */
+      patients_ok?: boolean | null;
+      source?: "ddpm" | "manual" | null;
     };
 
 /** Mirrors LINE quick-reply actions so one backend handler serves LINE and web. */

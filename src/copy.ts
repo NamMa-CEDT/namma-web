@@ -285,6 +285,22 @@ export const copy = {
     msl: "ม.รทก.",
   },
 
+  shelter: {
+    recommended: "ศูนย์พักพิงที่แนะนำ",
+    nearby: "ศูนย์พักพิงใกล้เคียง",
+    pick: "แนะนำ",
+    open: "เปิดรับอยู่",
+    closed: "ยังไม่เปิด",
+    residents: (cur: number, cap: number) => `มีผู้พัก ${cur} / ${cap} คน`,
+    patientsYes: "รับผู้ป่วยติดเตียง",
+    patientsNo: "ไม่รับผู้ป่วยติดเตียง",
+    patientsUnknown: "ไม่ได้ระบุว่ารับผู้ป่วยติดเตียง",
+    far: "ไกล โทร 1784 ถามศูนย์ที่ใกล้กว่า",
+    ddpmNote: "ข้อมูล ปภ. สถานะเปลี่ยนได้ · โทร 1784 ก่อนเดินทาง",
+    manualNote: "โทร 1784 ถามก่อนเดินทางว่าศูนย์ยังรับคนได้",
+    openMap: "เปิดใน Google Maps",
+  },
+
   vulnerable: {
     elderly: "ผู้สูงอายุ",
     bedridden: "ผู้ป่วยติดเตียง",

@@ -10,8 +10,9 @@ import { copy, type Starter } from "../../copy";
 import { load, loadSessionId, newId, save, saveSessionId, type ChatHandoff } from "../../lib/chatSession";
 import { looksLikeEmergency } from "../../lib/danger";
 import { getCurrentPosition } from "../../lib/geolocation";
-import { EmergencyCard, QuickReplies, Sources, StarterChips, TypingBubble } from "./parts";
+import { EmergencyCard, QuickReplies, ReplyText, Sources, StarterChips, TypingBubble } from "./parts";
 import { ProfilePanel } from "./ProfilePanel";
+import { ShelterCard, hasShelterDetail, type ShelterSource } from "./ShelterCard";
 import { StationCard, hasReading } from "./StationCard";
 
 type Item =
@@ -205,10 +206,16 @@ export default function ChatPage() {
 
 type StationSource = Extract<Source, { type: "station" }>;
 
-/** One NamMa turn: plain text (DS nm-msg), the station cards behind it, other sources, then the hotline. */
+/**
+ * One NamMa turn: the reply text (DS nm-msg), the station cards behind it (the backend sends the worse station first),
+ * the shelter card, other sources, then the hotline. GISTDA lines stay in the text, so they aren't repeated as sources.
+ */
 function Answer({ response: r, firstEmergency }: { response: ChatResponse; firstEmergency: boolean }) {
   const cards = r.sources.filter((s): s is StationSource => s.type === "station" && hasReading(s));
-  const rest = r.sources.filter((s) => !(s.type === "station" && hasReading(s)));
+  const shelters = r.sources.filter((s): s is ShelterSource => s.type === "shelter" && hasShelterDetail(s));
+  const rest = r.sources.filter(
+    (s) => s.type !== "gistda" && !cards.includes(s as StationSource) && !shelters.includes(s as ShelterSource),
+  );
   return (
     <div className="flex flex-col items-start gap-3">
       {r.emergency && firstEmergency && (
@@ -216,13 +223,15 @@ function Answer({ response: r, firstEmergency }: { response: ChatResponse; first
           <EmergencyCard />
         </div>
       )}
-      <div className="nm-msg whitespace-pre-line">{r.reply}</div>
+      <ReplyText text={r.reply} />
       {cards.map((s) => (
         <StationCard key={s.station_id} source={s} />
       ))}
+      {shelters.length > 0 && <ShelterCard shelters={shelters} />}
       <Sources sources={rest} />
-      {/* Every risk answer ends with the hotline (DS); rescue replies already led with it. */}
-      {isRiskAnswer(r) && !r.emergency && (
+      {/* Every risk and shelter answer ends with the hotline (DS); rescue replies already led with it. The backend drops
+          its text copy of the hotline when it sends these cards. */}
+      {(isRiskAnswer(r) || shelters.length > 0) && !r.emergency && (
         <div className="w-full max-w-[40rem]">
           <HotlineNotice />
         </div>
