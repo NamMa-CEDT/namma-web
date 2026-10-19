@@ -1,5 +1,5 @@
-import type { Profile, StationSummary } from "../api/types";
-import { riverGroups, staffFill } from "../components/RiverProfile";
+import type { Profile, River, StationSummary } from "../api/types";
+import { fromApi, staffFill } from "../components/RiverProfile";
 import { setupSteps } from "./chat/ProfilePanel";
 
 function st(p: Partial<StationSummary>): StationSummary {
@@ -20,24 +20,25 @@ describe("RiverProfile", () => {
     expect(staffFill(5)).toBe(100);
   });
 
-  it("orders the main stem upstream first and keeps branches in their own group, north first", () => {
-    const groups = riverGroups([
-      st({ id: 3, oldcode: "C.35", stem_order: 10, lat: 14.3691, lon: 100.5768 }),
-      st({ id: 7, oldcode: "CPY001", agency: "HII", stem_order: 1, lat: 15.6885, lon: 100.1238 }),
-      st({ id: 2, oldcode: "C.2", stem_order: 1, lat: 15.6706, lon: 100.1124 }),
-      st({ id: 10, oldcode: "CPY011", agency: "HII", stem_order: 11, lat: 14.3691, lon: 100.5769 }),
-      st({ id: 8, oldcode: "CPY002", agency: "HII", stem_order: 2, lat: 15.4266, lon: 100.1495 }),
-      st({ id: 9, oldcode: "CPY012", agency: "HII", stem_order: 12, lat: 14.3046, lon: 100.5774 }),
-      st({ id: 4, oldcode: "C.37", role: "branch", river: "คลองบางบาล", lat: 14.3 }),
-      st({ id: 5, oldcode: "C.36", role: "branch", river: "แม่น้ำน้อย", lat: 14.5 }),
-      st({ id: 6, oldcode: "C.99", stem_order: 3, latest: null }),
+  const river = (p: Partial<River>): River => ({
+    key: "แม่น้ำยม", name_th: "แม่น้ำยม", basins: [], provinces: [], worst_tier: null, reason: "largest",
+    distance_km: null, stations: [st({ id: 1 }), st({ id: 2, latest: null }), st({ id: 3 })], ...p,
+  });
+
+  it("keeps the server's order, drops stations without a reading and rivers left empty", () => {
+    const out = fromApi([river({}), river({ key: "คลองใหญ่@7", name_th: "คลองใหญ่", stations: [st({ latest: null })] })]);
+    expect(out.map((r) => [r.key, r.name, r.stations.map((s) => s.id)])).toEqual([["แม่น้ำยม", "แม่น้ำยม", [1, 3]]]);
+  });
+
+  it("says why a river is shown", () => {
+    const [atRisk, near, plain] = fromApi([
+      river({ reason: "at_risk", worst_tier: "danger" }),
+      river({ key: "b", reason: "near_you", distance_km: 1.5 }),
+      river({ key: "c", reason: "largest" }),
     ]);
-    // HII fills the places RID doesn't gauge; where both gauge one place (C.2 / CPY001, C.35 / CPY011) RID stays.
-    expect(groups.map((g) => g.stations.map((s) => s.oldcode))).toEqual([
-      ["C.2", "CPY002", "C.35", "CPY012"],
-      ["C.36", "C.37"],
-    ]);
-    expect(groups[1].name).toBe("แม่น้ำน้อย และ คลองบางบาล");
+    expect(atRisk.note).toBe("มีสถานีล้นตลิ่ง");
+    expect(near.note).toBe("ใกล้ที่ที่คุณบันทึกไว้ 1.5 กม.");
+    expect(plain.note).toBeNull();
   });
 });
 

@@ -2,12 +2,15 @@
 import type {
   NearbyStation,
   Reading,
+  River,
+  RiverReason,
   RiskTier,
   Shelter,
   StationDetail,
   StationLink,
   StationSummary,
 } from "../types";
+import riversFx from "./fixtures/rivers.json";
 import sheltersFx from "./fixtures/shelters.json";
 import stationsFx from "./fixtures/stations.json";
 import { haversineKm, shiftIso, timeShiftMs } from "./geo";
@@ -23,6 +26,8 @@ const FX_STATIONS = stationsFx.stations as unknown as FixtureStation[];
 const FX_EDGES = stationsFx.edges as FixtureEdge[];
 const FX_INGESTED_AT = stationsFx.meta.ingested_at as string | null;
 const FX_SHELTERS = sheltersFx.shelters as Omit<Shelter, "distance_km">[];
+type FixtureRiver = Omit<River, "worst_tier" | "reason" | "distance_km">;
+const FX_RIVERS = riversFx.rivers as unknown as FixtureRiver[];
 
 export function offsetNow(): number {
   return timeShiftMs(FX_INGESTED_AT);
@@ -119,4 +124,75 @@ export function shelters(q: { lat?: number; lon?: number; patients?: boolean; pe
       distance_km: hasPoint ? Math.round(haversineKm(q.lat!, q.lon!, s.lat, s.lon) * 10) / 10 : null,
     }))
     .sort((a, b) => (a.distance_km ?? 0) - (b.distance_km ?? 0));
+}
+
+// --- rivers (as api/rivers.py picks them) ---------------------------------------
+
+const TIER_RANK: RiskTier[] = ["normal", "watch", "warning", "danger"];
+const RIVER_FALLBACK = 3;
+
+/** A river's stations as of now: corridor ones through toSummary (demo tier overrides apply), the rest shifted. */
+function liveRivers(overrides: Record<string, RiskTier>): FixtureRiver[] {
+  const offset = offsetNow();
+  const byId = new Map(FX_STATIONS.map((s) => [s.id, s]));
+  return FX_RIVERS.map((r) => ({
+    ...r,
+    stations: r.stations.map((s) => {
+      const fx = byId.get(s.id);
+      if (fx) return toSummary(fx, offset, overrides);
+      return {
+        ...s,
+        latest: s.latest ? { ...s.latest, ts: shiftIso(s.latest.ts, offset) } : null,
+        risk: s.risk ? { ...s.risk, computed_at: shiftIso(s.risk.computed_at, offset) } : null,
+      };
+    }),
+  }));
+}
+
+function worst(r: FixtureRiver): RiskTier | null {
+  const tiers = r.stations.map((s) => s.risk?.tier).filter((t): t is RiskTier => !!t);
+  return tiers.length ? tiers.reduce((a, b) => (TIER_RANK.indexOf(b) > TIER_RANK.indexOf(a) ? b : a)) : null;
+}
+
+function nearestKm(r: FixtureRiver, lat: number, lon: number): number {
+  return Math.min(...r.stations.map((s) => haversineKm(lat, lon, s.lat, s.lon)));
+}
+
+function riverOut(r: FixtureRiver, reason: RiverReason, km: number | null): River {
+  return { ...r, worst_tier: worst(r), reason, distance_km: km == null ? null : Math.round(km * 10) / 10 };
+}
+
+export function listRivers(
+  q: { lat?: number; lon?: number; q?: string | null; limit: number },
+  overrides: Record<string, RiskTier>,
+): River[] {
+  const rivers = liveRivers(overrides);
+  const hasPoint = q.lat != null && q.lon != null;
+  const km = (r: FixtureRiver) => (hasPoint ? nearestKm(r, q.lat!, q.lon!) : null);
+  const bigFirst = (a: FixtureRiver, b: FixtureRiver) => b.stations.length - a.stations.length || a.key.localeCompare(b.key);
+  const needle = q.q?.trim();
+  if (needle) {
+    return rivers
+      .filter((r) => r.name_th.includes(needle))
+      .sort(bigFirst)
+      .slice(0, q.limit)
+      .map((r) => riverOut(r, "match", km(r)));
+  }
+  const over = (r: FixtureRiver) => Math.max(-99, ...r.stations.map((s) => s.latest?.diff_wl_bank ?? -99));
+  const out = rivers
+    .filter((r) => TIER_RANK.indexOf(worst(r) ?? "normal") >= 1)
+    .sort((a, b) => TIER_RANK.indexOf(worst(b)!) - TIER_RANK.indexOf(worst(a)!) || over(b) - over(a) || a.key.localeCompare(b.key))
+    .slice(0, q.limit)
+    .map((r) => riverOut(r, "at_risk", km(r)));
+  if (hasPoint && rivers.length) {
+    const closest = [...rivers].sort((a, b) => km(a)! - km(b)! || a.key.localeCompare(b.key))[0];
+    if (!out.some((r) => r.key === closest.key)) out.push(riverOut(closest, "near_you", km(closest)));
+  }
+  if (out.length) return out;
+  return [...rivers].sort(bigFirst).slice(0, RIVER_FALLBACK).map((r) => riverOut(r, "largest", null));
+}
+
+export function riverDetail(key: string, overrides: Record<string, RiskTier>): River | null {
+  const r = liveRivers(overrides).find((x) => x.key === key);
+  return r ? riverOut(r, "match", null) : null;
 }

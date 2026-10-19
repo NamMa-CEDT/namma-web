@@ -4,7 +4,7 @@ import { copy } from "../copy";
 import { formatBankGap } from "../lib/format";
 import { waterLine } from "../lib/riverShapes";
 import { stationTier, tierInfo, type TierKey } from "../lib/tiers";
-import type { River } from "./RiverProfile";
+import { RiverNote, type River } from "./RiverProfile";
 import { TIER_INK, TierBadge } from "./TierBadge";
 
 const HEIGHT = 150;
@@ -47,7 +47,10 @@ function OneRiver({ river }: { river: River }) {
   return (
     <section className="flex flex-col gap-2">
       <div className="flex flex-wrap items-baseline justify-between gap-x-3">
-        <h3 className="m-0 text-heading font-semibold text-river">{river.name}</h3>
+        <h3 className="m-0 text-heading font-semibold text-river">
+          {river.name}
+          <RiverNote river={river} />
+        </h3>
         <span className="text-caption text-ink-muted">{course(stations)}</span>
       </div>
 
@@ -138,7 +141,7 @@ export function RiverLine({ rivers }: { rivers: River[] }) {
   return (
     <div className="flex flex-col gap-6">
       {rivers.map((r) => (
-        <OneRiver key={r.name} river={r} />
+        <OneRiver key={r.key} river={r} />
       ))}
     </div>
   );

@@ -1,6 +1,6 @@
 // The mock backend is the executable form of docs/api.md; these tests pin its behaviour.
 import { createMockTransport } from "./index";
-import { resetState } from "./store";
+import { resetState, updateState } from "./store";
 
 const send = createMockTransport();
 const ORIGIN = "http://localhost";
@@ -61,6 +61,46 @@ describe("stations", () => {
     const r = await call("GET", "/api/stations/2609/readings?hours=72");
     expect(r.json.data.readings.length).toBeGreaterThan(24);
     expect((await call("GET", "/api/stations/999999")).status).toBe(404);
+  });
+});
+
+describe("rivers", () => {
+  type R = { key: string; reason: string; worst_tier: string | null; distance_km: number | null; stations: { id: number; oldcode: string }[] };
+
+  it("lists each gauged place once, upstream first", async () => {
+    const { status, json } = await call("GET", `/api/rivers/${encodeURIComponent("แม่น้ำเจ้าพระยา")}`);
+    expect(status).toBe(200);
+    const codes = (json.data as R).stations.map((s) => s.oldcode);
+    expect(codes[0]).toBe("C.2");
+    expect(codes).toContain("C.35");
+    expect(codes).not.toContain("CPY011"); // 10 m from C.35
+    expect(codes).not.toContain("CPY001"); // 2.5 km from C.2
+    expect(codes.indexOf("C.35")).toBeLessThan(codes.indexOf("C.12"));
+    expect((await call("GET", "/api/rivers/nope")).status).toBe(404);
+  });
+
+  it("puts rivers at risk first, then the one by the point; demo tiers count", async () => {
+    updateState((s) => {
+      s.tierOverrides = {};
+    });
+    const calm = (await call("GET", "/api/rivers?lat=18.79&lon=98.98")).json.data as R[]; // Chiang Mai
+    const near = calm.find((r) => r.reason === "near_you")!;
+    expect(near.key).toBe("แม่น้ำปิง");
+    expect(near.distance_km).toBeLessThan(10);
+    expect(calm.filter((r) => r.reason === "at_risk").every((r) => r.worst_tier && r.worst_tier !== "normal")).toBe(true);
+
+    updateState((s) => {
+      s.tierOverrides = { "2611": "danger" }; // C.36, แม่น้ำน้อย
+    });
+    const list = (await call("GET", "/api/rivers")).json.data as R[];
+    expect(list.find((r) => r.key === "แม่น้ำน้อย")).toMatchObject({ reason: "at_risk", worst_tier: "danger" });
+    expect(list[0].worst_tier).toBe("danger");
+  });
+
+  it("searches by name and rejects half a point", async () => {
+    const hits = (await call("GET", `/api/rivers?q=${encodeURIComponent("ยม")}`)).json.data as R[];
+    expect(hits.map((r) => [r.key, r.reason])).toEqual([["แม่น้ำยม", "match"]]);
+    expect((await call("GET", "/api/rivers?lat=14")).status).toBe(400);
   });
 });
 

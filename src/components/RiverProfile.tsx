@@ -1,8 +1,8 @@
 import { useState, type CSSProperties } from "react";
 import { Link } from "react-router";
-import type { StationSummary } from "../api/types";
-import { copy } from "../copy";
-import { formatBankGap, formatDateTime } from "../lib/format";
+import type { River as ApiRiver, StationSummary } from "../api/types";
+import { agencyName, copy } from "../copy";
+import { formatBankGap, formatDateTime, formatDistance } from "../lib/format";
 import { stationTier, tierInfo } from "../lib/tiers";
 import { RiverLine } from "./RiverLine";
 import { RiverSections } from "./RiverSections";
@@ -16,42 +16,35 @@ export function staffFill(diff: number): number {
   return Math.max(0, Math.min(100, ((diff + BELOW_M) / RANGE_M) * 100));
 }
 
+/** One river as the charts draw it: stations with a reading, upstream first. */
 export interface River {
+  key: string;
   name: string;
+  /** Why it is shown ("มีสถานีล้นตลิ่ง", "ใกล้ที่ที่คุณบันทึกไว้"); null when that says nothing. */
+  note: string | null;
   stations: StationSummary[];
 }
 
-/** Stations this close gauge the same place (C.35 and CPY011 are 10 m apart; the nearest distinct pair is 8 km). */
-const SAME_PLACE_KM = 3;
-
-/** Flat-earth distance: exact enough at a few km. */
-function km(a: StationSummary, b: StationSummary): number {
-  const x = (b.lon - a.lon) * Math.cos(((a.lat + b.lat) / 2) * (Math.PI / 180));
-  return Math.hypot(x, b.lat - a.lat) * 111.2;
+/** /api/rivers already groups, removes duplicate gauges and orders upstream first; this keeps the readable part. */
+export function fromApi(rivers: ApiRiver[]): River[] {
+  return rivers
+    .map((r) => ({
+      key: r.key,
+      name: r.name_th,
+      note:
+        r.reason === "at_risk" && r.worst_tier
+          ? copy.river.reason.atRisk(tierInfo(r.worst_tier).label)
+          : r.reason === "near_you"
+            ? copy.river.reason.nearYou(formatDistance(r.distance_km))
+            : null,
+      stations: r.stations.filter((s) => s.latest?.diff_wl_bank != null),
+    }))
+    .filter((r) => r.stations.length > 0);
 }
 
-/**
- * Upstream first. The main stem by stem_order, RID and HII together; where two stations gauge the same place
- * the RID one stands for it (stem_order can't tell: it differs for C.35 and CPY011). Branches and tributaries
- * each in their own group, north to south (the basin drains south), so a branch station never follows a
- * main-stem station whose water it doesn't receive.
- */
-export function riverGroups(stations: StationSummary[]): River[] {
-  const withReading = stations.filter((s) => s.latest?.diff_wl_bank != null);
-  const stem = withReading
-    .filter((s) => s.role === "main" && s.stem_order != null)
-    .sort((a, b) => Number(b.agency === "RID") - Number(a.agency === "RID"));
-  const main: StationSummary[] = [];
-  for (const s of stem) if (!main.some((m) => km(m, s) < SAME_PLACE_KM)) main.push(s);
-  main.sort((a, b) => a.stem_order! - b.stem_order!);
-  const groups: River[] = main.length ? [{ name: main[0].river ?? copy.river.main, stations: main }] : [];
-  for (const role of ["branch", "tributary"] as const) {
-    const list = withReading.filter((s) => s.role === role).sort((a, b) => b.lat - a.lat);
-    if (!list.length) continue;
-    const names = [...new Set(list.map((s) => s.river).filter(Boolean))];
-    groups.push({ name: names.join(" และ "), stations: list });
-  }
-  return groups;
+/** The note beside a river's name, if any. */
+export function RiverNote({ river }: { river: River }) {
+  return river.note ? <span className="text-caption font-normal text-ink-muted"> · {river.note}</span> : null;
 }
 
 /** One staff gauge; the whole gauge links to the station on the map. */
@@ -92,8 +85,11 @@ function StaffGauges({ rivers }: { rivers: River[] }) {
         <div className="nm-profile__scroll" tabIndex={0} aria-label={copy.home.riverTitle}>
           <div className="nm-profile__rivers">
             {rivers.map((r) => (
-              <section key={r.name} className="nm-profile__river">
-                <h3 className="nm-profile__name">{r.name}</h3>
+              <section key={r.key} className="nm-profile__river">
+                <h3 className="nm-profile__name">
+                  {r.name}
+                  <RiverNote river={r} />
+                </h3>
                 <ol className="nm-profile__stations">
                   {r.stations.map((s) => (
                     <Staff key={s.id} s={s} />
@@ -151,15 +147,16 @@ function ViewToggle({ view, onChange }: { view: RiverView; onChange: (v: RiverVi
   );
 }
 
-export function RiverProfile({ stations }: { stations: StationSummary[] }) {
+export function RiverProfile({ rivers: fromServer }: { rivers: ApiRiver[] }) {
   const [view, setView] = useState(readRiverView);
-  const rivers = riverGroups(stations);
+  const rivers = fromApi(fromServer);
   if (!rivers.length) return <p className="m-0 text-body text-ink-muted">{copy.river.empty}</p>;
   const latest = rivers
     .flatMap((r) => r.stations.map((s) => s.latest?.ts))
     .filter((t): t is string => !!t)
     .sort()
     .at(-1);
+  const agencies = [...new Set(rivers.flatMap((r) => r.stations.map((s) => agencyName(s.agency))))];
   const choose = (v: RiverView) => {
     setView(v);
     saveRiverView(v);
@@ -175,7 +172,7 @@ export function RiverProfile({ stations }: { stations: StationSummary[] }) {
         <StaffGauges rivers={rivers} />
       )}
       <figcaption className="nm-source">
-        {copy.river.sourceLead} · <span className="num">{formatDateTime(latest)}</span> · {copy.river.estimated}
+        {copy.river.sourceLead(agencies)} · <span className="num">{formatDateTime(latest)}</span> · {copy.river.estimated}
         {view !== "staff" && ` · ${copy.river.notes[view]}`}
       </figcaption>
     </figure>

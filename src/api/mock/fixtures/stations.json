@@ -1,7 +1,7 @@
 {
  "meta": {
-  "generated_at": "2026-10-16T14:24:33+07:00",
-  "ingested_at": "2026-10-16T14:10:00+07:00",
+  "generated_at": "2026-10-20T00:13:24+07:00",
+  "ingested_at": "2026-10-20T00:00:00+07:00",
   "source": "ThaiWater (HII) waterlevel_load + waterlevel_graph",
   "risk": "provisional, see ingest/export_web_fixtures.py"
  },
@@ -26,17 +26,17 @@
    "stem_order": 1,
    "role": "main",
    "latest": {
-    "ts": "2026-10-16T14:10:00+07:00",
-    "level_msl": 21.4,
-    "diff_wl_bank": -4.66,
+    "ts": "2026-10-20T00:00:00+07:00",
+    "level_msl": 20.86,
+    "diff_wl_bank": -5.2,
     "situation_level": 4,
     "discharge": null
    },
    "risk": {
     "tier": "normal",
-    "trend_cm_per_hr": 0.0,
+    "trend_cm_per_hr": -0.4,
     "hours_to_bank": null,
-    "computed_at": "2026-10-16T14:10:00+07:00"
+    "computed_at": "2026-10-20T00:00:00+07:00"
    }
   },
   {
@@ -59,17 +59,17 @@
    "stem_order": 1,
    "role": "main",
    "latest": {
-    "ts": "2026-10-16T13:00:00+07:00",
-    "level_msl": 21.76,
-    "diff_wl_bank": -3.94,
+    "ts": "2026-10-19T23:00:00+07:00",
+    "level_msl": 21.22,
+    "diff_wl_bank": -4.48,
     "situation_level": 3,
-    "discharge": 1654.0
+    "discharge": 1476.0
    },
    "risk": {
     "tier": "normal",
-    "trend_cm_per_hr": 0.0,
+    "trend_cm_per_hr": -0.67,
     "hours_to_bank": null,
-    "computed_at": "2026-10-16T13:00:00+07:00"
+    "computed_at": "2026-10-19T23:00:00+07:00"
    }
   },
   {
@@ -92,17 +92,17 @@
    "stem_order": 2,
    "role": "main",
    "latest": {
-    "ts": "2026-10-16T14:10:00+07:00",
-    "level_msl": 18.33,
-    "diff_wl_bank": -3.0,
-    "situation_level": 4,
+    "ts": "2026-10-20T00:00:00+07:00",
+    "level_msl": 17.84,
+    "diff_wl_bank": -3.49,
+    "situation_level": 3,
     "discharge": null
    },
    "risk": {
     "tier": "normal",
-    "trend_cm_per_hr": 0.07,
+    "trend_cm_per_hr": -0.73,
     "hours_to_bank": null,
-    "computed_at": "2026-10-16T14:10:00+07:00"
+    "computed_at": "2026-10-20T00:00:00+07:00"
    }
   },
   {
@@ -125,17 +125,17 @@
    "stem_order": 3,
    "role": "main",
    "latest": {
-    "ts": "2026-10-16T14:10:00+07:00",
-    "level_msl": 15.24,
-    "diff_wl_bank": -4.37,
+    "ts": "2026-10-20T00:00:00+07:00",
+    "level_msl": 13.98,
+    "diff_wl_bank": -5.62,
     "situation_level": 3,
     "discharge": null
    },
    "risk": {
     "tier": "normal",
-    "trend_cm_per_hr": 2.7,
-    "hours_to_bank": 161.9,
-    "computed_at": "2026-10-16T14:10:00+07:00"
+    "trend_cm_per_hr": -3.97,
+    "hours_to_bank": null,
+    "computed_at": "2026-10-20T00:00:00+07:00"
    }
   },
   {
@@ -158,17 +158,17 @@
    "stem_order": 4,
    "role": "main",
    "latest": {
-    "ts": "2026-10-16T14:10:00+07:00",
-    "level_msl": 17.39,
-    "diff_wl_bank": -0.15,
+    "ts": "2026-10-20T00:00:00+07:00",
+    "level_msl": 16.83,
+    "diff_wl_bank": -0.71,
     "situation_level": 4,
     "discharge": null
    },
    "risk": {
     "tier": "normal",
-    "trend_cm_per_hr": 0.07,
+    "trend_cm_per_hr": -1.33,
     "hours_to_bank": null,
-    "computed_at": "2026-10-16T14:10:00+07:00"
+    "computed_at": "2026-10-20T00:00:00+07:00"
    }
   },
   {
@@ -191,17 +191,17 @@
    "stem_order": 5,
    "role": "main",
    "latest": {
-    "ts": "2026-10-16T14:10:00+07:00",
-    "level_msl": 13.21,
-    "diff_wl_bank": -2.07,
+    "ts": "2026-10-20T00:00:00+07:00",
+    "level_msl": 13.19,
+    "diff_wl_bank": -2.08,
     "situation_level": 4,
     "discharge": null
    },
    "risk": {
     "tier": "normal",
-    "trend_cm_per_hr": 0.07,
+    "trend_cm_per_hr": 0.1,
     "hours_to_bank": null,
-    "computed_at": "2026-10-16T14:10:00+07:00"
+    "computed_at": "2026-10-20T00:00:00+07:00"
    }
   },
   {
@@ -224,7 +224,7 @@
    "stem_order": 5,
    "role": "main",
    "latest": {
-    "ts": "2026-10-16T13:00:00+07:00",
+    "ts": "2026-10-19T23:00:00+07:00",
     "level_msl": 14.05,
     "diff_wl_bank": -2.29,
     "situation_level": 4,
@@ -234,7 +234,7 @@
     "tier": "normal",
     "trend_cm_per_hr": 0.0,
     "hours_to_bank": null,
-    "computed_at": "2026-10-16T13:00:00+07:00"
+    "computed_at": "2026-10-19T23:00:00+07:00"
    }
   },
   {
@@ -257,17 +257,17 @@
    "stem_order": 6,
    "role": "main",
    "latest": {
-    "ts": "2026-10-16T14:10:00+07:00",
-    "level_msl": 12.1,
-    "diff_wl_bank": -3.0,
+    "ts": "2026-10-20T00:00:00+07:00",
+    "level_msl": 12.11,
+    "diff_wl_bank": -2.99,
     "situation_level": 4,
     "discharge": null
    },
    "risk": {
     "tier": "normal",
-    "trend_cm_per_hr": -1.33,
-    "hours_to_bank": null,
-    "computed_at": "2026-10-16T14:10:00+07:00"
+    "trend_cm_per_hr": 0.8,
+    "hours_to_bank": 373.8,
+    "computed_at": "2026-10-20T00:00:00+07:00"
    }
   },
   {
@@ -290,17 +290,17 @@
    "stem_order": 7,
    "role": "main",
    "latest": {
-    "ts": "2026-10-16T13:00:00+07:00",
-    "level_msl": 10.74,
-    "diff_wl_bank": -2.46,
+    "ts": "2026-10-19T23:00:00+07:00",
+    "level_msl": 10.68,
+    "diff_wl_bank": -2.52,
     "situation_level": 4,
-    "discharge": 1952.0
+    "discharge": 1934.0
    },
    "risk": {
     "tier": "normal",
-    "trend_cm_per_hr": 0.0,
+    "trend_cm_per_hr": 0.33,
     "hours_to_bank": null,
-    "computed_at": "2026-10-16T13:00:00+07:00"
+    "computed_at": "2026-10-19T23:00:00+07:00"
    }
   },
   {
@@ -323,17 +323,17 @@
    "stem_order": 8,
    "role": "main",
    "latest": {
-    "ts": "2026-10-16T14:10:00+07:00",
-    "level_msl": 9.2,
-    "diff_wl_bank": -1.73,
+    "ts": "2026-10-20T00:00:00+07:00",
+    "level_msl": 9.12,
+    "diff_wl_bank": -1.81,
     "situation_level": 4,
     "discharge": null
    },
    "risk": {
     "tier": "normal",
-    "trend_cm_per_hr": -0.07,
+    "trend_cm_per_hr": 0.1,
     "hours_to_bank": null,
-    "computed_at": "2026-10-16T14:10:00+07:00"
+    "computed_at": "2026-10-20T00:00:00+07:00"
    }
   },
   {
@@ -356,17 +356,17 @@
    "stem_order": 9,
    "role": "main",
    "latest": {
-    "ts": "2026-10-16T14:10:00+07:00",
-    "level_msl": 7.28,
-    "diff_wl_bank": -1.5,
+    "ts": "2026-10-20T00:00:00+07:00",
+    "level_msl": 7.16,
+    "diff_wl_bank": -1.62,
     "situation_level": 4,
     "discharge": null
    },
    "risk": {
     "tier": "normal",
-    "trend_cm_per_hr": -0.13,
+    "trend_cm_per_hr": -0.1,
     "hours_to_bank": null,
-    "computed_at": "2026-10-16T14:10:00+07:00"
+    "computed_at": "2026-10-20T00:00:00+07:00"
    }
   },
   {
@@ -389,17 +389,17 @@
    "stem_order": 9,
    "role": "main",
    "latest": {
-    "ts": "2026-10-16T13:00:00+07:00",
-    "level_msl": 7.7,
-    "diff_wl_bank": -2.2,
+    "ts": "2026-10-19T23:00:00+07:00",
+    "level_msl": 7.59,
+    "diff_wl_bank": -2.31,
     "situation_level": 4,
-    "discharge": 1923.0
+    "discharge": 1884.0
    },
    "risk": {
     "tier": "normal",
-    "trend_cm_per_hr": -0.33,
+    "trend_cm_per_hr": 0.0,
     "hours_to_bank": null,
-    "computed_at": "2026-10-16T13:00:00+07:00"
+    "computed_at": "2026-10-19T23:00:00+07:00"
    }
   },
   {
@@ -422,17 +422,17 @@
    "stem_order": 10,
    "role": "main",
    "latest": {
-    "ts": "2026-10-16T13:00:00+07:00",
-    "level_msl": 4.69,
-    "diff_wl_bank": 0.34,
+    "ts": "2026-10-19T23:00:00+07:00",
+    "level_msl": 4.47,
+    "diff_wl_bank": 0.12,
     "situation_level": 5,
-    "discharge": 1254.0
+    "discharge": 1190.0
    },
    "risk": {
     "tier": "danger",
-    "trend_cm_per_hr": -0.67,
+    "trend_cm_per_hr": 0.33,
     "hours_to_bank": null,
-    "computed_at": "2026-10-16T13:00:00+07:00"
+    "computed_at": "2026-10-19T23:00:00+07:00"
    }
   },
   {
@@ -455,17 +455,17 @@
    "stem_order": 11,
    "role": "main",
    "latest": {
-    "ts": "2026-10-16T14:10:00+07:00",
-    "level_msl": 4.43,
-    "diff_wl_bank": -0.64,
+    "ts": "2026-10-20T00:00:00+07:00",
+    "level_msl": 4.21,
+    "diff_wl_bank": -0.86,
     "situation_level": 4,
     "discharge": null
    },
    "risk": {
     "tier": "normal",
-    "trend_cm_per_hr": -0.33,
+    "trend_cm_per_hr": 0.2,
     "hours_to_bank": null,
-    "computed_at": "2026-10-16T14:10:00+07:00"
+    "computed_at": "2026-10-20T00:00:00+07:00"
    }
   },
   {
@@ -488,17 +488,17 @@
    "stem_order": 12,
    "role": "main",
    "latest": {
-    "ts": "2026-10-16T14:10:00+07:00",
-    "level_msl": 2.97,
-    "diff_wl_bank": 0.35,
+    "ts": "2026-10-20T00:00:00+07:00",
+    "level_msl": 2.67,
+    "diff_wl_bank": 0.05,
     "situation_level": 5,
     "discharge": null
    },
    "risk": {
     "tier": "danger",
-    "trend_cm_per_hr": 2.3,
+    "trend_cm_per_hr": 0.27,
     "hours_to_bank": null,
-    "computed_at": "2026-10-16T14:10:00+07:00"
+    "computed_at": "2026-10-20T00:00:00+07:00"
    }
   },
   {
@@ -521,17 +521,17 @@
    "stem_order": 13,
    "role": "main",
    "latest": {
-    "ts": "2026-10-16T14:10:00+07:00",
-    "level_msl": 2.38,
-    "diff_wl_bank": -0.12,
+    "ts": "2026-10-20T00:00:00+07:00",
+    "level_msl": 2.04,
+    "diff_wl_bank": -0.46,
     "situation_level": 4,
     "discharge": null
    },
    "risk": {
     "tier": "normal",
-    "trend_cm_per_hr": -0.33,
+    "trend_cm_per_hr": -1.67,
     "hours_to_bank": null,
-    "computed_at": "2026-10-16T14:10:00+07:00"
+    "computed_at": "2026-10-20T00:00:00+07:00"
    }
   },
   {
@@ -554,9 +554,9 @@
    "stem_order": 14,
    "role": "main",
    "latest": {
-    "ts": "2026-10-16T13:00:00+07:00",
-    "level_msl": 1.89,
-    "diff_wl_bank": -0.37,
+    "ts": "2026-10-19T23:00:00+07:00",
+    "level_msl": 1.45,
+    "diff_wl_bank": -0.81,
     "situation_level": 4,
     "discharge": null
    },
@@ -564,7 +564,7 @@
     "tier": "warning",
     "trend_cm_per_hr": -3.67,
     "hours_to_bank": null,
-    "computed_at": "2026-10-16T13:00:00+07:00"
+    "computed_at": "2026-10-19T23:00:00+07:00"
    }
   },
   {
@@ -587,17 +587,17 @@
    "stem_order": 15,
    "role": "main",
    "latest": {
-    "ts": "2026-10-16T14:10:00+07:00",
-    "level_msl": 1.15,
-    "diff_wl_bank": -1.01,
+    "ts": "2026-10-20T00:00:00+07:00",
+    "level_msl": 0.72,
+    "diff_wl_bank": -1.44,
     "situation_level": 4,
     "discharge": null
    },
    "risk": {
     "tier": "normal",
-    "trend_cm_per_hr": -17.0,
+    "trend_cm_per_hr": -11.0,
     "hours_to_bank": null,
-    "computed_at": "2026-10-16T14:10:00+07:00"
+    "computed_at": "2026-10-20T00:00:00+07:00"
    }
   },
   {
@@ -620,17 +620,17 @@
    "stem_order": null,
    "role": "tributary",
    "latest": {
-    "ts": "2026-10-16T13:00:00+07:00",
-    "level_msl": 3.64,
-    "diff_wl_bank": -1.06,
+    "ts": "2026-10-19T23:00:00+07:00",
+    "level_msl": 3.32,
+    "diff_wl_bank": -1.38,
     "situation_level": 4,
     "discharge": null
    },
    "risk": {
     "tier": "normal",
-    "trend_cm_per_hr": 0.67,
-    "hours_to_bank": 158.2,
-    "computed_at": "2026-10-16T13:00:00+07:00"
+    "trend_cm_per_hr": 0.33,
+    "hours_to_bank": null,
+    "computed_at": "2026-10-19T23:00:00+07:00"
    }
   },
   {
@@ -653,17 +653,17 @@
    "stem_order": null,
    "role": "branch",
    "latest": {
-    "ts": "2026-10-16T13:00:00+07:00",
-    "level_msl": 3.94,
-    "diff_wl_bank": -0.2,
+    "ts": "2026-10-19T23:00:00+07:00",
+    "level_msl": 3.8,
+    "diff_wl_bank": -0.34,
     "situation_level": 4,
-    "discharge": 88.0
+    "discharge": 83.0
    },
    "risk": {
     "tier": "normal",
-    "trend_cm_per_hr": -0.67,
+    "trend_cm_per_hr": 0.0,
     "hours_to_bank": null,
-    "computed_at": "2026-10-16T13:00:00+07:00"
+    "computed_at": "2026-10-19T23:00:00+07:00"
    }
   },
   {
@@ -686,17 +686,17 @@
    "stem_order": null,
    "role": "branch",
    "latest": {
-    "ts": "2026-10-16T13:00:00+07:00",
-    "level_msl": 5.8,
-    "diff_wl_bank": 1.5,
+    "ts": "2026-10-19T23:00:00+07:00",
+    "level_msl": 5.67,
+    "diff_wl_bank": 1.37,
     "situation_level": 5,
-    "discharge": 686.0
+    "discharge": 663.0
    },
    "risk": {
     "tier": "danger",
     "trend_cm_per_hr": -0.33,
     "hours_to_bank": null,
-    "computed_at": "2026-10-16T13:00:00+07:00"
+    "computed_at": "2026-10-19T23:00:00+07:00"
    }
   },
   {
@@ -719,17 +719,17 @@
    "stem_order": null,
    "role": "tributary",
    "latest": {
-    "ts": "2026-10-16T13:00:00+07:00",
-    "level_msl": 5.22,
-    "diff_wl_bank": -1.98,
+    "ts": "2026-10-19T23:00:00+07:00",
+    "level_msl": 3.96,
+    "diff_wl_bank": -3.24,
     "situation_level": 4,
-    "discharge": 402.0
+    "discharge": 264.0
    },
    "risk": {
     "tier": "normal",
-    "trend_cm_per_hr": -5.0,
+    "trend_cm_per_hr": 0.33,
     "hours_to_bank": null,
-    "computed_at": "2026-10-16T13:00:00+07:00"
+    "computed_at": "2026-10-19T23:00:00+07:00"
    }
   }
  ],
@@ -737,37 +737,37 @@
   {
    "upstream_id": 2795,
    "downstream_id": 2744,
-   "approx_travel_hours": null
+   "approx_travel_hours": 12.0
   },
   {
    "upstream_id": 2744,
    "downstream_id": 2723,
-   "approx_travel_hours": null
+   "approx_travel_hours": 8.0
   },
   {
    "upstream_id": 2723,
    "downstream_id": 2626,
-   "approx_travel_hours": null
+   "approx_travel_hours": 12.0
   },
   {
    "upstream_id": 2626,
    "downstream_id": 2609,
-   "approx_travel_hours": null
+   "approx_travel_hours": 22.0
   },
   {
    "upstream_id": 2609,
    "downstream_id": 2599,
-   "approx_travel_hours": null
+   "approx_travel_hours": 19.0
   },
   {
    "upstream_id": 2744,
    "downstream_id": 2611,
-   "approx_travel_hours": null
+   "approx_travel_hours": 12.0
   },
   {
    "upstream_id": 2624,
    "downstream_id": 2607,
-   "approx_travel_hours": null
+   "approx_travel_hours": 22.0
   }
  ]
 }

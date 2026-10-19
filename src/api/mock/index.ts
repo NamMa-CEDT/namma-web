@@ -69,6 +69,21 @@ route("GET", "/api/stations/:id/readings", async ({ params, query }) => {
   return readings ? { data: { station_id: Number(params.id), readings } } : fail(404, "not_found", "station not found");
 });
 
+// --- rivers -------------------------------------------------------------------
+
+route("GET", "/api/rivers", ({ query }) => {
+  const lat = num(query, "lat");
+  const lon = num(query, "lon");
+  if ((lat == null) !== (lon == null)) return fail(400, "bad_request", "lat and lon must be given together");
+  const limit = Math.min(50, Math.max(1, num(query, "limit") ?? 6));
+  return { data: data.listRivers({ lat, lon, q: query.get("q"), limit }, loadState().tierOverrides) };
+});
+
+route("GET", "/api/rivers/:key", ({ params }) => {
+  const r = data.riverDetail(decodeURIComponent(params.key), loadState().tierOverrides);
+  return r ? { data: r } : fail(404, "not_found", "river not found");
+});
+
 // --- shelters -----------------------------------------------------------------
 
 route("GET", "/api/shelters", ({ query }) => ({
