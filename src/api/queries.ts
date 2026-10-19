@@ -17,6 +17,7 @@ export const keys = {
   profile: (chatSession: string) => ["profile", chatSession] as const,
   floodAreas: (period: FloodPeriod, level: FloodLevel, province: string | null, amphoe: string | null) =>
     ["flood-areas", period, level, province, amphoe] as const,
+  floodCells: (period: FloodPeriod, bbox: string) => ["flood-cells", period, bbox] as const,
   provinceShapes: ["shapes", "provinces"] as const,
   tambonShapes: (provinceCode: string) => ["shapes", "tambons", provinceCode] as const,
   floodNear: (period: FloodPeriod, lat: number, lon: number) => ["flood-near", period, lat, lon] as const,
@@ -67,6 +68,17 @@ export function useFloodHistoryTambons(provinceCodes: string[], enabled: boolean
       staleTime: HISTORY_STALE_MS,
       enabled,
     })),
+  });
+}
+
+/** GISTDA's own cells in the view (close-up map). bbox = "w,s,e,n"; null = not zoomed in that far. */
+export function useFloodCells(period: FloodPeriod, bbox: string | null) {
+  return useQuery({
+    queryKey: keys.floodCells(period, bbox ?? ""),
+    queryFn: () => api.floodCells({ period, bbox: bbox!, res: 9, limit: 5000 }),
+    enabled: bbox != null,
+    refetchInterval: FLOOD_REFRESH_MS,
+    placeholderData: keepPreviousData,
   });
 }
 

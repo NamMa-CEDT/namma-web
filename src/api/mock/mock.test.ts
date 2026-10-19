@@ -157,7 +157,12 @@ describe("chat follows the demo script (CLAUDE.md §15)", () => {
     const a1 = await chat(sid, { message: "บ้านแม่อยู่บางบาล อยุธยา น้ำจะถึงไหม" });
     expect(a1.reply).toContain("C.37");
     expect(a1.reply).toContain("ไม่ใช่ระดับน้ำที่บ้าน");
-    expect(a1.sources[0]).toMatchObject({ type: "station", code: "C.37" });
+    // The nearest station (C.37) is cited; a worse one nearby comes first, as the backend sends it.
+    const order = ["normal", "watch", "warning", "danger"];
+    const stations = a1.sources.filter((s: { type: string }) => s.type === "station");
+    expect(stations.map((s: { code: string }) => s.code)).toContain("C.37");
+    const tiers = stations.map((s: { risk_tier: string }) => order.indexOf(s.risk_tier));
+    expect(tiers[0]).toBe(Math.max(...tiers));
     expect(a1.emergency).toBe(false);
 
     const a2 = await chat(sid, { message: "ที่บ้านมียายติดเตียง" });

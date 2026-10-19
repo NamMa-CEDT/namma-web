@@ -203,8 +203,8 @@ function riskAnswer(place: Place, s: ChatSessionState, deps: ChatDeps): ChatResp
   const askHousehold = s.household.length === 0 && s.consent === null;
   if (askHousehold) lines.push("", "ที่บ้านมีผู้สูงอายุ เด็กเล็ก หรือผู้ป่วยที่ต้องดูแลเป็นพิเศษไหม จะได้แนะนำให้ตรงขึ้น");
 
-  const sources = [stationSource(primary)];
-  if (worst.id !== primary.id) sources.push(stationSource(worst));
+  // The worse station first, as the backend sends it: the web draws the first card on top.
+  const sources = worst.id !== primary.id ? [stationSource(worst), stationSource(primary)] : [stationSource(primary)];
   return reply(lines.join("\n"), {
     sources,
     quick_replies: askHousehold
@@ -218,20 +218,32 @@ function shelterAnswer(place: Place | null, s: ChatSessionState, deps: ChatDeps)
   const needsCare = s.household.some((v) => v === "bedridden" || v === "patient");
   const list = deps.shelters(place.lat, place.lon, needsCare).slice(0, 3);
   if (!list.length) return reply("ยังไม่มีข้อมูลศูนย์พักพิงใกล้ตำแหน่งนี้ สอบถาม ปภ. 1784");
+  // As the backend's web reply: the list is the shelter card, the text a heading and the evacuation-order note.
   const lines = [
-    needsCare ? `ศูนย์พักพิงที่รับผู้ป่วย ใกล้ ${place.label}:` : `ศูนย์พักพิงใกล้ ${place.label}:`,
-    ...list.map(
-      (sh) =>
-        `• ${sh.name} ห่าง ${formatDistance(sh.distance_km)}` +
-        (sh.accepts_patients ? " · รับผู้ป่วย" : "") +
-        (sh.accepts_pets ? " · รับสัตว์เลี้ยง" : ""),
-    ),
-    "",
-    "ก่อนเดินทาง โทรสอบถาม ปภ. 1784 ว่าศูนย์ยังรับคนได้",
+    `ศูนย์พักพิงใกล้ ${place.label}` + (needsCare ? " เรียงให้ศูนย์ที่รับผู้ป่วยติดเตียงขึ้นก่อน" : ""),
+    "ถ้ามีคำสั่งอพยพจากทางการ ให้ไปตามจุดที่ทางการกำหนด",
   ];
-  return reply(lines.join("\n"), {
-    sources: list.map((sh) => ({ type: "shelter", shelter_id: sh.id, name: sh.name, distance_km: sh.distance_km })),
-  });
+  return reply(lines.join("\n"), { sources: list.map((sh) => shelterSource(sh, needsCare)) });
+}
+
+/** A shelter Source with the ShelterCard details, as the backend's _shelter_source. */
+function shelterSource(sh: Shelter, needsCare: boolean): Source {
+  const ok = sh.accepts_bedridden ?? (sh.accepts_patients ? true : null);
+  return {
+    type: "shelter",
+    shelter_id: sh.id,
+    name: sh.name,
+    distance_km: sh.distance_km,
+    lat: sh.lat,
+    lon: sh.lon,
+    district: sh.district ?? null,
+    province: sh.province ?? null,
+    is_open: sh.is_open ?? null,
+    capacity: sh.capacity,
+    current_residents: sh.current_residents ?? null,
+    source: sh.source ?? "manual",
+    ...(ok != null || needsCare ? { patients_ok: ok } : {}),
+  };
 }
 
 /** Danger: the hotline first. NamMa sends nothing on the person's behalf, so it says so and lists what to tell 1784. */
@@ -272,7 +284,7 @@ function handlePostback(data: string, s: ChatSessionState, deps: ChatDeps): Chat
         lines.push(
           `ถ้าระดับน้ำใกล้จุดเสี่ยง น้ำมาจะแจ้งเตือนให้อพยพเร็วขึ้น ศูนย์พักพิงที่รับผู้ป่วยใกล้ที่สุดคือ ${sh.name} ห่าง ${formatDistance(sh.distance_km)}`,
         );
-        sources = [{ type: "shelter", shelter_id: sh.id, name: sh.name, distance_km: sh.distance_km }];
+        sources = [shelterSource(sh, true)];
       }
     }
     return reply(lines.join("\n"), { sources });

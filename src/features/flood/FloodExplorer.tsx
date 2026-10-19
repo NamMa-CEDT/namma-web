@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router";
 import { API_MODE } from "../../api/client";
 import {
   useFloodAreas,
+  useFloodCells,
   useFloodHistory,
   useFloodHistoryTambons,
   useFloodNear,
@@ -25,11 +26,13 @@ import {
   historyClass,
   historyShare,
   placeName,
+  placeParts,
   shareWords,
   worstYear,
   type FloodClass,
 } from "../../lib/flood";
 import { formatDate, formatDateTime, formatDistance } from "../../lib/format";
+import { distanceToWaterKm, viewBox, waterPatches, type WaterPatch } from "../../lib/water";
 import type { Basemap, FlyTarget, MapArea, MapView } from "./FloodMap";
 import { FloodPatterns, Swatch } from "./patterns";
 
@@ -40,8 +43,11 @@ const LAYERS = ["3days", "7days", "history"] as const;
 // How close to fly when a row is tapped: an amphoe at 11, a tambon at 12.
 const FLY_ZOOM: Record<FloodLevel, number> = { province: 9, amphoe: 11, tambon: 12 };
 const MAX_PLACES = 3;
-// From this zoom the map shades tambons (of the provinces in view, nearest first) instead of provinces.
+// Zoom stages (design row "ซูมเข้าทีละขั้น"): provinces, then tambons (of the provinces in view, nearest first), then
+// close up the water itself: GISTDA's cells merged into patches over dashed tambon borders.
 const TAMBON_ZOOM = 9;
+const WATER_ZOOM = 13;
+type Stage = "province" | "tambon" | "water";
 const MAX_PROVINCES = 6;
 const CLASSES: FloodClass[] = ["many", "some", "none"];
 const TOTAL_PROVINCES = 77;
@@ -70,19 +76,34 @@ function legendText(history: boolean, year: number | null, zoomedIn: boolean): L
   return { title: h.legendWorst, labels: copy.flood.cls, note: h.worstNote };
 }
 
-function Legend({ text }: { text: LegendText }) {
+function Legend({ text, stage }: { text: LegendText; stage: Stage }) {
   return (
     <div className="rounded-sm border border-line bg-surface-raised px-3 py-2 shadow-float">
       <div className="text-caption font-semibold text-ink">{text.title}</div>
-      <ul className="m-0 mt-1 flex list-none flex-col gap-0.5 p-0 text-caption text-ink">
-        {CLASSES.map((c) => (
-          <li key={c} className="flex items-center gap-2">
-            <Swatch cls={c} />
-            {text.labels[c]}
+      {stage === "water" ? (
+        <ul className="m-0 mt-1 flex list-none flex-col gap-0.5 p-0 text-caption text-ink">
+          <li className="flex items-center gap-2">
+            <Swatch cls="water" />
+            {copy.flood.legendWater}
           </li>
-        ))}
-      </ul>
-      <p className="m-0 mt-1 max-w-[14rem] text-caption text-ink-muted">{text.note}</p>
+          <li className="flex items-center gap-2">
+            <Swatch cls="border" />
+            {copy.flood.legendBorder}
+          </li>
+        </ul>
+      ) : (
+        <>
+          <ul className="m-0 mt-1 flex list-none flex-col gap-0.5 p-0 text-caption text-ink">
+            {CLASSES.map((c) => (
+              <li key={c} className="flex items-center gap-2">
+                <Swatch cls={c} />
+                {text.labels[c]}
+              </li>
+            ))}
+          </ul>
+          <p className="m-0 mt-1 max-w-[14rem] text-caption text-ink-muted">{text.note}</p>
+        </>
+      )}
     </div>
   );
 }
@@ -312,13 +333,126 @@ function AreaList({ data, busy, onPick }: { data: FloodAreas; busy: boolean; onP
   );
 }
 
-interface Picked {
+interface PickedTambon {
+  kind: "tambon";
   /** GISTDA's totals for it; null = no flooded cell in it. */
   row: FloodArea | null;
   /** Its outline once loaded (the card can show before it is, when picked from the list). */
   shape: AreaShape | null;
   /** Its flood history (history layer); null = none on record. */
   hist?: FloodHistoryArea | null;
+}
+/** Close up: a patch of water, or a dry spot (with how far the water in view is from it). */
+type Picked =
+  | PickedTambon
+  | { kind: "water"; patch: WaterPatch }
+  | { kind: "land"; shape: AreaShape; lat: number; lon: number; nearestKm: number | null };
+
+function CardHead({ head, rest, onClose, children }: { head: string; rest: string[]; onClose: () => void; children?: React.ReactNode }) {
+  return (
+    <div className="flex items-start justify-between gap-2">
+      <div className="min-w-0">
+        <h2 id="flood-area-h" className="m-0 text-heading font-semibold">
+          {head}
+        </h2>
+        {rest.length > 0 && <p className="m-0 text-caption text-ink-muted">{rest.join(" · ")}</p>}
+        {children}
+      </div>
+      <button type="button" onClick={onClose} aria-label={copy.flood.close} title={copy.flood.close} className="nm-icon-btn shrink-0">
+        <span aria-hidden="true">✕</span>
+      </button>
+    </div>
+  );
+}
+
+/** "ไม่ถึง 1 ไร่", "85 ไร่", "4,010 ไร่" → rounded to tens: a patch's edge is not that precise. */
+function patchRai(rai: number): string {
+  if (rai < 1) return copy.flood.lessThanRai;
+  return formatRai(rai < 100 ? rai : Math.round(rai / 10) * 10);
+}
+
+/** A patch of water picked close up (design "3 · ซูมใกล้"): how big, what's in it, how far from home. */
+function WaterCard({
+  patch,
+  observed,
+  places,
+  onClose,
+  onAsk,
+}: {
+  patch: WaterPatch;
+  observed: string | null;
+  places: SavedPlace[];
+  onClose: () => void;
+  onAsk: (text: string) => void;
+}) {
+  const where = { province: patch.province, amphoe: patch.amphoe, tambon: patch.tambon };
+  const parts = placeParts(where);
+  const head = patch.tambon ? copy.flood.waterIn(parts[0]) : copy.flood.waterTitle;
+  const stats = [
+    patch.buildings != null && `${copy.flood.stats.buildings} ${formatCount(patch.buildings)}`,
+    patch.population != null && `${copy.flood.stats.population} ~${formatCount(patch.population)}`,
+  ].filter(Boolean);
+  // The saved place nearest this water, and how far it is.
+  const home = places
+    .map((p) => ({ p, km: distanceToWaterKm(patch.cells, p.lat, p.lon) }))
+    .filter((x): x is { p: SavedPlace; km: number } => x.km != null)
+    .sort((a, b) => a.km - b.km)[0];
+  return (
+    <section aria-labelledby="flood-area-h" className="flex flex-col gap-3 px-4 py-4">
+      <CardHead head={head} rest={patch.tambon ? parts.slice(1) : parts} onClose={onClose} />
+      <div className="flex items-center gap-2">
+        <Swatch cls="water" />
+        <p className="num m-0 text-reading-lg font-semibold">{copy.flood.waterRai(patchRai(patch.area_rai))}</p>
+      </div>
+      {(stats.length > 0 || home) && (
+        <p className="num m-0 text-body">
+          {[
+            ...stats,
+            home && (home.km === 0 ? copy.flood.homeInWater(home.p.label) : copy.flood.homeAway(home.p.label, formatDistance(home.km) ?? "")),
+          ]
+            .filter(Boolean)
+            .join(" · ")}
+        </p>
+      )}
+      {(patch.observed_at ?? observed) && (
+        <p className="m-0 text-caption text-ink-muted">
+          {copy.flood.imageDate} {formatDate((patch.observed_at ?? observed)!)}
+        </p>
+      )}
+      <button type="button" className="nm-btn nm-btn--primary nm-btn--block" onClick={() => onAsk(copy.flood.askAreaText(placeName(where)))}>
+        {copy.flood.askPoint}
+      </button>
+    </section>
+  );
+}
+
+/** A dry spot tapped close up: no water seen here, and how far the nearest water in view is. */
+function LandCard({
+  shape,
+  nearestKm,
+  onClose,
+  onAsk,
+}: {
+  shape: AreaShape;
+  nearestKm: number | null;
+  onClose: () => void;
+  onAsk: (text: string) => void;
+}) {
+  const where = shape.properties;
+  const [head, ...rest] = placeParts(where);
+  return (
+    <section aria-labelledby="flood-area-h" className="flex flex-col gap-3 px-4 py-4">
+      <CardHead head={head} rest={rest} onClose={onClose} />
+      <p className="m-0 text-reading-lg font-semibold">{copy.flood.landDry}</p>
+      <p className="m-0 text-body">
+        {nearestKm != null ? copy.flood.nearestWater(formatDistance(nearestKm) ?? "") : copy.flood.noWaterInView}
+      </p>
+      <p className="m-0 text-caption text-ink-muted">{copy.flood.landCaveat}</p>
+      <button type="button" className="nm-btn nm-btn--primary nm-btn--block" onClick={() => onAsk(copy.flood.askAreaText(placeName(where)))}>
+        {copy.flood.askPoint}
+      </button>
+    </section>
+  );
 }
 
 /** The tambon picked on the map or in the list (DS option C card): how much of it is under water, in words. */
@@ -329,7 +463,7 @@ function AreaCard({
   onClose,
   onAsk,
 }: {
-  picked: Picked;
+  picked: PickedTambon;
   observed: string | null;
   places: SavedPlace[];
   onClose: () => void;
@@ -357,23 +491,14 @@ function AreaCard({
     : [];
   return (
     <section aria-labelledby="flood-area-h" className="flex flex-col gap-3 px-4 py-4">
-      <div className="flex items-start justify-between gap-2">
-        <div className="min-w-0">
-          <h2 id="flood-area-h" className="m-0 text-heading font-semibold">
-            {head}
-          </h2>
-          {rest.length > 0 && <p className="m-0 text-caption text-ink-muted">{rest.join(" · ")}</p>}
-          {home && (
-            <p className="m-0 mt-1 flex items-center gap-1.5 text-caption font-semibold text-ink">
-              <span className="nm-house text-home" aria-hidden="true" />
-              {copy.flood.homeHere(home.label)}
-            </p>
-          )}
-        </div>
-        <button type="button" onClick={onClose} aria-label={copy.flood.close} title={copy.flood.close} className="nm-icon-btn shrink-0">
-          <span aria-hidden="true">✕</span>
-        </button>
-      </div>
+      <CardHead head={head} rest={rest} onClose={onClose}>
+        {home && (
+          <p className="m-0 mt-1 flex items-center gap-1.5 text-caption font-semibold text-ink">
+            <span className="nm-house text-home" aria-hidden="true" />
+            {copy.flood.homeHere(home.label)}
+          </p>
+        )}
+      </CardHead>
 
       <div className="flex items-center gap-2">
         <Swatch cls={cls} />
@@ -504,7 +629,7 @@ function HistoryCard({
   onClose,
   onAsk,
 }: {
-  picked: Picked;
+  picked: PickedTambon;
   years: number[];
   year: number | null;
   /** Its province is in the copy: no history then means it never flooded, not "unknown". */
@@ -591,12 +716,12 @@ function HistoryCard({
   );
 }
 
-function Notes({ legend, history }: { legend: LegendText; history: boolean }) {
+function Notes({ legend, stage, history }: { legend: LegendText; stage: Stage; history: boolean }) {
   const h = copy.flood.history;
   return (
     <div className="grid gap-2 border-t border-line px-4 pt-3 pb-4 text-caption text-ink-muted">
       <div className="sm:hidden">
-        <Legend text={legend} />
+        <Legend text={legend} stage={stage} />
       </div>
       <p className="m-0">{history ? h.subtitle : copy.flood.subtitle}</p>
       <p className="m-0">{history ? h.tapHint : copy.flood.tapHint}</p>
@@ -646,8 +771,11 @@ export function FloodExplorer({
   const [picked, setPicked] = useState<Picked | null>(null);
   const detail = useRef<HTMLDivElement>(null);
 
+  // The history layer has no cells to show close up: it stays on tambons.
+  const stage: Stage =
+    view == null || view.zoom < TAMBON_ZOOM ? "province" : view.zoom < WATER_ZOOM || history ? "tambon" : "water";
   // Zoomed in: the tambons of the provinces in view, with GISTDA's totals for each.
-  const zoomedIn = view != null && view.zoom >= TAMBON_ZOOM;
+  const zoomedIn = stage !== "province";
   const inView = useMemo(
     () => (view && zoomedIn && provinceShapes.data ? provincesInView(provinceShapes.data.features, view.bbox, MAX_PROVINCES) : []),
     [zoomedIn, provinceShapes.data, view],
@@ -658,6 +786,9 @@ export function FloodExplorer({
     inView.map((p) => p.properties.code),
     history,
   );
+  // Close up: GISTDA's own cells in view, merged into patches of water.
+  const cells = useFloodCells(period, stage === "water" && view ? viewBox(view.bbox) : null);
+  const patches = useMemo(() => (stage === "water" && cells.data ? waterPatches(cells.data.cells) : []), [stage, cells.data]);
 
   // useQueries hands back new arrays every render: rebuild only when some result's data changed.
   const shapesKey = tambonShapes.map((q) => q.dataUpdatedAt).join();
@@ -718,7 +849,7 @@ export function FloodExplorer({
   }, [period, history]);
   // A tambon picked from the list before its outline loaded: attach the outline once it has.
   useEffect(() => {
-    if (!picked?.row || picked.shape) return;
+    if (picked?.kind !== "tambon" || !picked.row || picked.shape) return;
     const r = picked.row;
     const key = nameKey(r.province, r.amphoe, r.tambon);
     const hit = tambons.find(
@@ -726,7 +857,7 @@ export function FloodExplorer({
         (r.code != null && t.shape.properties.code === r.code) ||
         nameKey(t.shape.properties.province, t.shape.properties.amphoe, t.shape.properties.tambon) === key,
     );
-    if (hit) setPicked({ row: r, shape: hit.shape });
+    if (hit) setPicked({ kind: "tambon", row: r, shape: hit.shape });
   }, [tambons, picked]);
   // On a phone the panel is under the map: bring the picked tambon into view.
   useEffect(() => {
@@ -736,11 +867,15 @@ export function FloodExplorer({
   const ask = (text: string) => navigate("/chat", { state: { send: text } satisfies ChatHandoff });
   const goTo = (p: string | null, a: string | null) => onScope({ province: p, amphoe: a });
 
-  /** A tap on the map: a province zooms in to its tambons, a tambon opens its card. */
-  const pickOnMap = (code: string) => {
+  /** A tap on the map: a province zooms in to its tambons, a tambon opens its card; close up, a dry spot says how far
+   * the water is. */
+  const pickOnMap = (code: string, lat: number, lon: number) => {
     if (zoomedIn) {
       const t = tambons.find((x) => x.shape.properties.code === code);
-      if (t) setPicked({ row: t.row, shape: t.shape, hist: t.hist });
+      if (!t) return;
+      if (stage === "water") {
+        setPicked({ kind: "land", shape: t.shape, lat, lon, nearestKm: distanceToWaterKm(cells.data?.cells ?? [], lat, lon) });
+      } else setPicked({ kind: "tambon", row: t.row, shape: t.shape, hist: t.hist });
       return;
     }
     const shape = provinceShapes.data?.features.find((f) => f.properties.code === code);
@@ -764,7 +899,11 @@ export function FloodExplorer({
     }
     if (a.lat != null && a.lon != null) setFlyTo({ lat: a.lat, lon: a.lon, zoom: FLY_ZOOM[level] });
     if (level === "amphoe") goTo(province, name(a.amphoe));
-    else setPicked({ row: a, shape: null });
+    else setPicked({ kind: "tambon", row: a, shape: null });
+  };
+  const pickWater = (id: string) => {
+    const patch = patches.find((p) => p.id === id);
+    if (patch) setPicked({ kind: "water", patch });
   };
 
   const pickHistoryProvince = (code: string) => {
@@ -783,11 +922,21 @@ export function FloodExplorer({
     ? copy.flood.tilesFailed
     : failedShapes
       ? copy.flood.areasFailed
-      : loadingShapes
-        ? copy.flood.loadingAreas
-        : !zoomedIn
-          ? copy.flood.zoomForTambons
-          : null;
+      : stage === "water" && cells.isError
+        ? copy.flood.waterFailed
+        : loadingShapes
+          ? copy.flood.loadingAreas
+          : stage === "water" && cells.isFetching && !cells.data
+            ? copy.flood.loadingWater
+            : stage === "water" && cells.data?.truncated
+              ? copy.flood.waterTruncated
+              : stage === "province"
+                ? copy.flood.zoomForTambons
+                : stage === "tambon" && !history
+                  ? copy.flood.zoomForWater
+                  : null;
+  const selectedArea =
+    picked?.kind === "tambon" ? (picked.shape?.properties.code ?? null) : picked?.kind === "land" ? picked.shape.properties.code : null;
 
   const map = (
     <div
@@ -800,8 +949,12 @@ export function FloodExplorer({
       <Suspense fallback={<Loading className="h-full" />}>
         <FloodMap
           areas={mapAreas}
-          selected={picked?.shape?.properties.code ?? null}
+          selected={selectedArea}
           onPick={pickOnMap}
+          closeUp={stage === "water"}
+          water={patches}
+          selectedWater={picked?.kind === "water" ? picked.patch.id : null}
+          onPickWater={pickWater}
           basemap={basemap}
           flyTo={flyTo}
           places={mapPlaces}
@@ -856,7 +1009,7 @@ export function FloodExplorer({
         </div>
       </div>
       <div className="absolute bottom-6 left-2 z-[500] hidden sm:block">
-        <Legend text={legend} />
+        <Legend text={legend} stage={stage} />
       </div>
     </div>
   );
@@ -882,7 +1035,7 @@ export function FloodExplorer({
 
       <div ref={detail} className="scroll-mt-4">
         {history ? (
-          picked ? (
+          picked?.kind === "tambon" ? (
             <HistoryCard
               picked={picked}
               years={hist.data?.years ?? []}
@@ -899,6 +1052,10 @@ export function FloodExplorer({
           ) : (
             <HistoryPanel data={hist.data} year={year} onYear={(y) => onScope({ year: y })} onPick={pickHistoryProvince} />
           )
+        ) : picked?.kind === "water" ? (
+          <WaterCard patch={picked.patch} observed={areas.data?.observed_to ?? null} places={places} onClose={() => setPicked(null)} onAsk={ask} />
+        ) : picked?.kind === "land" ? (
+          <LandCard shape={picked.shape} nearestKm={picked.nearestKm} onClose={() => setPicked(null)} onAsk={ask} />
         ) : picked ? (
           <AreaCard picked={picked} observed={areas.data?.observed_to ?? null} places={places} onClose={() => setPicked(null)} onAsk={ask} />
         ) : areas.isPending ? (
@@ -915,7 +1072,7 @@ export function FloodExplorer({
         )}
       </div>
 
-      <Notes legend={legend} history={history} />
+      <Notes legend={legend} stage={stage} history={history} />
     </aside>
   );
 

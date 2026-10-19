@@ -1,12 +1,14 @@
 import "leaflet/dist/leaflet.css";
 
+import type { MultiPolygon } from "geojson";
 import L from "leaflet";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { MapContainer, TileLayer, useMap, useMapEvents } from "react-leaflet";
 import { InvalidateOnResize } from "../../components/InvalidateOnResize";
 import type { AreaShape } from "../../lib/boundaries";
 import type { FloodClass } from "../../lib/flood";
-import { PATTERN_FILL } from "./patterns";
+import type { WaterPatch } from "../../lib/water";
+import { PATTERN_FILL, WATER_EDGE, WATER_FILL } from "./patterns";
 
 export type Basemap = "satellite" | "streets";
 export type FlyTarget = { lat: number; lon: number; zoom: number } | { bounds: [number, number, number, number] };
@@ -80,11 +82,14 @@ function AreasLayer({
   selected,
   onPick,
   basemap,
+  outlineOnly,
 }: {
   areas: MapArea[];
   selected: string | null;
-  onPick: (code: string) => void;
+  onPick: (code: string, lat: number, lon: number) => void;
   basemap: Basemap;
+  /** Close up: the water patches show the flooding; tambons are just dashed borders (still tappable). */
+  outlineOnly: boolean;
 }) {
   const map = useMap();
   const pick = useRef(onPick);
@@ -109,15 +114,17 @@ function AreasLayer({
       const code = a.shape.properties.code;
       const isSel = code === selected;
       const layer = L.geoJSON(a.shape, {
-        style: {
-          color: edge,
-          weight: isSel ? 4 : 1.2,
-          opacity: isSel ? 1 : 0.75,
-          fillColor: PATTERN_FILL[a.cls],
-          fillOpacity: FILL_OPACITY[a.cls],
-        },
+        style: outlineOnly
+          ? { color: edge, weight: isSel ? 3 : 2, opacity: 0.85, dashArray: "7 5", fillColor: "#000000", fillOpacity: 0 }
+          : {
+              color: edge,
+              weight: isSel ? 4 : 1.2,
+              opacity: isSel ? 1 : 0.75,
+              fillColor: PATTERN_FILL[a.cls],
+              fillOpacity: FILL_OPACITY[a.cls],
+            },
       });
-      layer.on("click", () => pick.current(code));
+      layer.on("click", (e: L.LeafletMouseEvent) => pick.current(code, e.latlng.lat, e.latlng.lng));
       group.addLayer(layer);
       if (isSel) chosen = layer;
       const tambon = a.shape.properties.tambon != null;
@@ -132,7 +139,56 @@ function AreasLayer({
       }
     }
     (chosen as L.GeoJSON | null)?.bringToFront();
-  }, [areas, selected, basemap, zoom, group]);
+  }, [areas, selected, basemap, zoom, group, outlineOnly]);
+
+  return null;
+}
+
+// Water sits in its own pane above the tambons, so a tap on water never lands on the tambon under it.
+const WATER_PANE = "nm-water";
+
+/** Close up: GISTDA's cells merged into smooth patches of water (lib/water.ts), each one tappable. */
+function WaterLayer({
+  patches,
+  selected,
+  onPick,
+}: {
+  patches: WaterPatch[];
+  selected: string | null;
+  onPick: (id: string) => void;
+}) {
+  const map = useMap();
+  const pick = useRef(onPick);
+  pick.current = onPick;
+  const group = useMemo(() => L.layerGroup(), []);
+
+  useEffect(() => {
+    if (!map.getPane(WATER_PANE)) map.createPane(WATER_PANE).style.zIndex = "450";
+    group.addTo(map);
+    return () => {
+      group.remove();
+    };
+  }, [map, group]);
+
+  useEffect(() => {
+    group.clearLayers();
+    for (const p of patches) {
+      const isSel = p.id === selected;
+      const shape: MultiPolygon = { type: "MultiPolygon", coordinates: p.polygons };
+      const layer = L.geoJSON(
+        shape,
+        {
+          pane: WATER_PANE,
+          style: { color: WATER_EDGE, weight: isSel ? 4 : 2, opacity: 1, lineJoin: "round", fillColor: WATER_FILL, fillOpacity: 0.9 },
+        },
+      );
+      layer.on("click", (e: L.LeafletMouseEvent) => {
+        L.DomEvent.stopPropagation(e);
+        pick.current(p.id);
+      });
+      group.addLayer(layer);
+    }
+  }, [patches, selected, group]);
 
   return null;
 }
@@ -171,7 +227,13 @@ function ImageryLabels() {
 interface Props {
   areas: MapArea[];
   selected: string | null;
-  onPick: (code: string) => void;
+  /** A tap on an area, with where exactly (close up, the panel says how far the water is from that point). */
+  onPick: (code: string, lat: number, lon: number) => void;
+  /** Close up (zoom 13+): water patches over dashed tambon borders. */
+  closeUp: boolean;
+  water: WaterPatch[];
+  selectedWater: string | null;
+  onPickWater: (id: string) => void;
   basemap: Basemap;
   flyTo: FlyTarget | null;
   places: MapPlace[];
@@ -185,6 +247,10 @@ export default function FloodMap({
   areas,
   selected,
   onPick,
+  closeUp,
+  water,
+  selectedWater,
+  onPickWater,
   basemap,
   flyTo,
   places,
@@ -217,7 +283,8 @@ export default function FloodMap({
       <InvalidateOnResize />
       <ViewWatcher onView={onView} />
       <FlyTo target={flyTo} />
-      <AreasLayer areas={areas} selected={selected} onPick={onPick} basemap={basemap} />
+      <AreasLayer areas={areas} selected={selected} onPick={onPick} basemap={basemap} outlineOnly={closeUp} />
+      <WaterLayer patches={water} selected={selectedWater} onPick={onPickWater} />
       <Places places={places} />
     </MapContainer>
   );

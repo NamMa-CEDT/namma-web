@@ -383,6 +383,33 @@
   .nm-riverline__mark--warning { width: 18px; background: var(--tier-warning); clip-path: polygon(50% 0, 100% 100%, 0 100%); }
   .nm-riverline__mark--danger { width: 14px; height: 14px; border-radius: 2px; background: var(--tier-danger); box-shadow: 0 0 0 2px var(--bank); transform: translate(-50%, -50%) rotate(45deg); }
   .nm-riverline__mark--unknown { border-radius: 50%; background: var(--surface-raised); border: 2px dashed var(--ink-muted); }
+  /* Chat reply text: paragraphs, and "สิ่งที่ควรทำตอนนี้" with its bullets as a list (wrapped lines hang). */
+  .nm-msg__block { margin: 0 0 var(--space-3); }
+  .nm-msg__list { margin: 0; padding-left: 1.2em; display: grid; gap: var(--space-1); }
+  .nm-msg__list > li::marker { color: var(--ink-muted); }
+  /* Shelter card in a chat answer: one card, a row per shelter, best first. Built like nm-station. */
+  .nm-shelters { background: var(--surface-raised); border: 1px solid var(--line); border-radius: var(--radius-md); display: grid; min-width: 0; }
+  .nm-shelters__head { display: flex; align-items: center; gap: var(--space-2); padding: var(--space-3) var(--space-4); border-bottom: 1px solid var(--line); font: 600 15px/24px var(--font-body); color: var(--ink-muted); }
+  .nm-shelter { display: grid; gap: var(--space-2); padding: var(--space-3) var(--space-4); min-width: 0; }
+  .nm-shelter + .nm-shelter { border-top: 1px solid var(--line); }
+  .nm-shelter__top { display: flex; justify-content: space-between; align-items: flex-start; gap: var(--space-3); }
+  .nm-shelter__pick { display: block; font: 600 14px/22px var(--font-body); color: var(--river); }
+  .nm-shelter__name { margin: 0; font: 600 18px/28px var(--font-body); }
+  .nm-shelter__meta { font: 400 14px/22px var(--font-body); color: var(--ink-muted); }
+  .nm-shelter__row { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2) var(--space-3); font: 400 14px/22px var(--font-body); }
+  .nm-shelter__far { color: var(--tier-watch-ink); }
+  .nm-shelter__map { display: inline-flex; align-items: center; min-height: 44px; color: var(--river); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; }
+  .nm-shelters__foot { margin: 0; padding: var(--space-3) var(--space-4); border-top: 1px solid var(--line); font: 400 14px/22px var(--font-body); color: var(--ink-muted); }
+  .nm-open { display: inline-flex; align-items: center; gap: 6px; flex: none; padding: 2px var(--space-2); border-radius: var(--radius-sm); font: 600 14px/22px var(--font-body); white-space: nowrap; }
+  .nm-open::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: currentColor; box-sizing: border-box; }
+  .nm-open--yes { background: var(--river-soft); color: var(--river); }
+  .nm-open--no { background: var(--surface-sunken); color: var(--ink-muted); }
+  .nm-open--no::before { background: none; border: 2px solid currentColor; }
+  .nm-tag--home { background: var(--home-soft); color: var(--home); }
+  .nm-tag--unknown { background: var(--tier-watch-soft); color: var(--tier-watch-ink); font-weight: 400; }
+  .nm-occ { display: inline-flex; align-items: center; gap: var(--space-2); color: var(--ink-muted); }
+  .nm-occ__bar { width: 72px; height: 6px; border-radius: 3px; background: var(--surface-sunken); overflow: hidden; }
+  .nm-occ__fill { display: block; height: 100%; min-width: 2px; width: calc(var(--fill) * 1%); background: var(--river); }
 }
 
 /* Leaflet's own CSS is unlayered, so these overrides and the pins stay unlayered too. */
