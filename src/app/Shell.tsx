@@ -1,11 +1,11 @@
 import { lazy, Suspense } from "react";
 import { Link, NavLink, Outlet, useSearchParams } from "react-router";
 import { API_MODE } from "../api/client";
-import { AutoThemeIcon, ChatIcon, FloodIcon, LineIcon, MapIcon, MoonIcon, SunIcon, UserIcon } from "../components/icons";
-import { useSession } from "../auth/session";
+import { AutoThemeIcon, ChatIcon, FloodIcon, LineIcon, MapIcon, MoonIcon, SunIcon } from "../components/icons";
 import { LogoMark } from "../components/Logo";
 import { ErrorBoundary, Loading } from "../components/States";
 import { StaleBanner } from "../components/Stale";
+import { AccountMenu } from "../features/account/AccountMenu";
 import { copy, DDPM } from "../copy";
 import { useTheme } from "../lib/theme";
 
@@ -34,7 +34,6 @@ function useDemoMode(): boolean {
 
 export function Shell() {
   const demo = useDemoMode();
-  const session = useSession();
   const [theme, cycleTheme] = useTheme();
   const ThemeIcon = THEME_ICON[theme];
   return (
@@ -70,18 +69,7 @@ export function Shell() {
           >
             <ThemeIcon className="text-[20px]" />
           </button>
-          <NavLink
-            to="/account"
-            aria-label={session ? `${copy.account.nav}: ${session.display_name}` : copy.account.signIn}
-            className={({ isActive }) =>
-              `flex min-h-11 min-w-11 items-center justify-center gap-2 rounded-md px-1 text-label no-underline sm:px-2 ${
-                isActive ? "font-semibold text-ink" : "text-ink-muted hover:text-ink"
-              }`
-            }
-          >
-            <UserIcon className="text-[24px]" />
-            <span className="max-w-32 truncate max-md:hidden">{session ? session.display_name : copy.account.signIn}</span>
-          </NavLink>
+          <AccountMenu />
         </div>
       </header>
 
