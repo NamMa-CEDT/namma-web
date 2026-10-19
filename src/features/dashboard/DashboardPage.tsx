@@ -199,7 +199,7 @@ function Dashboard() {
         <header className="border-b border-line px-4 pt-4">
           <h1 className="m-0 text-title font-semibold">{copy.dashboard.title}</h1>
           <p className="m-0 mt-1 rounded-sm bg-surface-sunken px-3 py-1.5 text-caption text-ink-muted">{copy.dashboard.banner}</p>
-          <div className="-mx-1 mt-2 flex gap-1 overflow-x-auto" role="tablist">
+          <div className="-mx-1 mt-2 flex gap-1 overflow-x-auto [scrollbar-width:none]" role="tablist">
             {(Object.keys(FILTERS) as FilterKey[]).map((k) => (
               <button
                 key={k}

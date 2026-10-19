@@ -1,12 +1,25 @@
 import { lazy, Suspense } from "react";
 import { Link, NavLink, Outlet, useLocation, useNavigate, useSearchParams } from "react-router";
 import { API_MODE } from "../api/client";
-import { ChatIcon, LineIcon, MapIcon, PhoneIcon, ShieldIcon, UserIcon } from "../components/icons";
+import {
+  AutoThemeIcon,
+  ChatIcon,
+  LineIcon,
+  MapIcon,
+  MoonIcon,
+  PhoneIcon,
+  ShieldIcon,
+  SunIcon,
+  UserIcon,
+} from "../components/icons";
 import { useSession } from "../auth/session";
 import { LogoMark } from "../components/Logo";
 import { ErrorBoundary, Loading } from "../components/States";
 import { StaleBanner } from "../components/Stale";
 import { copy, DDPM } from "../copy";
+import { useTheme } from "../lib/theme";
+
+const THEME_ICON = { auto: AutoThemeIcon, light: SunIcon, dark: MoonIcon };
 
 // Static check so http builds drop the demo panel (and the mock store it imports) entirely.
 const DemoPanel = import.meta.env.VITE_API_MODE === "http" ? null : lazy(() => import("../features/demo/DemoPanel"));
@@ -33,6 +46,8 @@ export function Shell() {
   const demo = useDemoMode();
   const navigate = useNavigate();
   const session = useSession();
+  const [theme, cycleTheme] = useTheme();
+  const ThemeIcon = THEME_ICON[theme];
   // On a phone the chat needs the height; the header's 1784 button and each answer's HotlineNotice carry the hotline.
   const inChat = useLocation().pathname === "/chat";
   return (
@@ -41,7 +56,6 @@ export function Shell() {
         <Link to="/" className="nm-wordmark" aria-label={`${copy.appNameEn} ${copy.appName} ${copy.nav.home}`}>
           <LogoMark size={36} />
           <span className="nm-wordmark__en max-sm:hidden">{copy.appNameEn}</span>
-          <span className="nm-wordmark__th max-sm:hidden">{copy.appName}</span>
         </Link>
         <nav className="hidden flex-1 gap-1 md:flex" aria-label="หลัก">
           {NAV.map(({ to, label, Icon }) => (
@@ -60,6 +74,15 @@ export function Shell() {
           ))}
         </nav>
         <div className="ml-auto flex shrink-0 items-center gap-1.5 sm:gap-2">
+          <button
+            type="button"
+            onClick={cycleTheme}
+            aria-label={`${copy.theme[theme]} · ${copy.theme.hint}`}
+            title={copy.theme[theme]}
+            className="inline-flex size-11 items-center justify-center rounded-md text-ink-muted hover:text-ink sm:border sm:border-line-strong sm:text-ink max-sm:size-10"
+          >
+            <ThemeIcon className="text-[20px]" />
+          </button>
           <NavLink
             to="/account"
             aria-label={session ? `${copy.account.nav}: ${session.display_name}` : copy.account.signIn}
@@ -107,8 +130,16 @@ export function Shell() {
               {DDPM.hotline}
             </a>
           </span>
-          <span aria-hidden="true">·</span>
-          <a href={DDPM.lineHref} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-ink underline">
+          {/* Phones keep the footer to one line; the LINE contact is also in each HotlineNotice. */}
+          <span className="max-sm:hidden" aria-hidden="true">
+            ·
+          </span>
+          <a
+            href={DDPM.lineHref}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex items-center gap-1 text-ink underline max-sm:hidden"
+          >
             <LineIcon />
             {DDPM.lineId}
           </a>

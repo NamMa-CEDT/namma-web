@@ -9,7 +9,12 @@ export default defineConfig(({ mode }) => {
   const config: UserConfig & { test: Record<string, unknown> } = {
     plugins: [react(), tailwindcss()],
     server: {
-      proxy: env.VITE_API_MODE === "http" ? { "/api": "http://localhost:8000" } : undefined,
+      allowedHosts: [".trycloudflare.com"], // let Cloudflare quick tunnels reach the dev server
+      // VITE_API_PROXY points the dev proxy at a remote backend (e.g. the deployed VM); default is local.
+      proxy:
+        env.VITE_API_MODE === "http"
+          ? { "/api": { target: env.VITE_API_PROXY || "http://localhost:8000", changeOrigin: true } }
+          : undefined,
     },
     test: {
       environment: "jsdom",
