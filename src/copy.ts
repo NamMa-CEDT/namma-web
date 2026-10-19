@@ -67,7 +67,7 @@ export const copy = {
     axisBelow2: "ต่ำกว่าตลิ่ง 2 ม.",
     axisBelow4: "ต่ำกว่าตลิ่ง 4 ม.",
     main: "แม่น้ำเจ้าพระยา",
-    sourceLead: "ที่มา: กรมชลประทาน ผ่าน ThaiWater (สสน.)",
+    sourceLead: "ที่มา: กรมชลประทาน และ สสน. ผ่าน ThaiWater",
     estimated: "ระดับเสี่ยงประเมินโดยน้ำมา จากระดับตลิ่งและสถานีต้นน้ำ",
     empty: "ยังไม่มีข้อมูลระดับน้ำ",
     // Home chart switcher: three drawings of the same readings.
@@ -300,6 +300,22 @@ export const copy = {
     chartEmpty: "ยังไม่มีข้อมูลย้อนหลังของสถานีนี้",
     chartBankLine: "ระดับตลิ่ง",
     msl: "ม.รทก.",
+  },
+
+  shelter: {
+    recommended: "ศูนย์พักพิงที่แนะนำ",
+    nearby: "ศูนย์พักพิงใกล้เคียง",
+    pick: "แนะนำ",
+    open: "เปิดรับอยู่",
+    closed: "ยังไม่เปิด",
+    residents: (cur: number, cap: number) => `มีผู้พัก ${cur} / ${cap} คน`,
+    patientsYes: "รับผู้ป่วยติดเตียง",
+    patientsNo: "ไม่รับผู้ป่วยติดเตียง",
+    patientsUnknown: "ไม่ได้ระบุว่ารับผู้ป่วยติดเตียง",
+    far: "ไกล โทร 1784 ถามศูนย์ที่ใกล้กว่า",
+    ddpmNote: "ข้อมูล ปภ. สถานะเปลี่ยนได้ · โทร 1784 ก่อนเดินทาง",
+    manualNote: "โทร 1784 ถามก่อนเดินทางว่าศูนย์ยังรับคนได้",
+    openMap: "เปิดใน Google Maps",
   },
 
   vulnerable: {

@@ -21,14 +21,29 @@ export interface River {
   stations: StationSummary[];
 }
 
+/** Stations this close gauge the same place (C.35 and CPY011 are 10 m apart; the nearest distinct pair is 8 km). */
+const SAME_PLACE_KM = 3;
+
+/** Flat-earth distance: exact enough at a few km. */
+function km(a: StationSummary, b: StationSummary): number {
+  const x = (b.lon - a.lon) * Math.cos(((a.lat + b.lat) / 2) * (Math.PI / 180));
+  return Math.hypot(x, b.lat - a.lat) * 111.2;
+}
+
 /**
- * Upstream first. The main stem by stem_order (RID key stations only: the HII stations on the same stem
- * would double every place); branches and tributaries each in their own group, north to south (the basin
- * drains south), so a branch station never follows a main-stem station whose water it doesn't receive.
+ * Upstream first. The main stem by stem_order, RID and HII together; where two stations gauge the same place
+ * the RID one stands for it (stem_order can't tell: it differs for C.35 and CPY011). Branches and tributaries
+ * each in their own group, north to south (the basin drains south), so a branch station never follows a
+ * main-stem station whose water it doesn't receive.
  */
 export function riverGroups(stations: StationSummary[]): River[] {
-  const withReading = stations.filter((s) => s.latest?.diff_wl_bank != null && s.agency === "RID");
-  const main = withReading.filter((s) => s.role === "main" && s.stem_order != null).sort((a, b) => a.stem_order! - b.stem_order!);
+  const withReading = stations.filter((s) => s.latest?.diff_wl_bank != null);
+  const stem = withReading
+    .filter((s) => s.role === "main" && s.stem_order != null)
+    .sort((a, b) => Number(b.agency === "RID") - Number(a.agency === "RID"));
+  const main: StationSummary[] = [];
+  for (const s of stem) if (!main.some((m) => km(m, s) < SAME_PLACE_KM)) main.push(s);
+  main.sort((a, b) => a.stem_order! - b.stem_order!);
   const groups: River[] = main.length ? [{ name: main[0].river ?? copy.river.main, stations: main }] : [];
   for (const role of ["branch", "tributary"] as const) {
     const list = withReading.filter((s) => s.role === role).sort((a, b) => b.lat - a.lat);
