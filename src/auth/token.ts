@@ -4,7 +4,6 @@ const KEY = "namma.session";
 export interface StoredSession {
   token: string;
   display_name: string;
-  role: "user" | "responder";
   picture_url: string | null;
   identities?: { line: boolean; google: string | null };
 }

@@ -5,6 +5,10 @@ import type {
   ChatRequest,
   ChatResponse,
   Envelope,
+  FloodAreas,
+  FloodCells,
+  FloodLevel,
+  FloodPeriod,
   LoginResponse,
   Provider,
   NearbyStation,
@@ -98,6 +102,11 @@ export const api = {
     request<StationReadings>("GET", `/api/stations/${id}/readings`, { query: { hours } }),
   shelters: (q: { lat?: number; lon?: number; patients?: boolean; pets?: boolean } = {}) =>
     request<Shelter[]>("GET", "/api/shelters", { query: q }),
+  floodAreas: (q: { period: FloodPeriod; level: FloodLevel; province?: string; amphoe?: string; limit?: number }) =>
+    request<FloodAreas>("GET", "/api/flood/areas", { query: q }),
+  /** bbox: "minLon,minLat,maxLon,maxLat". res 9 = GISTDA's cells; 5–8 = their parents, summed. */
+  floodCells: (q: { period: FloodPeriod; bbox: string; res: number; limit?: number }) =>
+    request<FloodCells>("GET", "/api/flood/cells", { query: q }),
   chat: (req: ChatRequest) => request<ChatResponse>("POST", "/api/chat", { body: req }),
   /** chat_session: the anonymous web chat to fold into the account on sign-in. */
   login: (id_token: string, chat_session?: string, provider: Provider = "line") =>

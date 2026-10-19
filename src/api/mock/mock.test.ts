@@ -64,6 +64,82 @@ describe("stations", () => {
   });
 });
 
+describe("flood (mock sample of GISTDA's layers)", () => {
+  type Area = { province: string; amphoe: string | null; cells: number; area_km2: number; area_rai: number };
+  type Cell = { h3: string; cells: number; area_km2: number; share: number; province?: string };
+  const sum = (xs: { area_km2: number }[]) => xs.reduce((s, x) => s + x.area_km2, 0);
+
+  it("totals flooded area per province, largest first, with the layer's dates", async () => {
+    const { status, json } = await call("GET", "/api/flood/areas?period=3days");
+    expect(status).toBe(200);
+    const d = json.data;
+    expect(d).toMatchObject({ period: "3days", level: "province" });
+    expect(d.fetched_at).toMatch(/\+07:00$/);
+    expect(Date.parse(d.observed_to)).toBeLessThanOrEqual(Date.parse(d.fetched_at));
+    const areas = d.areas as Area[];
+    expect(areas[0].province).toBe("พระนครศรีอยุธยา");
+    expect(areas.map((a) => a.area_km2)).toEqual([...areas.map((a) => a.area_km2)].sort((a, b) => b - a));
+    expect(d.total.cells).toBe(areas.reduce((s, a) => s + a.cells, 0));
+    expect(d.total.area_km2).toBeCloseTo(sum(areas), 2);
+    expect(d.total.area_rai).toBe(Math.round(d.total.area_km2 * 625));
+  });
+
+  it("drills down to amphoe inside a province", async () => {
+    const { json } = await call("GET", `/api/flood/areas?level=amphoe&province=${encodeURIComponent("พระนครศรีอยุธยา")}`);
+    const amphoes = (json.data.areas as Area[]).map((a) => a.amphoe);
+    expect(amphoes).toEqual(expect.arrayContaining(["บางบาล", "บางปะอิน"]));
+    const all = (await call("GET", "/api/flood/areas")).json.data.areas as Area[];
+    expect(json.data.total.cells).toBe(all.find((a) => a.province === "พระนครศรีอยุธยา")!.cells);
+    const q = `level=tambon&province=${encodeURIComponent("พระนครศรีอยุธยา")}&amphoe=${encodeURIComponent("บางบาล")}`;
+    const tambons = (await call("GET", `/api/flood/areas?${q}`)).json.data.areas as (Area & { tambon: string })[];
+    expect(tambons.map((t) => t.tambon).sort()).toEqual(["บางหลวงโดด", "สะพานไทย"]);
+  });
+
+  it("the 7-day layer holds the 3-day one", async () => {
+    const three = (await call("GET", "/api/flood/areas?period=3days")).json.data.total;
+    const seven = (await call("GET", "/api/flood/areas?period=7days")).json.data.total;
+    expect(seven.cells).toBeGreaterThan(three.cells);
+  });
+
+  it("returns the cells in view, and parents that sum them when zoomed out", async () => {
+    const bbox = "100.30,14.25,100.65,14.55";
+    const fine = (await call("GET", `/api/flood/cells?bbox=${bbox}&res=9`)).json.data;
+    const coarse = (await call("GET", `/api/flood/cells?bbox=${bbox}&res=7`)).json.data;
+    expect(fine.res).toBe(9);
+    expect(fine.cells.length).toBeGreaterThan(50);
+    expect(fine.cells[0].province).toBe("พระนครศรีอยุธยา");
+    expect(coarse.cells[0]).not.toHaveProperty("province");
+    expect((coarse.cells as Cell[]).reduce((s, c) => s + c.cells, 0)).toBeGreaterThanOrEqual(fine.cells.length);
+    for (const c of [...fine.cells, ...coarse.cells] as Cell[]) {
+      expect(c.share).toBeGreaterThan(0);
+      expect(c.share).toBeLessThanOrEqual(1);
+    }
+    const capped = (await call("GET", `/api/flood/cells?bbox=${bbox}&res=9&limit=5`)).json.data;
+    expect(capped.truncated).toBe(true);
+    expect(capped.cells).toHaveLength(5);
+    const empty = (await call("GET", "/api/flood/cells?bbox=98,8,98.5,8.5&res=9")).json.data;
+    expect(empty.cells).toEqual([]);
+  });
+
+  it("has no staff login any more", async () => {
+    expect((await call("POST", "/api/auth/line", { id_token: "demo:responder" })).status).toBe(401);
+    const { json } = await call("POST", "/api/auth/line", { id_token: "demo:user" });
+    expect(json.data.user).not.toHaveProperty("role");
+  });
+
+  it("rejects a bad period, level, box or resolution", async () => {
+    for (const path of [
+      "/api/flood/areas?period=1day",
+      "/api/flood/areas?level=village",
+      "/api/flood/cells?bbox=1,2,3",
+      "/api/flood/cells?bbox=100.5,14,100.4,15",
+      "/api/flood/cells?bbox=100,14,101,15&res=4",
+    ]) {
+      expect((await call("GET", path)).status, path).toBe(400);
+    }
+  });
+});
+
 describe("chat follows the demo script (CLAUDE.md §15)", () => {
   it("answers, asks for consent, then gives the hotline in danger", async () => {
     const sid = "test-session";

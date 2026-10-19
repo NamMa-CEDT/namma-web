@@ -1,9 +1,11 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "./client";
-import type { FactKind, Profile } from "./types";
+import type { FactKind, FloodLevel, FloodPeriod, Profile } from "./types";
 
 // ThaiWater updates every 10 min (HII) / hourly (RID); no need to poll faster than a minute.
 const STATION_REFRESH_MS = 60_000;
+// GISTDA publishes a few layers a day and the backend checks every 3 h.
+const FLOOD_REFRESH_MS = 10 * 60_000;
 
 export const keys = {
   stations: ["stations"] as const,
@@ -12,7 +14,32 @@ export const keys = {
   nearest: (lat: number, lon: number, k: number) => ["nearest", lat, lon, k] as const,
   shelters: (lat: number | null, lon: number | null, patients: boolean) => ["shelters", lat, lon, patients] as const,
   profile: (chatSession: string) => ["profile", chatSession] as const,
+  floodAreas: (period: FloodPeriod, level: FloodLevel, province: string | null, amphoe: string | null) =>
+    ["flood-areas", period, level, province, amphoe] as const,
+  floodCells: (period: FloodPeriod, bbox: string, res: number) => ["flood-cells", period, bbox, res] as const,
 };
+
+/** Flooded area per province, or per amphoe / tambon inside one (drill-down in the flood tab). */
+export function useFloodAreas(period: FloodPeriod, province: string | null = null, amphoe: string | null = null) {
+  const level: FloodLevel = amphoe ? "tambon" : province ? "amphoe" : "province";
+  return useQuery({
+    queryKey: keys.floodAreas(period, level, province, amphoe),
+    queryFn: () => api.floodAreas({ period, level, province: province ?? undefined, amphoe: amphoe ?? undefined }),
+    refetchInterval: FLOOD_REFRESH_MS,
+    placeholderData: keepPreviousData,
+  });
+}
+
+/** The flooded cells in the map's view. Keeps the last cells on screen while the next view loads. */
+export function useFloodCells(period: FloodPeriod, view: { bbox: string; res: number } | null) {
+  return useQuery({
+    queryKey: keys.floodCells(period, view?.bbox ?? "", view?.res ?? 0),
+    queryFn: () => api.floodCells({ period, bbox: view!.bbox, res: view!.res }),
+    enabled: view != null,
+    refetchInterval: FLOOD_REFRESH_MS,
+    placeholderData: keepPreviousData,
+  });
+}
 
 export function useStations() {
   return useQuery({ queryKey: keys.stations, queryFn: api.stations, refetchInterval: STATION_REFRESH_MS });

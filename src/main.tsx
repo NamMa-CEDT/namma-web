@@ -14,6 +14,7 @@ import { initSession } from "./auth/session";
 const HomePage = lazy(() => import("./features/home/HomePage"));
 const ChatPage = lazy(() => import("./features/chat/ChatPage"));
 const MapPage = lazy(() => import("./features/map/MapPage"));
+const FloodPage = lazy(() => import("./features/flood/FloodPage"));
 const AccountPage = lazy(() => import("./features/account/AccountPage"));
 
 const queryClient = new QueryClient({
@@ -43,6 +44,7 @@ initSession().then(() => {
               <Route index element={<HomePage />} />
               <Route path="/chat" element={<ChatPage />} />
               <Route path="/map" element={<MapPage />} />
+              <Route path="/flood" element={<FloodPage />} />
               <Route path="/account" element={<AccountPage />} />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Route>

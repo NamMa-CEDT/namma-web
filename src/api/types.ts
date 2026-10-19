@@ -119,6 +119,63 @@ export interface Shelter {
   updated_at?: string | null;
 }
 
+// --- flood (GISTDA satellite) -----------------------------------------------
+
+export type FloodPeriod = "3days" | "7days";
+export type FloodLevel = "province" | "amphoe" | "tambon";
+
+/** The stored GISTDA layer. All null before the first download: say "no data yet", never "no flooding". */
+export interface FloodLayer {
+  period: FloodPeriod;
+  /** When the backend downloaded the layer. */
+  fetched_at: string | null;
+  /** Range of the dates GISTDA gives its cells. */
+  observed_from: string | null;
+  observed_to: string | null;
+}
+
+export interface FloodArea {
+  /** Names without จ./อ./ต.; null when GISTDA gives only a code. */
+  province: string | null;
+  amphoe: string | null;
+  tambon: string | null;
+  code: string | null;
+  /** Flooded H3 cells (res 9, ~0.1 km²). */
+  cells: number;
+  area_km2: number;
+  area_rai: number;
+  /** Area-weighted centre of the cells, to fly the map there. */
+  lat: number | null;
+  lon: number | null;
+}
+
+export interface FloodAreas extends FloodLayer {
+  level: FloodLevel;
+  total: { cells: number; area_km2: number; area_rai: number };
+  areas: FloodArea[];
+}
+
+export interface FloodCell {
+  h3: string;
+  /** How many res-9 cells it sums (1 at res 9). */
+  cells: number;
+  area_km2: number;
+  /** Flooded part of the cell, 0–1. */
+  share: number;
+  /** res 9 only. */
+  province?: string | null;
+  amphoe?: string | null;
+  tambon?: string | null;
+  observed_at?: string | null;
+}
+
+export interface FloodCells extends FloodLayer {
+  res: number;
+  /** More cells in view than the limit: the largest are sent. */
+  truncated: boolean;
+  cells: FloodCell[];
+}
+
 // --- household (what the chat may remember, with consent) -------------------
 
 export type Vulnerable =
@@ -240,11 +297,8 @@ export interface Profile {
 
 // --- auth -------------------------------------------------------------------
 
-export type Role = "user" | "responder";
-
 export interface SessionUser {
   display_name: string;
-  role: Role;
   picture_url: string | null;
   /** Ways to sign in to this account: LINE (also gets LINE alerts) and Google (its email). */
   identities?: { line: boolean; google: string | null };

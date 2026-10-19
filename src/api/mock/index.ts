@@ -2,10 +2,11 @@
 // Works without service workers (LIFF browser, plain-http LAN on a phone, static demo builds).
 // Each route mirrors one endpoint in docs/api.md.
 import type { Transport } from "../client";
-import type { Fact, Profile, SessionUser } from "../types";
+import type { Fact, FloodLevel, FloodPeriod, Profile, SessionUser } from "../types";
 import { copy } from "../../copy";
 import { respond, type ChatSessionState } from "./chatScript";
 import * as data from "./data";
+import { floodAreas, floodCells } from "./flood";
 import { chatState, loadState, updateState, type MockState } from "./store";
 
 interface Ctx {
@@ -78,6 +79,42 @@ route("GET", "/api/shelters", ({ query }) => ({
     pets: query.get("pets") === "true",
   }),
 }));
+
+// --- flood (a labelled sample, see ./flood.ts) --------------------------------
+
+const FLOOD_PERIODS: FloodPeriod[] = ["3days", "7days"];
+const FLOOD_LEVELS: FloodLevel[] = ["province", "amphoe", "tambon"];
+
+function floodPeriod(q: URLSearchParams): FloodPeriod | null {
+  const p = q.get("period") ?? "3days";
+  return FLOOD_PERIODS.includes(p as FloodPeriod) ? (p as FloodPeriod) : null;
+}
+
+route("GET", "/api/flood/areas", ({ query }) => {
+  const period = floodPeriod(query);
+  const level = (query.get("level") ?? "province") as FloodLevel;
+  const limit = num(query, "limit") ?? 100;
+  if (!period || !FLOOD_LEVELS.includes(level) || limit < 1 || limit > 1000) {
+    return fail(400, "bad_request", "period, level or limit is invalid");
+  }
+  const filter = { province: query.get("province"), amphoe: query.get("amphoe") };
+  return { data: floodAreas(period, level, filter, limit, data.ingestedAt()) };
+});
+
+route("GET", "/api/flood/cells", ({ query }) => {
+  const period = floodPeriod(query);
+  const res = num(query, "res") ?? 9;
+  const limit = num(query, "limit") ?? 5000;
+  const box = (query.get("bbox") ?? "").split(",").map(Number);
+  const [w, s, e, n] = box;
+  if (!period || ![5, 6, 7, 8, 9].includes(res) || limit < 1 || limit > 20000) {
+    return fail(400, "bad_request", "period, res or limit is invalid");
+  }
+  if (box.length !== 4 || box.some(Number.isNaN) || !(w < e && s < n)) {
+    return fail(400, "bad_request", "bbox must be minLon,minLat,maxLon,maxLat");
+  }
+  return { data: floodCells(period, [w, s, e, n], res, limit, data.ingestedAt()) };
+});
 
 // --- chat ---------------------------------------------------------------------
 
@@ -179,7 +216,7 @@ route("DELETE", "/api/profile/facts/:kind", (ctx) => {
 
 // --- auth ---------------------------------------------------------------------
 
-// Demo tokens, as on the backend: demo:user, demo:responder, demo:user:<name> (LINE), demo:google:<name>.
+// Demo tokens, as on the backend: demo:user, demo:user:<name> (LINE), demo:google:<name>.
 // The mock keeps one account per demo id; its memory is the chat's (the mock has no account store).
 function mockLogin(idToken: string, provider: "line" | "google"): Result {
   const parts = idToken.split(":");
@@ -189,16 +226,14 @@ function mockLogin(idToken: string, provider: "line" | "google"): Result {
     if (parts[0] !== "demo" || parts[1] !== "google" || parts.length !== 3 || !nameOk(parts[2])) {
       return fail(401, "invalid_token", "mock mode accepts demo:google:<name>");
     }
-    user = { display_name: parts[2], role: "user", picture_url: null, identities: { line: false, google: `${parts[2]}@demo.namma` } };
+    user = { display_name: parts[2], picture_url: null, identities: { line: false, google: `${parts[2]}@demo.namma` } };
   } else {
-    const role = parts[1] === "responder" ? "responder" : parts[1] === "user" ? "user" : null;
-    if (parts[0] !== "demo" || !role || parts.length > 3 || (parts.length === 3 && !nameOk(parts[2]))) {
-      return fail(401, "invalid_token", "mock mode accepts demo:user, demo:responder or demo:user:<name>");
+    if (parts[0] !== "demo" || parts[1] !== "user" || parts.length > 3 || (parts.length === 3 && !nameOk(parts[2]))) {
+      return fail(401, "invalid_token", "mock mode accepts demo:user or demo:user:<name>");
     }
-    const name = parts[2] ?? (role === "responder" ? "เจ้าหน้าที่ทดลอง" : "ผู้ใช้ทดลอง");
-    user = { display_name: name, role, picture_url: null, identities: { line: true, google: null } };
+    user = { display_name: parts[2] ?? "ผู้ใช้ทดลอง", picture_url: null, identities: { line: true, google: null } };
   }
-  const token = `mock-${user.role}-${Math.random().toString(36).slice(2)}`;
+  const token = `mock-${Math.random().toString(36).slice(2)}`;
   updateState((s) => {
     s.sessions[token] = user;
   });

@@ -1,9 +1,14 @@
 # NamMa web (น้ำมา)
 
-Web app for the NamMa flood assistant: chat and station map.
+Web app for the NamMa flood assistant: chat, station map and a satellite flood map.
 The backend (FastAPI, LINE bot, ingest, risk, forecast) is in the sibling repo **[`namma-backend`](https://github.com/NamMa-CEDT/namma-backend)**.
 
-Stack: Vite + React 19 + TypeScript + Tailwind 4, react-router (`HashRouter`), TanStack Query, react-leaflet, Recharts.
+Stack: Vite + React 19 + TypeScript + Tailwind 4, react-router (`HashRouter`), TanStack Query, react-leaflet, h3-js, Recharts.
+
+**Flood tab (`#/flood`):** GISTDA's flooded H3 cells (`/api/flood/cells`) drawn with h3-js on one Leaflet canvas,
+over Esri World Imagery (or OpenStreetMap), with flooded area per province → amphoe → tambon (`/api/flood/areas`).
+Zoomed out it asks for parent cells (res 5–8, `src/lib/flood.ts`). In mock mode the cells are a **made-up sample**
+(`src/api/mock/flood.ts`) and the page says so; real cells come from the backend once it has a `GISTDA_API_KEY`.
 
 ## Run
 

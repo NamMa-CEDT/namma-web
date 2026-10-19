@@ -19,6 +19,7 @@ import {
   Trash,
   UserCircle,
   Warning,
+  Waves,
   type Icon as PhosphorIcon,
   type IconProps,
 } from "@phosphor-icons/react";
@@ -32,6 +33,7 @@ function wrap(Icon: PhosphorIcon) {
 
 export const ChatIcon = wrap(ChatCircleText);
 export const MapIcon = wrap(MapTrifold);
+export const FloodIcon = wrap(Waves);
 export const SendIcon = wrap(PaperPlaneRight);
 export const LocateIcon = wrap(Crosshair);
 export const PinIcon = wrap(MapPin);

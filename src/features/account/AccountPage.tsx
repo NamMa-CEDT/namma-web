@@ -55,7 +55,7 @@ function SignIn() {
           onSubmit={(e) => {
             e.preventDefault();
             const name = demoName.trim().toLowerCase().replace(/[^a-z0-9_-]/g, "");
-            void attempt(loginDemo("user", name || undefined));
+            void attempt(loginDemo(name || undefined));
           }}
         >
           <label className="grid gap-1 text-caption text-ink-muted" htmlFor="demo-name">

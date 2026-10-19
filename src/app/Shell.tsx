@@ -1,7 +1,7 @@
 import { lazy, Suspense } from "react";
 import { Link, NavLink, Outlet, useSearchParams } from "react-router";
 import { API_MODE } from "../api/client";
-import { AutoThemeIcon, ChatIcon, LineIcon, MapIcon, MoonIcon, SunIcon, UserIcon } from "../components/icons";
+import { AutoThemeIcon, ChatIcon, FloodIcon, LineIcon, MapIcon, MoonIcon, SunIcon, UserIcon } from "../components/icons";
 import { useSession } from "../auth/session";
 import { LogoMark } from "../components/Logo";
 import { ErrorBoundary, Loading } from "../components/States";
@@ -17,6 +17,7 @@ const DemoPanel = import.meta.env.VITE_API_MODE === "http" ? null : lazy(() => i
 const NAV = [
   { to: "/chat", label: copy.nav.chat, Icon: ChatIcon },
   { to: "/map", label: copy.nav.map, Icon: MapIcon },
+  { to: "/flood", label: copy.nav.flood, Icon: FloodIcon },
 ];
 
 function useDemoMode(): boolean {
@@ -39,7 +40,7 @@ export function Shell() {
   return (
     <div className="flex h-dvh flex-col bg-surface text-ink">
       <header className="z-[1000] flex min-h-16 items-center gap-x-1.5 border-b border-line bg-surface-raised px-2 py-1 sm:gap-x-4 sm:px-6">
-        <Link to="/" className="nm-wordmark" aria-label={`${copy.appNameEn} ${copy.appName} ${copy.nav.home}`}>
+        <Link to="/" className="nm-wordmark min-h-11 min-w-11" aria-label={`${copy.appNameEn} ${copy.appName} ${copy.nav.home}`}>
           <LogoMark size={36} />
           <span className="nm-wordmark__en max-sm:hidden">{copy.appNameEn}</span>
         </Link>
@@ -65,7 +66,7 @@ export function Shell() {
             onClick={cycleTheme}
             aria-label={`${copy.theme[theme]} · ${copy.theme.hint}`}
             title={copy.theme[theme]}
-            className="inline-flex size-11 items-center justify-center rounded-md text-ink-muted hover:text-ink sm:border sm:border-line-strong sm:text-ink max-sm:size-10"
+            className="inline-flex size-11 items-center justify-center rounded-md text-ink-muted hover:text-ink sm:border sm:border-line-strong sm:text-ink"
           >
             <ThemeIcon className="text-[20px]" />
           </button>
@@ -73,7 +74,7 @@ export function Shell() {
             to="/account"
             aria-label={session ? `${copy.account.nav}: ${session.display_name}` : copy.account.signIn}
             className={({ isActive }) =>
-              `flex min-h-11 items-center gap-2 rounded-md px-1 text-label no-underline sm:px-2 ${
+              `flex min-h-11 min-w-11 items-center justify-center gap-2 rounded-md px-1 text-label no-underline sm:px-2 ${
                 isActive ? "font-semibold text-ink" : "text-ink-muted hover:text-ink"
               }`
             }
@@ -129,7 +130,7 @@ export function Shell() {
         </p>
       </footer>
 
-      <nav className="pb-safe grid grid-cols-2 border-t border-line bg-surface-raised md:hidden" aria-label="หลัก">
+      <nav className="pb-safe grid grid-cols-3 border-t border-line bg-surface-raised md:hidden" aria-label="หลัก">
         {NAV.map(({ to, label, Icon }) => (
           <NavLink
             key={to}

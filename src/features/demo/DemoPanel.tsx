@@ -33,10 +33,10 @@ export default function DemoPanel() {
           </div>
 
           <p className="m-0 mt-3 text-caption font-semibold text-ink-muted">
-            {copy.demo.role}: {session ? `${session.display_name} (${session.role})` : "ไม่ได้เข้าสู่ระบบ"}
+            {copy.demo.account}: {session ? session.display_name : copy.demo.signedOut}
           </p>
           <div className="mt-1 flex flex-wrap gap-1">
-            <button type="button" className="nm-btn nm-btn--secondary nm-btn--sm px-3" onClick={() => loginDemo("user").then(refresh)}>
+            <button type="button" className="nm-btn nm-btn--secondary nm-btn--sm px-3" onClick={() => loginDemo().then(refresh)}>
               user
             </button>
             <button type="button" className="nm-btn nm-btn--secondary nm-btn--sm px-3" onClick={() => void logout().then(refresh)}>

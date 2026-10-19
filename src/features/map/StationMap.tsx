@@ -4,6 +4,7 @@ import type { LatLngBoundsExpression } from "leaflet";
 import { useEffect, useMemo, useState } from "react";
 import { MapContainer, Marker, TileLayer, Tooltip, useMap, useMapEvents } from "react-leaflet";
 import type { LatLon, StationSummary } from "../../api/types";
+import { InvalidateOnResize } from "../../components/InvalidateOnResize";
 import { copy } from "../../copy";
 import { PIN_SIZE, pinIcon } from "../../lib/pins";
 import { stationTier, tierInfo } from "../../lib/tiers";
@@ -36,18 +37,6 @@ function FlyTo({ target }: { target: LatLon | null }) {
     const zoom = Math.max(map.getZoom(), 10);
     map.flyTo([target.lat, target.lon], zoom, { duration: 0.6 });
   }, [map, target?.lat, target?.lon]);
-  return null;
-}
-
-/** Leaflet sizes itself once; tell it when the container changes (panel open/close, rotate). */
-function InvalidateOnResize() {
-  const map = useMap();
-  useEffect(() => {
-    const el = map.getContainer();
-    const ro = new ResizeObserver(() => map.invalidateSize());
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, [map]);
   return null;
 }
 

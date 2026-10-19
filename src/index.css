@@ -364,6 +364,9 @@
   /* DS disabled state for icon buttons (the send button before anything is typed). */
   .nm-icon-btn:disabled,
   .nm-icon-btn--send:disabled { background: var(--surface-sunken); border-color: var(--line); color: var(--ink-muted); box-shadow: none; cursor: not-allowed; }
+  /* GISTDA flood cells. One colour in both themes: the satellite imagery under them doesn't change with the theme,
+     and a bright blue reads on both the imagery and street tiles. Not a tier colour: flooding seen ≠ risk tier. */
+  :root { --flood: #1aa3ff; --flood-edge: #06467f; --flood-edge-on-imagery: #e6f5ff; }
   /* A staff gauge that is a button (river profile → station on the map). */
   .nm-profile__station > a { color: inherit; text-decoration: none; display: flex; flex-direction: column; gap: var(--space-1); }
   .nm-profile__station > a:hover .nm-profile__place { text-decoration: underline; }

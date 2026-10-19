@@ -3,7 +3,7 @@
 // browser's anonymous chat session, so what the person already told NamMa joins their account.
 import { useSyncExternalStore } from "react";
 import { api, API_MODE } from "../api/client";
-import type { LoginResponse, Provider, Role, SessionUser } from "../api/types";
+import type { LoginResponse, Provider, SessionUser } from "../api/types";
 import { loadSessionId } from "../lib/chatSession";
 import { readStoredSession, setToken, writeStoredSession, type StoredSession } from "./token";
 
@@ -46,9 +46,9 @@ function signedIn(res: LoginResponse): LoginResponse {
   return res;
 }
 
-/** Demo login as a demo user or responder (see canDemoLogin). `name` gives a tester their own account. */
-export async function loginDemo(role: Role, name?: string): Promise<LoginResponse> {
-  return signedIn(await api.login(name ? `demo:${role}:${name}` : `demo:${role}`, loadSessionId()));
+/** Demo LINE login (see canDemoLogin). `name` gives a tester their own account. */
+export async function loginDemo(name?: string): Promise<LoginResponse> {
+  return signedIn(await api.login(name ? `demo:user:${name}` : "demo:user", loadSessionId()));
 }
 
 /** Sign in with a Google ID token (Google's button). Creates the account on first sign-in. */
