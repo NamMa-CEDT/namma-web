@@ -4,6 +4,7 @@ import { useProfile, useRivers } from "../../api/queries";
 import { Composer } from "../../components/Composer";
 import { HotlineNotice } from "../../components/HotlineNotice";
 import { RiverProfile } from "../../components/RiverProfile";
+import { RiverSearch } from "../../components/RiverSearch";
 import { ErrorState, Loading } from "../../components/States";
 import { copy, type Starter } from "../../copy";
 import { loadSessionId, type ChatHandoff } from "../../lib/chatSession";
@@ -14,35 +15,17 @@ import { FloodExplorer, type FloodScope } from "../flood/FloodExplorer";
 const TABS = ["flood", "river"] as const;
 type Tab = (typeof TABS)[number];
 
-/** Find any river by name; empty shows the rivers at risk and the one near the saved place. */
-function RiverSearch({ value, onChange }: { value: string; onChange: (v: string) => void }) {
-  return (
-    <div className="flex items-center gap-2">
-      <label htmlFor="river-search" className="sr-only">
-        {copy.river.search.label}
-      </label>
-      <input
-        id="river-search"
-        type="search"
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder={copy.river.search.placeholder}
-        className="min-h-11 w-56 rounded-md border border-line bg-surface px-3 text-body"
-      />
-      {value && (
-        <button type="button" className="min-h-11 px-2 font-semibold text-river" onClick={() => onChange("")}>
-          {copy.river.search.clear}
-        </button>
-      )}
-    </div>
-  );
-}
-
 /**
  * DS new-user page: the question, the composer and starter chips above the bank line; below it, what the water is
  * doing now in two tabs (DS option G): น้ำท่วม, GISTDA's satellite flood map first, then แม่น้ำ, the live
  * RiverProfile (staff gauges, river line, cross-sections). Then the three setup steps. Sending opens the chat.
  */
+/** The chosen river alone when there is one (and it's in the results); otherwise the results as they are. */
+function shownRivers<T extends { key: string }>(list: T[], picked: string | null): T[] {
+  const only = picked ? list.filter((r) => r.key === picked) : [];
+  return only.length ? only : list;
+}
+
 export default function HomePage() {
   const [text, setText] = useState("");
   const navigate = useNavigate();
@@ -50,6 +33,7 @@ export default function HomePage() {
   const [floodScope, setFloodScope] = useState<FloodScope>({ period: "3days", province: null, amphoe: null });
   const [riverInput, setRiverInput] = useState("");
   const [riverQuery, setRiverQuery] = useState("");
+  const [picked, setPicked] = useState<string | null>(null); // a suggestion chosen: the chart shows only that river
   useEffect(() => {
     const t = setTimeout(() => setRiverQuery(riverInput), 250); // one request per pause, not per keystroke
     return () => clearTimeout(t);
@@ -125,10 +109,21 @@ export default function HomePage() {
               <FloodExplorer embedded scope={floodScope} onScope={(c) => setFloodScope((s) => ({ ...s, ...c }))} />
             ) : (
               <div className="flex flex-col gap-3">
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <p className="m-0 text-body text-ink-muted">{copy.home.riverSubtitle}</p>
-                  <RiverSearch value={riverInput} onChange={setRiverInput} />
-                </div>
+                <RiverSearch
+                  value={riverInput}
+                  onChange={(v) => {
+                    setPicked(null);
+                    setRiverInput(v);
+                  }}
+                  onPick={(r) => {
+                    setPicked(r.key);
+                    setRiverInput(r.name_th);
+                    setRiverQuery(r.name_th);
+                  }}
+                  showLabel
+                  className="max-w-xl"
+                />
+                <p className="m-0 text-body text-ink-muted">{copy.home.riverSubtitle}</p>
                 <div className="rounded-md border border-line bg-surface p-4 sm:p-6">
                   {rivers.isPending ? (
                     <Loading />
@@ -137,7 +132,7 @@ export default function HomePage() {
                   ) : riverQuery.trim() && !rivers.data.length ? (
                     <p className="m-0 text-body text-ink-muted">{copy.river.search.none(riverQuery.trim())}</p>
                   ) : (
-                    <RiverProfile rivers={rivers.data} />
+                    <RiverProfile rivers={shownRivers(rivers.data, picked)} />
                   )}
                 </div>
               </div>

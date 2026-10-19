@@ -97,9 +97,12 @@ describe("rivers", () => {
     expect(list[0].worst_tier).toBe("danger");
   });
 
-  it("searches by name and rejects half a point", async () => {
+  it("searches by name, then by place, and rejects half a point", async () => {
+    // The Nan has a station named after the Yom ("คลองผันน้ำยม-น่าน4"): a name hit comes first, the place hit after.
     const hits = (await call("GET", `/api/rivers?q=${encodeURIComponent("ยม")}`)).json.data as R[];
-    expect(hits.map((r) => [r.key, r.reason])).toEqual([["แม่น้ำยม", "match"]]);
+    expect(hits.map((r) => [r.key, r.reason])).toEqual([["แม่น้ำยม", "match"], ["แม่น้ำน่าน", "match"]]);
+    const byProvince = (await call("GET", `/api/rivers?q=${encodeURIComponent("อุบลราชธานี")}`)).json.data as R[];
+    expect(byProvince.map((r) => r.key)).toContain("แม่น้ำชี"); // the Chi runs through Ubon Ratchathani
     expect((await call("GET", "/api/rivers?lat=14")).status).toBe(400);
   });
 });

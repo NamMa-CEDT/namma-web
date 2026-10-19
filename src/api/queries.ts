@@ -122,8 +122,19 @@ export function useRivers(near: { lat: number; lon: number } | null, q = "") {
   return useQuery({
     queryKey: keys.rivers(near?.lat ?? null, near?.lon ?? null, query),
     queryFn: () =>
-      api.rivers(query ? { q: query } : { lat: near?.lat, lon: near?.lon, limit: RIVERS_LIMIT }),
+      api.rivers(query ? { q: query, limit: RIVERS_LIMIT } : { lat: near?.lat, lon: near?.lon, limit: RIVERS_LIMIT }),
     refetchInterval: STATION_REFRESH_MS,
+    placeholderData: keepPreviousData,
+  });
+}
+
+/** Up to 8 rivers for the suggestions under the search box, as the user types. */
+export function useRiverSuggestions(q: string) {
+  const query = q.trim();
+  return useQuery({
+    queryKey: ["river-suggestions", query],
+    queryFn: () => api.rivers({ q: query, limit: 8 }),
+    enabled: query !== "",
     placeholderData: keepPreviousData,
   });
 }

@@ -9,6 +9,8 @@ import { agencyName, copy } from "../../copy";
 import { formatBankGap, formatDistance } from "../../lib/format";
 import { getCurrentPosition } from "../../lib/geolocation";
 import { stationTier, TIER_ORDER, tierInfo } from "../../lib/tiers";
+import { RiverSearch } from "../../components/RiverSearch";
+import type { River } from "../../api/types";
 import { CorridorStrip } from "./CorridorStrip";
 import { StationName, StationSheet } from "./StationSheet";
 
@@ -78,6 +80,8 @@ export default function MapPage() {
   const [locating, setLocating] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [tilesFailed, setTilesFailed] = useState(false);
+  const [riverText, setRiverText] = useState("");
+  const [river, setRiver] = useState<River | null>(null); // the river picked in the search: the map zooms to it
 
   const select = useCallback(
     (id: number | null) => {
@@ -122,6 +126,7 @@ export default function MapPage() {
             stations={visible}
             selectedId={selectedId}
             point={point}
+            fitTo={river ? river.stations.map((s) => ({ lat: s.lat, lon: s.lon })) : null}
             picking={picking}
             onSelect={select}
             onPick={(p) => {
@@ -182,6 +187,25 @@ export default function MapPage() {
               </div>
             </header>
             {point && <NearPanel point={point} onSelect={select} />}
+            <div className="border-b border-line px-4 py-3">
+              <RiverSearch
+                value={riverText}
+                onChange={(v) => {
+                  setRiverText(v);
+                  if (!v) setRiver(null);
+                }}
+                onPick={(r) => {
+                  setRiver(r);
+                  setRiverText(r.name_th);
+                }}
+                className="max-w-md"
+              />
+              {river && (
+                <p className="m-0 mt-2 text-caption text-ink-muted" role="status">
+                  {copy.river.search.showOnMap(river.name_th)} · {copy.river.search.stations(river.stations.length)}
+                </p>
+              )}
+            </div>
             <CorridorStrip stations={visible} onSelect={select} />
             <p className="m-0 px-4 pb-4 text-caption text-ink-muted">
               {copy.footer.dataCredit} · {agencyName("RID")}

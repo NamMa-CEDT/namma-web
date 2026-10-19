@@ -12,6 +12,7 @@ import {
   MapPin,
   MapTrifold,
   Microphone,
+  MagnifyingGlass,
   Minus,
   Moon,
   PaperPlaneRight,
@@ -46,6 +47,7 @@ export const TrashIcon = wrap(Trash);
 export const UserIcon = wrap(UserCircle);
 export const ArrowDownIcon = wrap(ArrowDown);
 export const MinusIcon = wrap(Minus);
+export const SearchIcon = wrap(MagnifyingGlass);
 export const SunIcon = wrap(Sun);
 export const MoonIcon = wrap(Moon);
 export const AutoThemeIcon = wrap(Desktop);

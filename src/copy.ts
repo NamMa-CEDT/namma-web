@@ -87,6 +87,8 @@ export const copy = {
       placeholder: "ชื่อแม่น้ำ เช่น ยม น่าน ชี",
       none: (q: string) => `ไม่พบแม่น้ำที่ชื่อมีคำว่า “${q}”`,
       clear: "ล้างคำค้น",
+      stations: (n: number) => `${n} สถานี`,
+      showOnMap: (name: string) => `แสดง${name}บนแผนที่`,
     },
     upstreamFirst: "เรียงจากต้นน้ำ",
     othersNormal: (n: number) => `อีก ${n} สถานีปกติ`,

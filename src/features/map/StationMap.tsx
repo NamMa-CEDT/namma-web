@@ -15,6 +15,8 @@ interface Props {
   stations: StationSummary[];
   selectedId: number | null;
   point: LatLon | null;
+  /** Points to fit the view to (a river's stations, from the search); null leaves the view alone. */
+  fitTo: LatLon[] | null;
   picking: boolean;
   onSelect: (id: number) => void;
   onPick: (p: LatLon) => void;
@@ -29,6 +31,19 @@ function MapEvents({ onZoom, onClick }: { onZoom: (z: number) => void; onClick?:
   return null;
 }
 
+/** Zooms to fit these points, when the search picks a river. Re-runs when the picked river changes. */
+function FitTo({ points }: { points: LatLon[] | null }) {
+  const map = useMap();
+  const key = points?.map((p) => `${p.lat},${p.lon}`).join(";") ?? "";
+  useEffect(() => {
+    const size = map.getSize();
+    if (!points?.length || !size.x || !size.y) return; // hidden container: see FlyTo
+    const bounds = points.map((p) => [p.lat, p.lon] as [number, number]);
+    map.flyToBounds(bounds, { padding: [32, 32], maxZoom: 12, duration: 0.6 });
+  }, [map, key]);
+  return null;
+}
+
 function FlyTo({ target }: { target: LatLon | null }) {
   const map = useMap();
   useEffect(() => {
@@ -40,7 +55,7 @@ function FlyTo({ target }: { target: LatLon | null }) {
   return null;
 }
 
-export default function StationMap({ stations, selectedId, point, picking, onSelect, onPick, onTilesFailed }: Props) {
+export default function StationMap({ stations, selectedId, point, fitTo, picking, onSelect, onPick, onTilesFailed }: Props) {
   const [zoom, setZoom] = useState(8);
   const [tileErrors, setTileErrors] = useState(0);
 
@@ -80,6 +95,7 @@ export default function StationMap({ stations, selectedId, point, picking, onSel
       <MapEvents onZoom={setZoom} onClick={picking ? onPick : undefined} />
       <InvalidateOnResize />
       <FlyTo target={selected ? { lat: selected.lat, lon: selected.lon } : point} />
+      <FitTo points={selected ? null : fitTo} />
 
       {ordered.map((s) => {
         const tier = stationTier(s);

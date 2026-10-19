@@ -172,11 +172,12 @@ export function listRivers(
   const bigFirst = (a: FixtureRiver, b: FixtureRiver) => b.stations.length - a.stations.length || a.key.localeCompare(b.key);
   const needle = q.q?.trim();
   if (needle) {
-    return rivers
-      .filter((r) => r.name_th.includes(needle))
-      .sort(bigFirst)
-      .slice(0, q.limit)
-      .map((r) => riverOut(r, "match", km(r)));
+    // As the backend: a name hit first, then a station whose province, amphoe, name or code matches.
+    const inPlace = (r: FixtureRiver) =>
+      r.stations.some((s) => [s.province, s.amphoe, s.name_th, s.oldcode].some((v) => v?.includes(needle)));
+    const named = rivers.filter((r) => r.name_th.includes(needle)).sort(bigFirst);
+    const placed = rivers.filter((r) => !named.includes(r) && inPlace(r)).sort(bigFirst);
+    return [...named, ...placed].slice(0, q.limit).map((r) => riverOut(r, "match", km(r)));
   }
   const over = (r: FixtureRiver) => Math.max(-99, ...r.stations.map((s) => s.latest?.diff_wl_bank ?? -99));
   const out = rivers
