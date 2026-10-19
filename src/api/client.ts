@@ -7,6 +7,7 @@ import type {
   Envelope,
   FloodAreas,
   FloodCells,
+  FloodHistory,
   FloodLevel,
   FloodNear,
   FloodPeriod,
@@ -108,6 +109,9 @@ export const api = {
   /** bbox: "minLon,minLat,maxLon,maxLat". res 9 = GISTDA's cells; 5–8 = their parents, summed. */
   floodCells: (q: { period: FloodPeriod; bbox: string; res: number; limit?: number }) =>
     request<FloodCells>("GET", "/api/flood/cells", { query: q }),
+  /** Flood history 2011–: per province, or per tambon of one province (its pv code). */
+  floodHistory: (q: { level: "province" | "tambon"; province?: string }) =>
+    request<FloodHistory>("GET", "/api/flood/history", { query: q }),
   floodNear: (q: { period: FloodPeriod; lat: number; lon: number }) =>
     request<FloodNear>("GET", "/api/flood/near", { query: q }),
   chat: (req: ChatRequest) => request<ChatResponse>("POST", "/api/chat", { body: req }),

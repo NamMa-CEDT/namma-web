@@ -6,7 +6,7 @@ import type { Fact, FloodLevel, FloodPeriod, Profile, SessionUser } from "../typ
 import { copy } from "../../copy";
 import { respond, type ChatSessionState } from "./chatScript";
 import * as data from "./data";
-import { floodAreas, floodCells, floodNear } from "./flood";
+import { floodAreas, floodCells, floodHistory, floodNear } from "./flood";
 import { chatState, loadState, updateState, type MockState } from "./store";
 
 interface Ctx {
@@ -124,6 +124,15 @@ route("GET", "/api/flood/near", ({ query }) => {
     return fail(400, "bad_request", "period, lat or lon is invalid");
   }
   return { data: floodNear(period, lat, lon, data.ingestedAt()) };
+});
+
+route("GET", "/api/flood/history", ({ query }) => {
+  const level = query.get("level") ?? "province";
+  const province = query.get("province");
+  if ((level !== "province" && level !== "tambon") || (level === "tambon" && !province)) {
+    return fail(400, "bad_request", "level must be province, or tambon with province");
+  }
+  return { data: floodHistory(level, province) };
 });
 
 // --- chat ---------------------------------------------------------------------

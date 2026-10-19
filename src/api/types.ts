@@ -194,6 +194,30 @@ export interface FloodCells extends FloodLayer {
   cells: FloodCell[];
 }
 
+/** One area's flood history (our copy of GISTDA's 2011– record, /api/flood/history). */
+export interface FloodHistoryArea {
+  /** GISTDA pv_idn / tb_idn: the same as the map outlines' code. */
+  code: string;
+  province: string | null;
+  amphoe: string | null;
+  tambon: string | null;
+  /** Years with any flooding, ascending. */
+  years: number[];
+  /** Flooded rai per year ("2011" → rai), only the flooded years. */
+  rai_by_year: Record<string, number>;
+}
+
+export interface FloodHistory {
+  level: "province" | "tambon";
+  province: string | null;
+  /** Every year the record covers, e.g. 2011…2024; empty before the first province is copied. */
+  years: number[];
+  /** Province codes copied so far: an area missing from `areas` there never flooded; elsewhere it is unknown. */
+  provinces: string[];
+  /** Worst year's rai first. */
+  areas: FloodHistoryArea[];
+}
+
 // --- household (what the chat may remember, with consent) -------------------
 
 export type Vulnerable =
