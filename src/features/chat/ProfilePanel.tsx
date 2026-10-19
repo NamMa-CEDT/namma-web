@@ -122,7 +122,7 @@ const HOUSE: FactKind[] = ["house", "assets", "history"];
 
 /**
  * DS ProfilePanel: what NamMa remembers, beside the chat while the first conversation collects it.
- * Desktop: a full-height column on surface-sunken. Phones: the meter plus a "ข้อมูลที่จำไว้" toggle.
+ * Desktop: a full-height column on surface-sunken, left of the chat. Phones: the meter plus a "ข้อมูลที่จำไว้" toggle.
  * Every item can be deleted here (CLAUDE.md §7). Sensitive facts appear only after consent, with its date.
  */
 export function ProfilePanel({ chatSession }: { chatSession: string }) {
@@ -143,7 +143,7 @@ export function ProfilePanel({ chatSession }: { chatSession: string }) {
   return (
     <aside
       aria-labelledby="profile-h"
-      className={`nm-memory border-line bg-surface-sunken p-4 max-lg:max-h-[60%] max-lg:gap-3 max-lg:border-b lg:order-last lg:w-[22rem] lg:shrink-0 lg:border-l lg:px-7 lg:py-8 ${open ? "overflow-y-auto" : "lg:overflow-y-auto"}`}
+      className={`nm-memory border-line bg-surface-sunken p-4 max-lg:max-h-[60%] max-lg:gap-3 max-lg:border-b lg:w-[22rem] lg:shrink-0 lg:border-r lg:px-7 lg:py-8 ${open ? "overflow-y-auto" : "lg:overflow-y-auto"}`}
     >
       <div className="flex items-start justify-between gap-2">
         <div>
