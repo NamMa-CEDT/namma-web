@@ -80,6 +80,8 @@ export const copy = {
       atRisk: (tierLabel: string) => `มีสถานี${tierLabel}`,
       nearYou: (distance: string | null) => (distance ? `ใกล้ที่ที่คุณบันทึกไว้ ${distance}` : "ใกล้ที่ที่คุณบันทึกไว้"),
     },
+    showMore: (n: number) => `แสดงอีก ${n} แม่น้ำ`,
+    showLess: "แสดงน้อยลง",
     search: {
       label: "ค้นหาแม่น้ำ",
       placeholder: "ชื่อแม่น้ำ เช่น ยม น่าน ชี",
