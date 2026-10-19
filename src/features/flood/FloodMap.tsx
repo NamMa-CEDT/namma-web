@@ -1,6 +1,7 @@
 import "leaflet/dist/leaflet.css";
 
 import type { MultiPolygon } from "geojson";
+import { cellToBoundary, cellToLatLng } from "h3-js";
 import L from "leaflet";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { MapContainer, TileLayer, useMap, useMapEvents } from "react-leaflet";
@@ -8,7 +9,8 @@ import { InvalidateOnResize } from "../../components/InvalidateOnResize";
 import type { AreaShape } from "../../lib/boundaries";
 import type { FloodClass } from "../../lib/flood";
 import type { WaterPatch } from "../../lib/water";
-import { PATTERN_FILL, WATER_EDGE, WATER_FILL } from "./patterns";
+import { heatPalette } from "./heat";
+import { PATTERN_FILL, WATER_EDGE } from "./patterns";
 
 export type Basemap = "satellite" | "streets";
 export type FlyTarget = { lat: number; lon: number; zoom: number } | { bounds: [number, number, number, number] };
@@ -144,8 +146,133 @@ function AreasLayer({
   return null;
 }
 
-// Water sits in its own pane above the tambons, so a tap on water never lands on the tambon under it.
+// Water sits in its own panes above the tambons: the heat canvas, then the tappable outlines over it.
+const HEAT_PANE = "nm-heat";
 const WATER_PANE = "nm-water";
+
+/**
+ * The close-up heatmap: every GISTDA cell stamped as a soft blob weighted by how much of it is flooded, so where many
+ * well-flooded cells sit together the water reads deep blue and a scatter of half-wet cells reads pale. The summed
+ * alpha is coloured through heat.ts and cut to the patches' smooth outlines. One canvas, redrawn after each pan or
+ * zoom (hidden while Leaflet animates a zoom): thousands of cells stay fast on a phone.
+ */
+function HeatCanvas({ patches }: { patches: WaterPatch[] }) {
+  const map = useMap();
+  const canvas = useMemo(() => {
+    const c = document.createElement("canvas");
+    c.className = "leaflet-zoom-hide";
+    c.style.position = "absolute";
+    c.style.pointerEvents = "none";
+    return c;
+  }, []);
+  const palette = useMemo(() => heatPalette(), []);
+
+  const draw = useCallback(() => {
+    const size = map.getSize();
+    if (!size.x || !size.y) return;
+    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    canvas.width = size.x * dpr;
+    canvas.height = size.y * dpr;
+    canvas.style.width = `${size.x}px`;
+    canvas.style.height = `${size.y}px`;
+    L.DomUtil.setPosition(canvas, map.containerPointToLayerPoint([0, 0]));
+    const ctx = canvas.getContext("2d");
+    if (!ctx || !patches.length) {
+      ctx?.clearRect(0, 0, canvas.width, canvas.height);
+      return;
+    }
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, size.x, size.y);
+
+    // A cell's radius on screen at this zoom, from one cell's centre to a corner.
+    const first = patches[0].cells[0].h3;
+    const [clat, clon] = cellToLatLng(first);
+    const [vlat, vlon] = cellToBoundary(first)[0];
+    const cellR = map.latLngToContainerPoint([clat, clon]).distanceTo(map.latLngToContainerPoint([vlat, vlon]));
+    const r = Math.max(4, cellR * 2.2);
+    const stamp = document.createElement("canvas");
+    stamp.width = stamp.height = Math.ceil(r * 2);
+    const sctx = stamp.getContext("2d")!;
+    const g = sctx.createRadialGradient(r, r, 0, r, r, r);
+    g.addColorStop(0, "rgba(0,0,0,1)");
+    g.addColorStop(1, "rgba(0,0,0,0)");
+    sctx.fillStyle = g;
+    sctx.fillRect(0, 0, stamp.width, stamp.height);
+
+    // 1. A smooth flooded-share field: Σ(share × blob) / Σ(blob), summed additively on two canvases. A weighted
+    //    average, so the colour follows how much of the ground is under water, not how many cells happen to be close.
+    const w = canvas.width;
+    const h = canvas.height;
+    const layer = () => {
+      const c = document.createElement("canvas");
+      c.width = w;
+      c.height = h;
+      const x = c.getContext("2d", { willReadFrequently: true })!;
+      x.setTransform(dpr, 0, 0, dpr, 0, 0);
+      x.globalCompositeOperation = "lighter";
+      return x;
+    };
+    const shareSum = layer();
+    const weightSum = layer();
+    const K = 0.09; // per-blob weight: ~10 overlapping blobs stay under the 8-bit ceiling
+    for (const p of patches) {
+      for (const c of p.cells) {
+        const [lat, lon] = cellToLatLng(c.h3);
+        const pt = map.latLngToContainerPoint([lat, lon]);
+        if (pt.x < -r || pt.y < -r || pt.x > size.x + r || pt.y > size.y + r) continue;
+        shareSum.globalAlpha = K * Math.min(1, c.share);
+        shareSum.drawImage(stamp, pt.x - r, pt.y - r);
+        weightSum.globalAlpha = K;
+        weightSum.drawImage(stamp, pt.x - r, pt.y - r);
+      }
+    }
+
+    // 2. Colour: share → the heat palette.
+    const num = shareSum.getImageData(0, 0, w, h).data;
+    const den = weightSum.getImageData(0, 0, w, h).data;
+    const img = ctx.createImageData(w, h);
+    const px = img.data;
+    for (let i = 3; i < px.length; i += 4) {
+      if (den[i] < 3) continue;
+      const j = Math.min(255, Math.round((num[i] / den[i]) * 255)) * 4;
+      px[i - 3] = palette[j];
+      px[i - 2] = palette[j + 1];
+      px[i - 1] = palette[j + 2];
+      px[i] = palette[j + 3];
+    }
+    ctx.putImageData(img, 0, 0);
+
+    // 3. Cut to the patches' smooth outlines, so the heat ends where the water does.
+    const clip = new Path2D();
+    for (const p of patches) {
+      for (const poly of p.polygons) {
+        for (const ring of poly) {
+          ring.forEach(([lon, lat], i) => {
+            const pt = map.latLngToContainerPoint([lat, lon]);
+            if (i === 0) clip.moveTo(pt.x, pt.y);
+            else clip.lineTo(pt.x, pt.y);
+          });
+          clip.closePath();
+        }
+      }
+    }
+    ctx.globalCompositeOperation = "destination-in";
+    ctx.fill(clip, "evenodd");
+    ctx.globalCompositeOperation = "source-over";
+  }, [map, canvas, patches, palette]);
+
+  useEffect(() => {
+    const pane = map.getPane(HEAT_PANE) ?? map.createPane(HEAT_PANE);
+    pane.style.zIndex = "440";
+    pane.appendChild(canvas);
+    return () => {
+      canvas.remove();
+    };
+  }, [map, canvas]);
+  useEffect(draw, [draw]);
+  useMapEvents({ moveend: draw, resize: draw });
+  return null;
+}
 
 /** Close up: GISTDA's cells merged into smooth patches of water (lib/water.ts), each one tappable. */
 function WaterLayer({
@@ -179,7 +306,9 @@ function WaterLayer({
         shape,
         {
           pane: WATER_PANE,
-          style: { color: WATER_EDGE, weight: isSel ? 4 : 2, opacity: 1, lineJoin: "round", fillColor: WATER_FILL, fillOpacity: 0.9 },
+          // The heat canvas underneath does the colour; this is the shoreline, and the tap target (an invisible fill
+          // still takes clicks).
+          style: { color: WATER_EDGE, weight: isSel ? 4 : 1.5, opacity: 0.95, lineJoin: "round", fillColor: "#000000", fillOpacity: 0 },
         },
       );
       layer.on("click", (e: L.LeafletMouseEvent) => {
@@ -284,6 +413,7 @@ export default function FloodMap({
       <ViewWatcher onView={onView} />
       <FlyTo target={flyTo} />
       <AreasLayer areas={areas} selected={selected} onPick={onPick} basemap={basemap} outlineOnly={closeUp} />
+      <HeatCanvas patches={water} />
       <WaterLayer patches={water} selected={selectedWater} onPick={onPickWater} />
       <Places places={places} />
     </MapContainer>

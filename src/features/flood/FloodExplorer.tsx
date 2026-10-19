@@ -11,6 +11,7 @@ import { areaName, floodClass, formatCount, formatKm2, formatRai, placeName, pla
 import { formatDate, formatDateTime, formatDistance } from "../../lib/format";
 import { distanceToWaterKm, viewBox, waterPatches, type WaterPatch } from "../../lib/water";
 import type { Basemap, FlyTarget, MapArea, MapView } from "./FloodMap";
+import { HEAT_GRADIENT, heatColor } from "./heat";
 import { FloodPatterns, Swatch } from "./patterns";
 
 const FloodMap = lazy(() => import("./FloodMap"));
@@ -38,9 +39,13 @@ function Legend({ stage }: { stage: Stage }) {
       <div className="text-caption font-semibold text-ink">{copy.flood.legend}</div>
       {stage === "water" ? (
         <ul className="m-0 mt-1 flex list-none flex-col gap-0.5 p-0 text-caption text-ink">
-          <li className="flex items-center gap-2">
-            <Swatch cls="water" />
+          <li className="flex flex-col gap-0.5">
             {copy.flood.legendWater}
+            <span aria-hidden="true" className="block h-2.5 w-36 rounded-sm" style={{ background: HEAT_GRADIENT }} />
+            <span className="flex w-36 justify-between text-ink-muted">
+              <span>{copy.flood.heatLow}</span>
+              <span>{copy.flood.heatHigh}</span>
+            </span>
           </li>
           <li className="flex items-center gap-2">
             <Swatch cls="border" />
@@ -303,6 +308,11 @@ function patchRai(rai: number): string {
   return formatRai(rai < 100 ? rai : Math.round(rai / 10) * 10);
 }
 
+/** How much of its cells is under water, on average: the patch's colour on the heatmap. */
+function meanShare(patch: WaterPatch): number {
+  return patch.cells.reduce((s, c) => s + c.share, 0) / patch.cells.length;
+}
+
 /** A patch of water picked close up (design "3 · ซูมใกล้"): how big, what's in it, how far from home. */
 function WaterCard({
   patch,
@@ -333,7 +343,7 @@ function WaterCard({
     <section aria-labelledby="flood-area-h" className="flex flex-col gap-3 px-4 py-4">
       <CardHead head={head} rest={patch.tambon ? parts.slice(1) : parts} onClose={onClose} />
       <div className="flex items-center gap-2">
-        <Swatch cls="water" />
+        <span aria-hidden="true" className="block h-4 w-[22px] shrink-0 rounded-[5px]" style={{ background: heatColor(meanShare(patch)) }} />
         <p className="num m-0 text-reading-lg font-semibold">{copy.flood.waterRai(patchRai(patch.area_rai))}</p>
       </div>
       {(stats.length > 0 || home) && (

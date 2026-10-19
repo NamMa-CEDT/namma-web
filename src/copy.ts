@@ -252,6 +252,8 @@ export const copy = {
     waterFailed: "โหลดจุดที่น้ำท่วมไม่ได้",
     waterTruncated: "แสดงเฉพาะจุดที่ท่วมมากที่สุด ซูมเข้าเพื่อดูทั้งหมด",
     legendWater: "น้ำที่ดาวเทียมเห็น",
+    heatLow: "บางส่วน",
+    heatHigh: "เต็มพื้นที่",
     legendBorder: "เขตตำบล",
     waterTitle: "แอ่งน้ำ",
     waterIn: (tambon: string) => `แอ่งน้ำใน ${tambon}`,
