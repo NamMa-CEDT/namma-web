@@ -8,12 +8,15 @@ import {
   CaretLeft,
   ChatCircleText,
   Crosshair,
+  Desktop,
   MapPin,
   MapTrifold,
   Microphone,
   Minus,
+  Moon,
   PaperPlaneRight,
   Phone,
+  Sun,
   Trash,
   UserCircle,
   ShieldCheck,
@@ -49,6 +52,9 @@ export const UserIcon = wrap(UserCircle);
 export const ArrowDownIcon = wrap(ArrowDown);
 export const MinusIcon = wrap(Minus);
 export const UsersIcon = wrap(Users);
+export const SunIcon = wrap(Sun);
+export const MoonIcon = wrap(Moon);
+export const AutoThemeIcon = wrap(Desktop);
 
 /** LINE's speech-bubble glyph, only on LINE buttons and the @1784DDPM link (swap for the official asset). */
 export const LineIcon = (p: SVGProps<SVGSVGElement>) => (

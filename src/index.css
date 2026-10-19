@@ -314,6 +314,14 @@
 .nm-profile__code { font: 500 14px/22px var(--font-mono); color: var(--river); }
 .nm-profile__reading { font: 400 14px/22px var(--font-body); color: var(--ink-muted); font-variant-numeric: tabular-nums; }
 .nm-profile__station .nm-badge { align-self: flex-start; }
+/* Phones: a narrower axis leaves room for ~2.5 gauges; columns grow to fit long Thai names and badges instead of clipping. */
+@media (max-width: 639px) {
+  .nm-profile { gap: 0 var(--space-2); }
+  .nm-profile__axis { width: 64px; font-size: 12px; line-height: 16px; }
+  .nm-profile__axis > span { white-space: normal; }
+  .nm-profile__station { width: max-content; min-width: 96px; max-width: 128px; }
+  .nm-profile__place { overflow-wrap: anywhere; }
+}
 .nm-staff { position: relative; width: 44px; height: var(--track); box-sizing: border-box; background: var(--surface-raised); box-shadow: inset 0 0 0 1px var(--line-strong); border-radius: 2px; overflow: hidden; }
 .nm-staff::before { content: ""; position: absolute; left: 1px; top: 0; bottom: 0; width: 10px; background: repeating-linear-gradient(to top, var(--line-strong) 0 calc(var(--track) / 12), transparent calc(var(--track) / 12) calc(var(--track) / 6)); }
 .nm-staff__water { position: absolute; left: 13px; right: 1px; bottom: 0; height: calc(min(var(--fill), var(--bank-at)) * 1%); background: var(--water); }
@@ -398,6 +406,12 @@
 }
 
 /* Map pins: the tier shape itself, so the map reads without colour (DS: shape on every map pin). */
+.nm-pin-hit {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
 .nm-pin {
   display: block;
   width: 100%;

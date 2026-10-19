@@ -21,6 +21,14 @@ export const copy = {
     rescue: "ส่งขอความช่วยเหลือ",
   },
 
+  // Header light/dark button: the label names the current mode; pressing moves to the next.
+  theme: {
+    auto: "ธีม: ตามเครื่อง",
+    light: "ธีม: สว่าง",
+    dark: "ธีม: มืด",
+    hint: "กดเพื่อเปลี่ยน",
+  },
+
   // Rescue starts in the chat: triage asks before any ticket is sent (CLAUDE.md §6).
   rescueMessage: "น้ำเข้าบ้านแล้ว ช่วยด้วย",
 
