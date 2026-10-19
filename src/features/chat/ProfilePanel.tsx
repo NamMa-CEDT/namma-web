@@ -291,9 +291,80 @@ function PanelBody({ profile: p, chatSession, onAsk }: { profile: Profile; chatS
 
 const DESKTOP = "(min-width: 64rem)"; // Tailwind lg: the column shows, the drawer must not
 
+// Desktop column width, dragged by its right edge and remembered per browser.
+const WIDTH_KEY = "namma.profile.width";
+const MIN_W = 224;
+const MAX_W = 480;
+const DEFAULT_W = 288;
+const clampWidth = (w: number) => Math.round(Math.min(MAX_W, Math.max(MIN_W, w)));
+
+function useColumnWidth() {
+  const [width, setWidth] = useState(() => {
+    try {
+      const saved = Number(localStorage.getItem(WIDTH_KEY));
+      return saved ? clampWidth(saved) : DEFAULT_W;
+    } catch {
+      return DEFAULT_W;
+    }
+  });
+  useEffect(() => {
+    try {
+      localStorage.setItem(WIDTH_KEY, String(width));
+    } catch {
+      // not remembered: fine
+    }
+  }, [width]);
+  return [width, (w: number) => setWidth(clampWidth(w))] as const;
+}
+
+/**
+ * The column's right edge: drag to resize (pointer capture, so the drag survives leaving the strip), arrow keys move it
+ * 16 px, Home/End jump to the limits, double-click resets. A separator with its value, for screen readers.
+ */
+function ResizeHandle({ width, onResize, label }: { width: number; onResize: (w: number) => void; label: string }) {
+  const start = useRef<{ x: number; w: number } | null>(null);
+  const keys: Record<string, number> = { ArrowLeft: width - 16, ArrowRight: width + 16, Home: MIN_W, End: MAX_W };
+  return (
+    <div
+      role="separator"
+      aria-orientation="vertical"
+      aria-label={label}
+      aria-valuemin={MIN_W}
+      aria-valuemax={MAX_W}
+      aria-valuenow={width}
+      tabIndex={0}
+      title={label}
+      onPointerDown={(e) => {
+        e.preventDefault();
+        e.currentTarget.setPointerCapture(e.pointerId);
+        start.current = { x: e.clientX, w: width };
+        document.body.style.cursor = "col-resize";
+      }}
+      onPointerMove={(e) => start.current && onResize(start.current.w + e.clientX - start.current.x)}
+      onPointerUp={() => {
+        start.current = null;
+        document.body.style.cursor = "";
+      }}
+      onLostPointerCapture={() => {
+        start.current = null;
+        document.body.style.cursor = "";
+      }}
+      onDoubleClick={() => onResize(DEFAULT_W)}
+      onKeyDown={(e) => {
+        if (!(e.key in keys)) return;
+        e.preventDefault();
+        onResize(keys[e.key]);
+      }}
+      className="group absolute inset-y-0 -right-1.5 z-10 flex w-3 cursor-col-resize touch-none justify-center focus-visible:outline-none"
+    >
+      <span className="h-full w-0.5 bg-transparent transition-colors group-hover:bg-river group-focus-visible:bg-river group-active:bg-river" />
+    </div>
+  );
+}
+
 /**
  * DS ProfilePanel, option C: what NamMa remembers as four rows that open (ที่ตั้ง, คนในบ้าน, บ้านและทรัพย์สิน, LINE).
- * Desktop: a slim column left of the chat. Phones: the chat has the screen; `drawerOpen` slides the same rows in from
+ * Desktop: a slim column left of the chat, resizable by its right edge. Phones: the chat has the screen; `drawerOpen` slides the same rows in from
  * the left as a modal dialog (focus kept inside, Esc or the backdrop closes it), like a chat app's sidebar.
  * Every item can be deleted here (CLAUDE.md §7). Sensitive facts appear only after consent, with its date.
  */
@@ -310,6 +381,7 @@ export function ProfilePanel({
   onCloseDrawer: () => void;
 }) {
   const profile = useProfile(chatSession);
+  const [width, setWidth] = useColumnWidth();
   const dialog = useRef<HTMLDialogElement>(null);
   const headingId = useId();
 
@@ -337,12 +409,15 @@ export function ProfilePanel({
 
   return (
     <>
-      <aside aria-labelledby={`${headingId}-col`} className="hidden w-[18rem] shrink-0 flex-col overflow-y-auto border-r border-line bg-surface-sunken py-4 lg:flex">
-        <h2 id={`${headingId}-col`} className="m-0 mb-2 px-4 text-heading font-semibold">
-          {copy.profile.title}
-        </h2>
-        <PanelBody profile={p} chatSession={chatSession} onAsk={ask} />
-      </aside>
+      <div className="relative hidden shrink-0 lg:flex" style={{ width }}>
+        <aside aria-labelledby={`${headingId}-col`} className="flex w-full flex-col overflow-y-auto border-r border-line bg-surface-sunken py-4">
+          <h2 id={`${headingId}-col`} className="m-0 mb-2 px-4 text-heading font-semibold">
+            {copy.profile.title}
+          </h2>
+          <PanelBody profile={p} chatSession={chatSession} onAsk={ask} />
+        </aside>
+        <ResizeHandle width={width} onResize={setWidth} label={copy.profile.resize} />
+      </div>
 
       <dialog
         ref={dialog}
