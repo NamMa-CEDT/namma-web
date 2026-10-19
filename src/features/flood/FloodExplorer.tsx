@@ -140,22 +140,29 @@ function Segmented<T extends string>({
   value,
   onChange,
   name,
+  flush = false,
 }: {
   label: string;
   options: readonly T[];
   value: T;
   onChange: (v: T) => void;
   name: (v: T) => string;
+  /** Inside a panel that already draws the frame: no border, fill or shadow of its own. */
+  flush?: boolean;
 }) {
   return (
-    <div role="group" aria-label={label} className="pointer-events-auto inline-flex rounded-md border border-line-strong bg-surface-raised p-0.5 shadow-float">
+    <div
+      role="group"
+      aria-label={label}
+      className={`pointer-events-auto rounded-md p-0.5 ${flush ? "flex bg-surface-sunken" : "inline-flex border border-line-strong bg-surface-raised shadow-float"}`}
+    >
       {options.map((o) => (
         <button
           key={o}
           type="button"
           aria-pressed={o === value}
           onClick={() => onChange(o)}
-          className={`min-h-10 rounded-[8px] px-3 text-label font-semibold ${
+          className={`min-h-9 rounded-[8px] px-2 text-label font-semibold whitespace-nowrap ${flush ? "flex-1" : ""} ${
             o === value ? "bg-river text-on-river" : "text-ink-muted hover:text-ink"
           }`}
         >
@@ -805,6 +812,7 @@ export function FloodExplorer({
   const [flyTo, setFlyTo] = useState<FlyTarget | null>(null);
   const [tilesFailed, setTilesFailed] = useState(false);
   const [picked, setPicked] = useState<Picked | null>(null);
+  const [controlsOpen, setControlsOpen] = useState(true);
   const detail = useRef<HTMLDivElement>(null);
   const mapEl = useRef<HTMLDivElement>(null);
 
@@ -1006,53 +1014,86 @@ export function FloodExplorer({
         />
       </Suspense>
 
-      {/* Leaflet's zoom buttons sit top-left; the layer (and the history's year, not on phones: the panel's chips are
-          right below) go next to them, the basemap top-right. */}
-      <div className="pointer-events-none absolute top-2.5 right-2 left-[3.5rem] z-[500] flex flex-wrap items-start justify-between gap-2">
-        <div className="flex flex-col items-start gap-2">
-          <Segmented
-            label={copy.flood.periodLabel}
-            options={LAYERS}
-            value={history ? "history" : period}
-            onChange={(l) => (l === "history" ? onScope({ history: true }) : onScope({ period: l, history: false }))}
-            name={(l) => (l === "history" ? copy.flood.history.tab : copy.flood.period[l])}
-          />
-          {history && hist.data && hist.data.years.length > 0 && (
-            <label className="pointer-events-auto inline-flex items-center gap-2 rounded-md border border-line-strong bg-surface-raised px-3 py-1.5 text-label font-semibold shadow-float max-sm:hidden">
-              {copy.flood.history.yearLabel}
-              <select
-                value={year ?? ""}
-                onChange={(e) => onScope({ year: e.target.value ? Number(e.target.value) : null })}
-                className="num min-h-8 bg-transparent font-semibold text-ink"
-              >
-                <option value="">{copy.flood.history.allYears}</option>
-                {hist.data.years.map((y) => (
-                  <option key={y} value={y}>
-                    {y}
-                  </option>
-                ))}
-              </select>
-            </label>
-          )}
-        </div>
-        <div className="flex flex-col items-end gap-2">
-          <Segmented
-            label={copy.flood.basemap}
-            options={["satellite", "streets"] as const}
-            value={basemap}
-            onChange={setBasemap}
-            name={(b) => copy.flood[b]}
-          />
-          {status && (
-            <p role="status" className="pointer-events-auto m-0 max-w-[15rem] rounded-sm border border-line bg-surface-raised px-3 py-2 text-caption text-ink shadow-float">
-              {status}
-            </p>
+      {/* Leaflet's zoom buttons sit top-left; the map controls (period, history year, basemap) sit in a collapsible
+          panel top-right. */}
+      <div className="pointer-events-none absolute top-2.5 right-2 left-[3.5rem] z-[500] flex justify-end">
+        <div className="pointer-events-auto flex w-64 max-w-full flex-col gap-2 rounded-md border border-line-strong bg-surface-raised p-2 shadow-float">
+          <button
+            type="button"
+            aria-expanded={controlsOpen}
+            onClick={() => setControlsOpen((o) => !o)}
+            className={`flex min-h-9 w-full items-center justify-between gap-2 border-b px-1 pb-2 text-label font-semibold text-ink hover:text-river ${
+              controlsOpen ? "border-line" : "border-transparent"
+            }`}
+          >
+            {copy.flood.mapControls}
+            <svg
+              aria-hidden="true"
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className={`text-ink-muted transition-transform ${controlsOpen ? "rotate-180" : ""}`}
+            >
+              <path d="m6 9 6 6 6-6" />
+            </svg>
+          </button>
+          {controlsOpen && (
+            <>
+              <p className="m-0 px-1 text-caption text-ink-muted">{copy.flood.periodLabel}</p>
+              <Segmented
+                flush
+                label={copy.flood.periodLabel}
+                options={LAYERS}
+                value={history ? "history" : period}
+                onChange={(l) => (l === "history" ? onScope({ history: true }) : onScope({ period: l, history: false }))}
+                name={(l) => (l === "history" ? copy.flood.history.tab : copy.flood.periodShort[l])}
+              />
+              {history && hist.data && hist.data.years.length > 0 && (
+                <label className="pointer-events-auto flex items-center justify-between gap-2 rounded-sm border border-line bg-surface px-3 py-1.5 text-label font-semibold max-sm:hidden">
+                  {copy.flood.history.yearLabel}
+                  <select
+                    value={year ?? ""}
+                    onChange={(e) => onScope({ year: e.target.value ? Number(e.target.value) : null })}
+                    className="num min-h-8 bg-transparent font-semibold text-ink"
+                  >
+                    <option value="">{copy.flood.history.allYears}</option>
+                    {hist.data.years.map((y) => (
+                      <option key={y} value={y}>
+                        {y}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              )}
+              <p className="m-0 px-1 text-caption text-ink-muted">{copy.flood.basemap}</p>
+              <Segmented
+                flush
+                label={copy.flood.basemap}
+                options={["satellite", "streets"] as const}
+                value={basemap}
+                onChange={setBasemap}
+                name={(b) => copy.flood[b]}
+              />
+            </>
           )}
         </div>
       </div>
       <div className="absolute bottom-6 left-2 z-[500] hidden sm:block">
         <Legend text={legend} stage={stage} />
       </div>
+      {status && (
+        <p
+          role="status"
+          className="pointer-events-auto absolute right-2 bottom-6 z-[500] m-0 max-w-[15rem] rounded-sm border border-line bg-surface-raised px-3 py-2 text-caption text-ink shadow-float"
+        >
+          {status}
+        </p>
+      )}
     </div>
   );
 

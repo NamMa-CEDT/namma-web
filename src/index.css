@@ -466,6 +466,39 @@
   color: var(--ink);
   border-color: var(--line);
 }
+/* Zoom buttons: the same raised, bordered group as the flood map's segmented controls. */
+.leaflet-container .leaflet-control-zoom.leaflet-bar {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 2px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-md);
+  background: var(--surface-raised);
+  box-shadow: var(--shadow-float);
+}
+.leaflet-container .leaflet-control-zoom.leaflet-bar a {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  width: 2.25rem;
+  height: 2.25rem;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--ink-muted);
+  font: 600 1.25rem/1 var(--font-body);
+}
+.leaflet-container .leaflet-control-zoom.leaflet-bar a:hover {
+  background: var(--surface-sunken);
+  color: var(--ink);
+}
+.leaflet-container .leaflet-control-zoom.leaflet-bar a.leaflet-disabled {
+  background: transparent;
+  color: var(--ink-muted);
+  opacity: 0.4;
+}
 
 /* Map pins: the tier shape itself, so the map reads without colour (DS: shape on every map pin). */
 .nm-pin-hit {

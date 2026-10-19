@@ -394,7 +394,14 @@ export default function FloodMap({
   const onTileError = { tileerror: () => setTileErrors((n) => n + 1) };
 
   return (
-    <MapContainer center={[14.6, 100.45]} zoom={8} minZoom={5} className="h-full w-full" scrollWheelZoom={scrollWheelZoom}>
+    <MapContainer
+      center={[14.6, 100.45]}
+      zoom={8}
+      minZoom={5}
+      className="h-full w-full"
+      scrollWheelZoom={scrollWheelZoom}
+      attributionControl={false}
+    >
       {basemap === "satellite" ? (
         <>
           <TileLayer key="sat" url={SATELLITE_URL} attribution={`${ESRI_CREDIT} · ${CREDIT}`} maxZoom={18} eventHandlers={onTileError} />
