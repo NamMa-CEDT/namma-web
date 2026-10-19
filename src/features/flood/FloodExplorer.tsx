@@ -1,20 +1,42 @@
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router";
 import { API_MODE } from "../../api/client";
-import { useFloodAreas, useFloodNear, useFloodTambons, useProfile, useProvinceShapes, useTambonShapes } from "../../api/queries";
-import type { FloodArea, FloodAreas, FloodLevel, FloodPeriod, SavedPlace } from "../../api/types";
+import {
+  useFloodAreas,
+  useFloodHistory,
+  useFloodHistoryTambons,
+  useFloodNear,
+  useFloodTambons,
+  useProfile,
+  useProvinceShapes,
+  useTambonShapes,
+} from "../../api/queries";
+import type { FloodArea, FloodAreas, FloodHistory, FloodHistoryArea, FloodLevel, FloodPeriod, SavedPlace } from "../../api/types";
 import { ErrorState, Loading } from "../../components/States";
 import { copy, DDPM } from "../../copy";
 import { containsPoint, joinAreas, nameKey, provincesInView, type AreaShape } from "../../lib/boundaries";
 import { loadSessionId, type ChatHandoff } from "../../lib/chatSession";
-import { areaName, floodClass, formatCount, formatKm2, formatRai, placeName, shareWords, type FloodClass } from "../../lib/flood";
+import {
+  areaName,
+  floodClass,
+  formatCount,
+  formatKm2,
+  formatRai,
+  historyClass,
+  historyShare,
+  placeName,
+  shareWords,
+  worstYear,
+  type FloodClass,
+} from "../../lib/flood";
 import { formatDate, formatDateTime, formatDistance } from "../../lib/format";
 import type { Basemap, FlyTarget, MapArea, MapView } from "./FloodMap";
 import { FloodPatterns, Swatch } from "./patterns";
 
 const FloodMap = lazy(() => import("./FloodMap"));
 
-const PERIODS: FloodPeriod[] = ["3days", "7days"];
+// The map's layer switch: the latest satellite layers, or the 2011– history.
+const LAYERS = ["3days", "7days", "history"] as const;
 // How close to fly when a row is tapped: an amphoe at 11, a tambon at 12.
 const FLY_ZOOM: Record<FloodLevel, number> = { province: 9, amphoe: 11, tambon: 12 };
 const MAX_PLACES = 3;
@@ -22,25 +44,67 @@ const MAX_PLACES = 3;
 const TAMBON_ZOOM = 9;
 const MAX_PROVINCES = 6;
 const CLASSES: FloodClass[] = ["many", "some", "none"];
+const TOTAL_PROVINCES = 77;
 export interface FloodScope {
   period: FloodPeriod;
   province: string | null;
   amphoe: string | null;
+  /** The history layer (2011– record) instead of the latest satellite layer. */
+  history?: boolean;
+  /** History layer: one year, or null for all years. */
+  year?: number | null;
 }
 
-function Legend() {
+/** What the legend says: the live layer, or the history layer for one year / all years, zoomed out / in. */
+interface LegendText {
+  title: string;
+  labels: Record<FloodClass, string>;
+  note: string;
+}
+
+function legendText(history: boolean, year: number | null, zoomedIn: boolean): LegendText {
+  const h = copy.flood.history;
+  if (!history) return { title: copy.flood.legend, labels: copy.flood.cls, note: copy.flood.legendNote };
+  if (year != null) return { title: h.legendYear(year), labels: copy.flood.cls, note: copy.flood.legendNote };
+  if (zoomedIn) return { title: h.legendOften, labels: h.often, note: h.oftenNote };
+  return { title: h.legendWorst, labels: copy.flood.cls, note: h.worstNote };
+}
+
+function Legend({ text }: { text: LegendText }) {
   return (
     <div className="rounded-sm border border-line bg-surface-raised px-3 py-2 shadow-float">
-      <div className="text-caption font-semibold text-ink">{copy.flood.legend}</div>
+      <div className="text-caption font-semibold text-ink">{text.title}</div>
       <ul className="m-0 mt-1 flex list-none flex-col gap-0.5 p-0 text-caption text-ink">
         {CLASSES.map((c) => (
           <li key={c} className="flex items-center gap-2">
             <Swatch cls={c} />
-            {copy.flood.cls[c]}
+            {text.labels[c]}
           </li>
         ))}
       </ul>
-      <p className="m-0 mt-1 max-w-[14rem] text-caption text-ink-muted">{copy.flood.legendNote}</p>
+      <p className="m-0 mt-1 max-w-[14rem] text-caption text-ink-muted">{text.note}</p>
+    </div>
+  );
+}
+
+/** "ทุกปี", 2011 … 2024: which year of the history the map shades. */
+function YearChips({ years, year, onYear }: { years: number[]; year: number | null; onYear: (y: number | null) => void }) {
+  const options: (number | null)[] = [null, ...years];
+  return (
+    <div role="group" aria-label={copy.flood.history.yearLabel} className="flex flex-wrap gap-1.5">
+      {options.map((y) => (
+        <button
+          key={y ?? "all"}
+          type="button"
+          aria-pressed={y === year}
+          onClick={() => onYear(y)}
+          className={`num min-h-9 rounded-pill border px-3 text-caption font-semibold ${
+            y === year ? "border-river bg-river text-on-river" : "border-line-strong text-ink-muted hover:text-ink"
+          }`}
+        >
+          {y ?? copy.flood.history.allYears}
+        </button>
+      ))}
     </div>
   );
 }
@@ -253,6 +317,8 @@ interface Picked {
   row: FloodArea | null;
   /** Its outline once loaded (the card can show before it is, when picked from the list). */
   shape: AreaShape | null;
+  /** Its flood history (history layer); null = none on record. */
+  hist?: FloodHistoryArea | null;
 }
 
 /** The tambon picked on the map or in the list (DS option C card): how much of it is under water, in words. */
@@ -335,22 +401,213 @@ function AreaCard({
     </section>
   );
 }
-function Notes() {
+/** The history layer's side panel: the year picker, the total for that year (or the worst year), provinces ranked. */
+function HistoryPanel({
+  data,
+  year,
+  onYear,
+  onPick,
+}: {
+  data: FloodHistory;
+  year: number | null;
+  onYear: (y: number | null) => void;
+  onPick: (code: string) => void;
+}) {
+  const h = copy.flood.history;
+  if (!data.years.length) {
+    return (
+      <section className="border-b border-line px-4 py-4">
+        <h2 className="m-0 text-heading font-semibold">{h.noData}</h2>
+        <p className="m-0 mt-1 text-body text-ink-muted">{h.noDataBody}</p>
+      </section>
+    );
+  }
+  const from = data.years[0];
+  const to = data.years[data.years.length - 1];
+  const byYear = new Map<number, number>();
+  for (const a of data.areas) for (const [y, rai] of Object.entries(a.rai_by_year)) byYear.set(Number(y), (byYear.get(Number(y)) ?? 0) + rai);
+  const widest = [...byYear.entries()].sort((a, b) => b[1] - a[1])[0];
+  const rows = data.areas
+    .map((a) => {
+      const worst = worstYear(a);
+      return { a, worst, rai: year != null ? (a.rai_by_year[String(year)] ?? 0) : (worst?.rai ?? 0) };
+    })
+    .filter((r) => r.rai > 0)
+    .sort((x, y) => y.rai - x.rai);
+  const max = rows[0]?.rai || 1;
+  return (
+    <>
+      <section className="flex flex-col gap-3 border-b border-line px-4 py-4">
+        <h2 className="m-0 text-heading font-semibold">{h.title(from, to)}</h2>
+        <YearChips years={data.years} year={year} onYear={onYear} />
+        <div>
+          <h3 className="m-0 text-caption font-semibold text-ink-muted">{year != null ? h.yearTotal(year) : h.worstTotal}</h3>
+          {year != null ? (
+            byYear.get(year) ? (
+              <p className="num m-0 text-reading-lg font-semibold">{formatRai(byYear.get(year)!)}</p>
+            ) : (
+              <p className="m-0 mt-1 text-body">{h.noneYear(year)}</p>
+            )
+          ) : (
+            widest && (
+              <p className="num m-0 text-reading-lg font-semibold">
+                {widest[0]} · {formatRai(widest[1])}
+              </p>
+            )
+          )}
+        </div>
+        {data.provinces.length < TOTAL_PROVINCES && <p className="m-0 text-caption text-ink-muted">{h.copied(data.provinces.length)}</p>}
+      </section>
+      {rows.length > 0 && (
+        <section className="px-4 py-3">
+          <h2 className="m-0 text-heading font-semibold">{copy.flood.byLevel.province}</h2>
+          <ul className="m-0 mt-1 list-none p-0">
+            {rows.map(({ a, worst, rai }) => (
+              <li key={a.code} className="border-b border-line last:border-b-0">
+                <button
+                  type="button"
+                  onClick={() => onPick(a.code)}
+                  className="grid min-h-14 w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 py-2 text-left hover:bg-surface-sunken"
+                >
+                  <span className="min-w-0 truncate text-body font-semibold">{areaName({ ...a, code: a.code }, "province")}</span>
+                  <span className="num text-body">
+                    {formatRai(rai)}
+                    <span className="ml-1 text-river" aria-hidden="true">
+                      ›
+                    </span>
+                  </span>
+                  <span className="col-span-2 mt-1 h-1.5 rounded-pill bg-surface-sunken" aria-hidden="true">
+                    <span className="block h-full rounded-pill" style={{ width: `${Math.max(2, (rai / max) * 100)}%`, background: "var(--flood)" }} />
+                  </span>
+                  {year == null && worst && (
+                    <span className="num col-span-2 mt-1 text-caption text-ink-muted">
+                      {h.yearsFlooded(a.years.length, data.years.length)} · {h.worst(worst.year, formatRai(worst.rai))}
+                    </span>
+                  )}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+    </>
+  );
+}
+
+/** A tambon picked in the history layer: how many years it flooded, and how much each year. */
+function HistoryCard({
+  picked,
+  years,
+  year,
+  copied,
+  places,
+  onClose,
+  onAsk,
+}: {
+  picked: Picked;
+  years: number[];
+  year: number | null;
+  /** Its province is in the copy: no history then means it never flooded, not "unknown". */
+  copied: boolean;
+  places: SavedPlace[];
+  onClose: () => void;
+  onAsk: (text: string) => void;
+}) {
+  const h = copy.flood.history;
+  const { shape } = picked;
+  const hist = picked.hist ?? null;
+  const where = {
+    province: shape?.properties.province ?? hist?.province ?? null,
+    amphoe: shape?.properties.amphoe ?? hist?.amphoe ?? null,
+    tambon: shape?.properties.tambon ?? hist?.tambon ?? null,
+  };
+  const [head, ...rest] = [
+    areaName({ ...where, code: hist?.code ?? null }, "tambon"),
+    ...(where.amphoe ? [areaName({ ...where, tambon: null, code: null }, "amphoe")] : []),
+    ...(where.province ? [areaName({ ...where, amphoe: null, tambon: null, code: null }, "province")] : []),
+  ];
+  const areaKm2 = shape?.properties.area_km2 ?? 0;
+  const cls = historyClass(hist ?? undefined, areaKm2, year, "tambon");
+  const home = shape ? places.find((p) => containsPoint(shape, p.lat, p.lon)) : undefined;
+  const max = hist ? (worstYear(hist)?.rai ?? 1) : 1;
+  const yearRai = year != null && hist ? (hist.rai_by_year[String(year)] ?? 0) : 0;
+  return (
+    <section aria-labelledby="flood-history-h" className="flex flex-col gap-3 px-4 py-4">
+      <div className="flex items-start justify-between gap-2">
+        <div className="min-w-0">
+          <h2 id="flood-history-h" className="m-0 text-heading font-semibold">
+            {head}
+          </h2>
+          {rest.length > 0 && <p className="m-0 text-caption text-ink-muted">{rest.join(" · ")}</p>}
+          {home && (
+            <p className="m-0 mt-1 flex items-center gap-1.5 text-caption font-semibold text-ink">
+              <span className="nm-house text-home" aria-hidden="true" />
+              {copy.flood.homeHere(home.label)}
+            </p>
+          )}
+        </div>
+        <button type="button" onClick={onClose} aria-label={copy.flood.close} title={copy.flood.close} className="nm-icon-btn shrink-0">
+          <span aria-hidden="true">✕</span>
+        </button>
+      </div>
+
+      <div className="flex items-center gap-2">
+        <Swatch cls={cls} />
+        <p className={`m-0 font-semibold ${hist ? "text-reading-lg" : "text-body"}`}>
+          {hist ? h.yearsFlooded(hist.years.length, years.length) : copied ? h.never : h.notCopied}
+        </p>
+      </div>
+      {year != null && hist && (
+        <p className="num m-0 text-body">
+          {yearRai > 0
+            ? [`${year}: ${formatRai(yearRai)}`, areaKm2 > 0 && shareWords(historyShare(hist, year, areaKm2), "ตำบล")].filter(Boolean).join(" · ")
+            : h.noneYear(year)}
+        </p>
+      )}
+      {hist && (
+        <div>
+          <h3 className="m-0 text-caption font-semibold text-ink-muted">{h.byYear}</h3>
+          <ul className="m-0 mt-1 grid list-none grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-x-2 gap-y-1 p-0">
+            {years.map((y) => {
+              const rai = hist.rai_by_year[String(y)] ?? 0;
+              return (
+                <li key={y} className={`contents text-caption ${y === year ? "font-semibold text-ink" : "text-ink-muted"}`}>
+                  <span className="num">{y}</span>
+                  <span className="h-2 rounded-pill bg-surface-sunken" aria-hidden="true">
+                    {rai > 0 && <span className="block h-full rounded-pill" style={{ width: `${Math.max(3, (rai / max) * 100)}%`, background: "var(--flood)" }} />}
+                  </span>
+                  <span className="num text-right">{rai > 0 ? formatRai(rai) : "–"}</span>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      )}
+
+      <button type="button" className="nm-btn nm-btn--primary nm-btn--block" onClick={() => onAsk(h.askText(placeName(where)))}>
+        {copy.flood.askArea}
+      </button>
+    </section>
+  );
+}
+
+function Notes({ legend, history }: { legend: LegendText; history: boolean }) {
+  const h = copy.flood.history;
   return (
     <div className="grid gap-2 border-t border-line px-4 pt-3 pb-4 text-caption text-ink-muted">
       <div className="sm:hidden">
-        <Legend />
+        <Legend text={legend} />
       </div>
-      <p className="m-0">{copy.flood.subtitle}</p>
-      <p className="m-0">{copy.flood.tapHint}</p>
-      <p className="m-0">{copy.flood.caveat}</p>
+      <p className="m-0">{history ? h.subtitle : copy.flood.subtitle}</p>
+      <p className="m-0">{history ? h.tapHint : copy.flood.tapHint}</p>
+      <p className="m-0">{history ? h.caveat : copy.flood.caveat}</p>
       <p className="m-0">
         {copy.footer.unofficial} · {copy.footer.emergency}{" "}
         <a href={DDPM.telHref} className="font-semibold text-tier-danger-ink underline">
           {DDPM.hotline}
         </a>
       </p>
-      <p className="m-0">{copy.flood.source}</p>
+      <p className="m-0">{history ? h.source : copy.flood.source}</p>
     </div>
   );
 }
@@ -371,7 +628,10 @@ export function FloodExplorer({
   embedded?: boolean;
 }) {
   const { period, province, amphoe } = scope;
+  const history = scope.history ?? false;
+  const year = scope.year ?? null;
   const navigate = useNavigate();
+  const hist = useFloodHistory(history);
   const areas = useFloodAreas(period, province, amphoe);
   const provinceRows = useFloodAreas(period);
   const provinceShapes = useProvinceShapes();
@@ -394,22 +654,43 @@ export function FloodExplorer({
   );
   const tambonShapes = useTambonShapes(inView.map((p) => p.properties.code));
   const tambonRows = useFloodTambons(period, inView.map((p) => p.properties.province));
+  const tambonHist = useFloodHistoryTambons(
+    inView.map((p) => p.properties.code),
+    history,
+  );
 
   // useQueries hands back new arrays every render: rebuild only when some result's data changed.
   const shapesKey = tambonShapes.map((q) => q.dataUpdatedAt).join();
   const rowsKey = tambonRows.map((q) => q.dataUpdatedAt).join();
+  const histKey = tambonHist.map((q) => q.dataUpdatedAt).join();
   const tambons = useMemo(() => {
-    const out: { shape: AreaShape; row: FloodArea | null }[] = [];
+    const out: { shape: AreaShape; row: FloodArea | null; hist: FloodHistoryArea | null }[] = [];
     tambonShapes.forEach((q, i) => {
       if (!q.data) return;
       const joined = joinAreas(q.data.features, tambonRows[i]?.data?.areas ?? [], "tambon");
-      for (const shape of q.data.features) out.push({ shape, row: joined.get(shape.properties.code) ?? null });
+      const hist = new Map((tambonHist[i]?.data?.areas ?? []).map((a) => [a.code, a]));
+      for (const shape of q.data.features)
+        out.push({ shape, row: joined.get(shape.properties.code) ?? null, hist: hist.get(shape.properties.code) ?? null });
     });
     return out;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [shapesKey, rowsKey]);
+  }, [shapesKey, rowsKey, histKey]);
 
   const mapAreas: MapArea[] = useMemo(() => {
+    if (history) {
+      if (zoomedIn) {
+        return tambons.map(({ shape, hist: h }) => ({
+          shape,
+          cls: historyClass(h ?? undefined, shape.properties.area_km2, year, "tambon"),
+          label: shape.properties.tambon,
+        }));
+      }
+      const byCode = new Map((hist.data?.areas ?? []).map((a) => [a.code, a]));
+      return (provinceShapes.data?.features ?? []).map((shape) => {
+        const h = byCode.get(shape.properties.code);
+        return { shape, cls: historyClass(h, shape.properties.area_km2, year, "province"), label: h ? shape.properties.province : null };
+      });
+    }
     if (zoomedIn) {
       return tambons.map(({ shape, row }) => ({
         shape,
@@ -427,14 +708,14 @@ export function FloodExplorer({
         label: row ? shape.properties.province : null,
       };
     });
-  }, [zoomedIn, tambons, provinceShapes.data, provinceRows.data]);
+  }, [history, year, hist.data, zoomedIn, tambons, provinceShapes.data, provinceRows.data]);
 
   const onView = useCallback((v: MapView) => setView(v), []);
   const onTilesFailed = useCallback(() => setTilesFailed(true), []);
   // Another period is another layer: the picked tambon's numbers change.
   useEffect(() => {
     setPicked(null);
-  }, [period]);
+  }, [period, history]);
   // A tambon picked from the list before its outline loaded: attach the outline once it has.
   useEffect(() => {
     if (!picked?.row || picked.shape) return;
@@ -459,7 +740,7 @@ export function FloodExplorer({
   const pickOnMap = (code: string) => {
     if (zoomedIn) {
       const t = tambons.find((x) => x.shape.properties.code === code);
-      if (t) setPicked({ row: t.row, shape: t.shape });
+      if (t) setPicked({ row: t.row, shape: t.shape, hist: t.hist });
       return;
     }
     const shape = provinceShapes.data?.features.find((f) => f.properties.code === code);
@@ -486,8 +767,18 @@ export function FloodExplorer({
     else setPicked({ row: a, shape: null });
   };
 
+  const pickHistoryProvince = (code: string) => {
+    const shape = provinceShapes.data?.features.find((f) => f.properties.code === code);
+    if (shape?.properties.bbox) setFlyTo({ bounds: shape.properties.bbox });
+  };
+  const legend = legendText(history, year, zoomedIn);
+  const histCopied = new Set(hist.data?.provinces ?? []);
+
   const loadingShapes = provinceShapes.isPending || tambonShapes.some((q) => q.isPending);
-  const failedShapes = provinceShapes.isError || tambonShapes.some((q) => q.isError) || tambonRows.some((q) => q.isError);
+  const failedShapes =
+    provinceShapes.isError ||
+    tambonShapes.some((q) => q.isError) ||
+    (history ? tambonHist.some((q) => q.isError) : tambonRows.some((q) => q.isError));
   const status = tilesFailed
     ? copy.flood.tilesFailed
     : failedShapes
@@ -520,15 +811,35 @@ export function FloodExplorer({
         />
       </Suspense>
 
-      {/* Leaflet's zoom buttons sit top-left; the period goes next to them, the basemap top-right. */}
+      {/* Leaflet's zoom buttons sit top-left; the layer (and the history's year, not on phones: the panel's chips are
+          right below) go next to them, the basemap top-right. */}
       <div className="pointer-events-none absolute top-2.5 right-2 left-[3.5rem] z-[500] flex flex-wrap items-start justify-between gap-2">
-        <Segmented
-          label={copy.flood.periodLabel}
-          options={PERIODS}
-          value={period}
-          onChange={(p) => onScope({ period: p })}
-          name={(p) => copy.flood.period[p]}
-        />
+        <div className="flex flex-col items-start gap-2">
+          <Segmented
+            label={copy.flood.periodLabel}
+            options={LAYERS}
+            value={history ? "history" : period}
+            onChange={(l) => (l === "history" ? onScope({ history: true }) : onScope({ period: l, history: false }))}
+            name={(l) => (l === "history" ? copy.flood.history.tab : copy.flood.period[l])}
+          />
+          {history && hist.data && hist.data.years.length > 0 && (
+            <label className="pointer-events-auto inline-flex items-center gap-2 rounded-md border border-line-strong bg-surface-raised px-3 py-1.5 text-label font-semibold shadow-float max-sm:hidden">
+              {copy.flood.history.yearLabel}
+              <select
+                value={year ?? ""}
+                onChange={(e) => onScope({ year: e.target.value ? Number(e.target.value) : null })}
+                className="num min-h-8 bg-transparent font-semibold text-ink"
+              >
+                <option value="">{copy.flood.history.allYears}</option>
+                {hist.data.years.map((y) => (
+                  <option key={y} value={y}>
+                    {y}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
+        </div>
         <div className="flex flex-col items-end gap-2">
           <Segmented
             label={copy.flood.basemap}
@@ -545,7 +856,7 @@ export function FloodExplorer({
         </div>
       </div>
       <div className="absolute bottom-6 left-2 z-[500] hidden sm:block">
-        <Legend />
+        <Legend text={legend} />
       </div>
     </div>
   );
@@ -565,12 +876,30 @@ export function FloodExplorer({
       )}
       {API_MODE === "mock" && (
         <div className="px-4 pt-3">
-          <p className="nm-stale m-0">{copy.flood.sample}</p>
+          <p className="nm-stale m-0">{history ? copy.flood.history.sample : copy.flood.sample}</p>
         </div>
       )}
 
       <div ref={detail} className="scroll-mt-4">
-        {picked ? (
+        {history ? (
+          picked ? (
+            <HistoryCard
+              picked={picked}
+              years={hist.data?.years ?? []}
+              year={year}
+              copied={histCopied.has(picked.shape?.properties.code.slice(0, 2) ?? "")}
+              places={places}
+              onClose={() => setPicked(null)}
+              onAsk={ask}
+            />
+          ) : hist.isPending ? (
+            <Loading />
+          ) : hist.isError ? (
+            <ErrorState error={hist.error} onRetry={() => hist.refetch()} />
+          ) : (
+            <HistoryPanel data={hist.data} year={year} onYear={(y) => onScope({ year: y })} onPick={pickHistoryProvince} />
+          )
+        ) : picked ? (
           <AreaCard picked={picked} observed={areas.data?.observed_to ?? null} places={places} onClose={() => setPicked(null)} onAsk={ask} />
         ) : areas.isPending ? (
           <Loading />
@@ -586,7 +915,7 @@ export function FloodExplorer({
         )}
       </div>
 
-      <Notes />
+      <Notes legend={legend} history={history} />
     </aside>
   );
 

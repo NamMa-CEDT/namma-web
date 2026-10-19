@@ -2,7 +2,17 @@
 // and rehearsed without a GISTDA key. It is not GISTDA data, and the page says so whenever the mock is on.
 // The queries mirror namma-backend api/flood.py: sums of res-9 cells, parents for zoomed-out views, largest first.
 import { cellArea, cellToParent, getResolution, gridDisk, gridDistance, latLngToCell, cellToLatLng } from "h3-js";
-import type { FloodArea, FloodAreas, FloodCell, FloodCells, FloodLevel, FloodNear, FloodPeriod } from "../types";
+import type {
+  FloodArea,
+  FloodAreas,
+  FloodCell,
+  FloodCells,
+  FloodHistory,
+  FloodHistoryArea,
+  FloodLevel,
+  FloodNear,
+  FloodPeriod,
+} from "../types";
 import { haversineKm, toBangkokIso } from "./geo";
 
 interface SampleCell {
@@ -188,4 +198,33 @@ export function floodNear(period: FloodPeriod, lat: number, lon: number, ingeste
     radius_km: NEAR_KM,
     nearby: { cells: near.length, ...area(near.reduce((s, x) => s + x.c.area_km2, 0)) },
   };
+}
+
+// --- flood history (a SAMPLE in the shape of /api/flood/history; real codes and names, made-up years and rai) ---
+
+const AYU = "พระนครศรีอยุธยา";
+// [tb code, amphoe, tambon, years flooded, rai in the worst year]
+const HISTORY_SAMPLE: [string, string, string, number[], number][] = [
+  ["140501", "บางบาล", "บางบาล", [2011, 2012, 2013, 2017, 2021, 2022, 2023, 2024], 3300],
+  ["140516", "บางบาล", "บ้านกุ่ม", [2011, 2017, 2022, 2024], 5200],
+  ["140502", "บางบาล", "วัดยม", [2011, 2013, 2017, 2021, 2022, 2024], 4100],
+  ["140414", "บางไทร", "ไผ่พระ", [2011, 2013, 2017, 2022], 6100],
+  ["141202", "เสนา", "บ้านแพน", [2011, 2024], 2400],
+  ["140103", "พระนครศรีอยุธยา", "หอรัตนไชย", [2011, 2022], 300],
+];
+
+function historyArea([code, amphoe, tambon, years, worst]: (typeof HISTORY_SAMPLE)[number]): FloodHistoryArea {
+  // 2011 the worst year everywhere, the rest smaller: enough to tell the years apart on the map.
+  const rai_by_year = Object.fromEntries(years.map((y) => [String(y), y === 2011 ? worst : Math.round(worst * 0.4)]));
+  return { code, province: AYU, amphoe, tambon, years, rai_by_year };
+}
+
+export function floodHistory(level: "province" | "tambon", province: string | null): FloodHistory {
+  const tambons = HISTORY_SAMPLE.map(historyArea);
+  const base = { level, province, years: Array.from({ length: 14 }, (_, i) => 2011 + i), provinces: ["14"] };
+  if (level === "tambon") return { ...base, areas: province === "14" ? tambons : [] };
+  const rai: Record<string, number> = {};
+  for (const t of tambons) for (const [y, r] of Object.entries(t.rai_by_year)) rai[y] = (rai[y] ?? 0) + r;
+  const years = [...new Set(tambons.flatMap((t) => t.years))].sort();
+  return { ...base, areas: [{ code: "14", province: AYU, amphoe: null, tambon: null, years, rai_by_year: rai }] };
 }
