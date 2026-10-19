@@ -67,7 +67,7 @@ export const copy = {
     axisBelow2: "ต่ำกว่าตลิ่ง 2 ม.",
     axisBelow4: "ต่ำกว่าตลิ่ง 4 ม.",
     main: "แม่น้ำเจ้าพระยา",
-    sourceLead: "ที่มา: กรมชลประทาน ผ่าน ThaiWater (สสน.)",
+    sourceLead: "ที่มา: กรมชลประทาน และ สสน. ผ่าน ThaiWater",
     estimated: "ระดับเสี่ยงประเมินโดยน้ำมา จากระดับตลิ่งและสถานีต้นน้ำ",
     empty: "ยังไม่มีข้อมูลระดับน้ำ",
     // Home chart switcher: three drawings of the same readings.
