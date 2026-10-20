@@ -10,6 +10,7 @@ import { HashRouter, Navigate, Route, Routes } from "react-router";
 import { ApiError, API_MODE, MOCK_STORE_KEY } from "./api/client";
 import { Shell } from "./app/Shell";
 import { autoLineSignIn, initSession } from "./auth/session";
+import { reloadForNewBuild } from "./lib/staleBuild";
 
 const HomePage = lazy(() => import("./features/home/HomePage"));
 const ChatPage = lazy(() => import("./features/chat/ChatPage"));
@@ -27,6 +28,11 @@ const queryClient = new QueryClient({
       retry: (count, err) => !(err instanceof ApiError && err.status >= 400 && err.status < 500) && count < 2,
     },
   },
+});
+
+// Vite reports a failed chunk load here first; reloading picks up the new build (see lib/staleBuild).
+window.addEventListener("vite:preloadError", (e) => {
+  if (reloadForNewBuild()) e.preventDefault();
 });
 
 if (API_MODE === "mock") {
