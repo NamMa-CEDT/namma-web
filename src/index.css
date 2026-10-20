@@ -343,9 +343,10 @@
 .nm-memory__empty { font: 400 15px/24px var(--font-body); color: var(--ink-muted); }
 .nm-memory__note { font: 400 14px/22px var(--font-body); color: var(--ink-muted); }
 /* Chat side panel on phones: the same rows as the desktop column, as a drawer from the left (a modal <dialog>). */
-.nm-drawer { margin: 0; padding: 0; border: 0; width: min(85vw, 22rem); max-width: none; height: 100dvh; max-height: none; background: var(--surface-sunken); color: var(--ink); box-shadow: var(--shadow-raised); }
+/* Starts under the 52 px header (Shell, min-h-13) so the bar stays visible; the backdrop dims only the page below it. */
+.nm-drawer { margin: 0; padding: 0; border: 0; top: 3.25rem; width: min(85vw, 22rem); max-width: none; height: calc(100dvh - 3.25rem); max-height: none; background: var(--surface-sunken); color: var(--ink); box-shadow: var(--shadow-raised); }
 .nm-drawer[open] { animation: nm-drawer-in 180ms ease-out; }
-.nm-drawer::backdrop { background: rgb(11 26 46 / 0.45); }
+.nm-drawer::backdrop { top: 3.25rem; background: rgb(11 26 46 / 0.45); }
 @keyframes nm-drawer-in { from { transform: translateX(-100%); } to { transform: none; } }
 .nm-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 }
