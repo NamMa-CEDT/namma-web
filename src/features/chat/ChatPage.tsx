@@ -1,6 +1,6 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useLocation, useNavigate } from "react-router";
+import { Link, useLocation, useNavigate } from "react-router";
 import { api } from "../../api/client";
 import { keys, useProfile } from "../../api/queries";
 import type { ChatRequest, ChatResponse, QuickReply, Source } from "../../api/types";
@@ -266,6 +266,14 @@ export default function ChatPage() {
         </div>
 
         <div className="mx-auto w-full max-w-3xl px-4 pb-3 sm:px-6">
+          {quickReplies.some((q) => q.type === "postback" && q.data.startsWith("consent:")) && (
+            // Asking permission to remember health info: point to the person's rights (PDPA).
+            <p className="m-0 pb-1.5 text-caption text-ink-muted">
+              <Link to="/pdpa" className="underline">
+                {copy.legal.pdpaLink}
+              </Link>
+            </p>
+          )}
           <QuickReplies items={quickReplies} disabled={pending} onPick={pick} />
           {suggestions.length > 0 && (
             // A short list above the composer: with every command showing it scrolls instead of pushing the chat away.
@@ -302,6 +310,12 @@ export default function ChatPage() {
             placeholder={items.length ? copy.chat.placeholder : copy.home.placeholder}
             inputRef={input}
           />
+          <p className="m-0 pt-1.5 text-center text-caption text-ink-muted">
+            {copy.legal.aiNote} ·{" "}
+            <Link to="/privacy" className="underline">
+              {copy.legal.privacyLink}
+            </Link>
+          </p>
         </div>
       </section>
     </div>

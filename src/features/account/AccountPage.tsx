@@ -1,5 +1,6 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState, type ReactNode } from "react";
+import { Link } from "react-router";
 import { ApiError } from "../../api/client";
 import type { Provider } from "../../api/types";
 import { canDemoLogin, deleteAccount, link, loginDemo, loginGoogle, logout, unlink, useSession } from "../../auth/session";
@@ -183,7 +184,17 @@ export default function AccountPage() {
   const session = useSession();
   return (
     <div className="h-full overflow-y-auto">
-      <div className="mx-auto max-w-xl px-4 py-8 sm:px-6">{session ? <Account /> : <SignIn />}</div>
+      <div className="mx-auto grid max-w-xl gap-8 px-4 py-8 sm:px-6">
+        {session ? <Account /> : <SignIn />}
+        <p className="m-0 flex flex-wrap gap-x-4 text-caption">
+          <Link to="/privacy" className="text-ink-muted underline">
+            {copy.legal.privacyLink}
+          </Link>
+          <Link to="/pdpa" className="text-ink-muted underline">
+            {copy.legal.pdpaLink}
+          </Link>
+        </p>
+      </div>
     </div>
   );
 }
