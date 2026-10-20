@@ -7,12 +7,15 @@ import type { LoginResponse, Provider, SessionUser } from "../api/types";
 import { loadSessionId } from "../lib/chatSession";
 import {
   initLiff,
+  inLineApp,
   LIFF_ID,
   lineIdToken,
   lineIdTokenFresh,
   lineLogout,
   lineReturnUrl,
   lineSignedIn,
+  onPhone,
+  openInLineApp,
   returnedFromLine,
   startLineLogin,
 } from "../lib/liff";
@@ -39,6 +42,41 @@ export async function initSession(): Promise<void> {
   }
 }
 
+// Set by signing out, cleared by signing in: inside the LINE app LIFF signs the person in to LINE again on every
+// open, so without it signing out there would last until the next page load.
+const LINE_AUTO_OFF_KEY = "namma.line.auto.off";
+
+function setAutoOff(off: boolean) {
+  try {
+    if (off) localStorage.setItem(LINE_AUTO_OFF_KEY, "1");
+    else localStorage.removeItem(LINE_AUTO_OFF_KEY);
+  } catch {
+    // blocked storage
+  }
+}
+
+function autoOff(): boolean {
+  try {
+    return localStorage.getItem(LINE_AUTO_OFF_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
+/** Opened inside the LINE app (the phone sign-in, see openInLineApp) and not signed in to NamMa: sign in with the
+ *  LINE login LIFF already has, without a button. Runs after the first render; a failure leaves the button.
+ *  True when it signed in. */
+export async function autoLineSignIn(): Promise<boolean> {
+  if (!canLineLogin || current || autoOff()) return false;
+  try {
+    if (!(await initLiff()) || !inLineApp() || !lineSignedIn()) return false;
+    return (await loginLine(true)) !== null;
+  } catch (e) {
+    console.warn("LINE sign-in inside the LINE app failed", e);
+    return false;
+  }
+}
+
 export function getSession(): StoredSession | null {
   return current;
 }
@@ -58,6 +96,7 @@ export function useSession(): StoredSession | null {
 export const canDemoLogin = API_MODE === "mock" || import.meta.env.VITE_DEMO_LOGIN === "1";
 
 function signedIn(res: LoginResponse): LoginResponse {
+  setAutoOff(false);
   set({ token: res.session_token, ...res.user });
   return res;
 }
@@ -121,6 +160,12 @@ export function takeLinePending(): LinePending | null {
 }
 
 function toLine(intent: LinePending, retried = false): null {
+  // Sign-in on a phone browser goes through the LINE app, which signs in there by itself (autoLineSignIn). Linking
+  // stays here: the LINE app's browser doesn't have this browser's session, so it would sign in, not link.
+  if (intent === "login" && onPhone() && !inLineApp()) {
+    openInLineApp();
+    return null;
+  }
   putFlag(LINE_PENDING_KEY, intent);
   if (retried) putFlag(LINE_RETRIED_KEY, "1");
   startLineLogin(lineReturnUrl());
@@ -204,6 +249,7 @@ export async function logout(): Promise<void> {
 /** Forgets our session and LIFF's cached LINE login, so the next "sign in with LINE" doesn't come back as the
  *  last person who used this browser. */
 function signOutEverywhere() {
+  setAutoOff(true);
   try {
     lineLogout();
   } catch {

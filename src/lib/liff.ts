@@ -25,6 +25,24 @@ export function initLiff(): Promise<boolean> {
   return ready;
 }
 
+/** Inside the LINE app's LIFF browser (opened through liff.line.me), where LIFF signs the person in by itself. */
+export function inLineApp(): boolean {
+  return liff.isInClient();
+}
+
+/** A phone or tablet. iPadOS reports itself as a Mac, so a Mac with a touch screen counts too. */
+export function onPhone(): boolean {
+  const ua = navigator.userAgent;
+  return /Android|iPhone|iPad|iPod/i.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1);
+}
+
+/** Opens this site inside the LINE app, already signed in to LINE. On phones, liff.login() hands the login to the
+ *  LINE app and back to the browser, and that handoff fails in the LINE app ("unknown error"); this is the way
+ *  LINE expects phone users to sign in. The session then lives in LINE's browser, not the one the person was in. */
+export function openInLineApp(): void {
+  window.location.href = `https://liff.line.me/${LIFF_ID}`;
+}
+
 /** This page load is LINE sending the browser back after its login page. */
 export function returnedFromLine(): boolean {
   return RETURNED_FROM_LINE;

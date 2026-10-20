@@ -4,6 +4,7 @@ const liff = vi.hoisted(() => ({
   init: vi.fn(async () => undefined),
   isLoggedIn: vi.fn(() => false),
   getIDToken: vi.fn((): string | null => null),
+  isInClient: vi.fn(() => false),
   getDecodedIDToken: vi.fn((): { exp: number } | null => ({ exp: Date.now() / 1000 + 3600 })),
   login: vi.fn(),
   logout: vi.fn(),
@@ -16,8 +17,13 @@ const api = vi.hoisted(() => ({
 }));
 vi.mock("../api/client", async (orig) => ({ ApiError: (await orig<typeof import("../api/client")>()).ApiError, api, API_MODE: "mock" }));
 
-const returned = vi.hoisted(() => ({ value: false }));
-vi.mock("../lib/liff", async (orig) => ({ ...(await orig<object>()), returnedFromLine: () => returned.value }));
+const returned = vi.hoisted(() => ({ value: false, phone: false, openInLineApp: vi.fn() }));
+vi.mock("../lib/liff", async (orig) => ({
+  ...(await orig<object>()),
+  returnedFromLine: () => returned.value,
+  onPhone: () => returned.phone,
+  openInLineApp: returned.openInLineApp,
+}));
 
 import { ApiError } from "../api/client";
 import { LineReturnError, loginLine, linkLine, logout, takeLinePending } from "./session";
@@ -26,6 +32,7 @@ beforeEach(() => {
   localStorage.clear();
   vi.clearAllMocks();
   returned.value = false;
+  returned.phone = false;
   liff.getDecodedIDToken.mockReturnValue({ exp: Date.now() / 1000 + 3600 });
 });
 
@@ -141,6 +148,26 @@ describe("LINE login (LIFF)", () => {
     sessionStorage.clear();
 
     expect(takeLinePending()).toBe("login");
+  });
+
+  it("on a phone, signs in through the LINE app instead of LINE's handoff back to the browser", async () => {
+    liff.isLoggedIn.mockReturnValue(false);
+    returned.phone = true;
+
+    expect(await loginLine()).toBeNull();
+
+    expect(returned.openInLineApp).toHaveBeenCalled();
+    expect(liff.login).not.toHaveBeenCalled();
+  });
+
+  it("on a phone, linking LINE stays in this browser (the LINE app's browser has no session to link to)", async () => {
+    liff.isLoggedIn.mockReturnValue(false);
+    returned.phone = true;
+
+    expect(await linkLine()).toBeNull();
+
+    expect(returned.openInLineApp).not.toHaveBeenCalled();
+    expect(liff.login).toHaveBeenCalled();
   });
 
   it("signing out forgets LIFF's cached LINE login too", async () => {

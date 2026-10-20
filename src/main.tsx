@@ -9,7 +9,7 @@ import { createRoot } from "react-dom/client";
 import { HashRouter, Navigate, Route, Routes } from "react-router";
 import { ApiError, API_MODE, MOCK_STORE_KEY } from "./api/client";
 import { Shell } from "./app/Shell";
-import { initSession } from "./auth/session";
+import { autoLineSignIn, initSession } from "./auth/session";
 
 const HomePage = lazy(() => import("./features/home/HomePage"));
 const ChatPage = lazy(() => import("./features/chat/ChatPage"));
@@ -59,4 +59,8 @@ initSession().then(() => {
       </QueryClientProvider>
     </StrictMode>,
   );
+  // Opened inside the LINE app: sign in with LINE without a button, then refetch as the signed-in person.
+  void autoLineSignIn().then((ok) => {
+    if (ok) void queryClient.invalidateQueries();
+  });
 });
