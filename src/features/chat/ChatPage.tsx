@@ -5,13 +5,13 @@ import { api } from "../../api/client";
 import { keys, useProfile } from "../../api/queries";
 import type { ChatRequest, ChatResponse, QuickReply, Source } from "../../api/types";
 import { Composer } from "../../components/Composer";
-import { MapIcon, SidebarIcon } from "../../components/icons";
+import { FloodIcon, MapIcon, SidebarIcon } from "../../components/icons";
 import { HotlineNotice } from "../../components/HotlineNotice";
 import { LineQrDialog } from "../../components/LineQrDialog";
 import { copy } from "../../copy";
 import { load, loadSessionId, newId, save, saveSessionId, type ChatHandoff } from "../../lib/chatSession";
 import { COMMANDS, parseCommand, suggestCommands, type Command } from "../../lib/commands";
-import { floodMapLink } from "../../lib/floodLink";
+import { floodMapLink, stationMapLink } from "../../lib/floodLink";
 import { looksLikeEmergency } from "../../lib/danger";
 import { getCurrentPosition } from "../../lib/geolocation";
 import { LINE_OA_URL } from "../../lib/line";
@@ -345,10 +345,16 @@ function Answer({ response: r, firstEmergency }: { response: ChatResponse; first
       <ReplyText text={r.reply} />
       {/* Right under the text that names the place, before the cards about it. */}
       {r.place && (
-        <Link to={floodMapLink(r.place)} className="nm-btn nm-btn--secondary nm-btn--sm">
-          <MapIcon className="shrink-0 text-[20px] text-river" />
-          {copy.chat.openFloodMap}
-        </Link>
+        <div className="flex flex-wrap gap-2">
+          <Link to={floodMapLink(r.place)} className="nm-btn nm-btn--secondary nm-btn--sm">
+            <FloodIcon className="shrink-0 text-[20px] text-river" />
+            {copy.chat.openFloodMap}
+          </Link>
+          <Link to={stationMapLink(r.place)} className="nm-btn nm-btn--secondary nm-btn--sm">
+            <MapIcon className="shrink-0 text-[20px] text-river" />
+            {copy.chat.openStationMap}
+          </Link>
+        </div>
       )}
       {cards.map((s) => (
         <StationCard key={s.station_id} source={s} />

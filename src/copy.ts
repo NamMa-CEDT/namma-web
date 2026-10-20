@@ -409,6 +409,25 @@ export const copy = {
     close: "ปิด",
     back: "กลับไปรายการสถานี",
     corridorHint: "แตะสถานีเพื่อดูรายละเอียด",
+    optionsHint: "แตะเพื่อเปลี่ยนพื้นหลังแผนที่ หรือแสดงสถานี สสน.",
+    stationsLabel: "สถานีที่แสดง",
+    nearPlace: (label: string) => `สถานีใกล้${label}`,
+    nearLabel: "ดูสถานีใกล้",
+    sample: "โหมดจำลอง: ระดับน้ำในหน้านี้เป็นข้อมูลตัวอย่าง ไม่ใช่ข้อมูลจริงจาก ThaiWater",
+    askStation: "ถามน้ำมาเรื่องสถานีนี้",
+    askStationText: (name: string) => `ระดับน้ำที่สถานี${name}เป็นอย่างไร ควรทำอะไร`,
+    floodAround: "ดูน้ำท่วมจากดาวเทียมรอบสถานีนี้",
+    placesTitle: "สถานีใกล้ที่ของคุณ",
+    placeNearest: (station: string, km: string) => `ใกล้สุด: สถานี${station} · ห่าง ${km}`,
+    placeNoStation: "ยังไม่พบสถานีวัดน้ำใกล้ที่นี่",
+    placeMore: "สถานีอื่นใกล้ที่นี่",
+    summaryTitle: "ตอนนี้",
+    summaryCount: (n: number) => `${n} สถานี`,
+    filterLabel: "กรองตามระดับเสี่ยง",
+    filterClear: "แสดงทุกสถานี",
+    filtered: (label: string, n: number) => `แสดงเฉพาะ${label} ${n} สถานี`,
+    worrying: "สถานีที่ต้องติดตาม",
+    allCalm: "ทุกสถานียังต่ำกว่าเกณฑ์เฝ้าระวัง",
   },
 
   flood: {
@@ -616,6 +635,7 @@ export const copy = {
     newChat: "เริ่มคุยใหม่",
     sourcesLabel: "ที่มา",
     openFloodMap: "ดูบนแผนที่น้ำท่วม",
+    openStationMap: "ดูสถานีวัดน้ำใกล้ที่นี่",
     // Slash commands (lib/commands.ts): what each one does, shown in the menu that opens on "/" and by /help.
     commands: {
       label: "คำสั่ง",

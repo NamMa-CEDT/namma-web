@@ -4,15 +4,17 @@ import type { MultiPolygon } from "geojson";
 import { cellToBoundary, cellToLatLng } from "h3-js";
 import L from "leaflet";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { MapContainer, TileLayer, useMap, useMapEvents } from "react-leaflet";
+import { MapContainer, useMap, useMapEvents } from "react-leaflet";
 import { InvalidateOnResize } from "../../components/InvalidateOnResize";
+import { BasemapTiles, MapHandle, PlacePins, type MapPlace } from "../../components/mapLayers";
+import type { Basemap } from "../../lib/basemaps";
 import type { AreaShape } from "../../lib/boundaries";
 import type { MapClass } from "../../lib/flood";
 import type { WaterPatch } from "../../lib/water";
 import { heatPalette } from "./heat";
 import { PATTERN_FILL, WATER_EDGE } from "./patterns";
 
-export type Basemap = "satellite" | "streets";
+export type { Basemap, MapPlace };
 export type FlyTarget = { lat: number; lon: number; zoom: number } | { bounds: [number, number, number, number] };
 export type MapView = { bbox: [number, number, number, number]; zoom: number };
 
@@ -24,19 +26,8 @@ export interface MapArea {
   label: string | null;
 }
 
-export interface MapPlace {
-  lat: number;
-  lon: number;
-  label: string;
-}
-
-const SATELLITE_URL = "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}";
-// English place names and borders over the imagery while zoomed out; from ALL_LABELS_ZOOM our Thai tambon names
-// take over.
-const LABELS_URL =
-  "https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}";
-const ESRI_CREDIT = "&copy; Esri, Maxar, Earthstar Geographics";
 const CREDIT = "น้ำท่วม: GISTDA · ขอบเขต: กรมแผนที่ทหาร/OCHA";
+// Esri's English place names over the imagery until our Thai tambon names take over (ALL_LABELS_ZOOM).
 // Tambon names: the flooded ones from zoom 10, every one from 12 (all of them at 10 is a wall of labels).
 const FLOODED_LABELS_ZOOM = 10;
 const ALL_LABELS_ZOOM = 12;
@@ -53,13 +44,6 @@ function ViewWatcher({ onView }: { onView: (v: MapView) => void }) {
   }, [map, onView]);
   useMapEvents({ moveend: emit });
   useEffect(emit, [emit]);
-  return null;
-}
-
-/** Hands the Leaflet map up, so the page's own zoom buttons (drawn over the map, outside it) can zoom it. */
-function MapHandle({ onMap }: { onMap: (map: L.Map) => void }) {
-  const map = useMap();
-  useEffect(() => onMap(map), [map, onMap]);
   return null;
 }
 
@@ -331,37 +315,6 @@ function WaterLayer({
   return null;
 }
 
-const HOUSE_SVG =
-  '<svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11 L12 4 L21 11 M5.5 9.5 V20 H18.5 V9.5" fill="none" stroke="currentColor" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/></svg>';
-
-/** The person's saved places as house pins, so they can find their own tambon. */
-function Places({ places }: { places: MapPlace[] }) {
-  const map = useMap();
-  useEffect(() => {
-    const icon = L.divIcon({ className: "nm-home-pin", html: HOUSE_SVG, iconSize: [26, 26] });
-    const markers = places.map((p) => {
-      const m = L.marker([p.lat, p.lon], { icon, interactive: false, keyboard: false, zIndexOffset: 1000 });
-      // Labels are text nodes, never HTML: the label is what the user typed.
-      const text = document.createElement("span");
-      text.textContent = p.label;
-      m.bindTooltip(text, { permanent: true, direction: "right", offset: [12, 0], className: "nm-area-label" });
-      return m.addTo(map);
-    });
-    return () => {
-      for (const m of markers) m.remove();
-    };
-  }, [map, places]);
-  return null;
-}
-
-/** Esri's English labels only while zoomed out; closer in, the Thai tambon names. */
-function ImageryLabels() {
-  const map = useMap();
-  const [zoom, setZoom] = useState(() => map.getZoom());
-  useMapEvents({ zoomend: () => setZoom(map.getZoom()) });
-  return zoom < ALL_LABELS_ZOOM ? <TileLayer key="labels" url={LABELS_URL} maxZoom={18} /> : null;
-}
-
 interface Props {
   areas: MapArea[];
   selected: string | null;
@@ -403,7 +356,7 @@ export default function FloodMap({
   useEffect(() => {
     if (tileErrors === 8) onTilesFailed();
   }, [tileErrors, onTilesFailed]);
-  const onTileError = { tileerror: () => setTileErrors((n) => n + 1) };
+  const onTileError = useCallback(() => setTileErrors((n) => n + 1), []);
   // The heat is for water seen lately; water seen only weeks ago (30-day map) is drawn by WaterLayer alone.
   const recentWater = useMemo(() => water.filter((p) => p.seen !== "30days"), [water]);
 
@@ -417,20 +370,7 @@ export default function FloodMap({
       zoomControl={false}
       attributionControl={false}
     >
-      {basemap === "satellite" ? (
-        <>
-          <TileLayer key="sat" url={SATELLITE_URL} attribution={`${ESRI_CREDIT} · ${CREDIT}`} maxZoom={18} eventHandlers={onTileError} />
-          <ImageryLabels />
-        </>
-      ) : (
-        <TileLayer
-          key="osm"
-          url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
-          attribution={`&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> · ${CREDIT}`}
-          maxZoom={18}
-          eventHandlers={onTileError}
-        />
-      )}
+      <BasemapTiles basemap={basemap} credit={CREDIT} labelsUntilZoom={ALL_LABELS_ZOOM} onTileError={onTileError} />
       <InvalidateOnResize />
       <MapHandle onMap={onMap} />
       <ViewWatcher onView={onView} />
@@ -438,7 +378,7 @@ export default function FloodMap({
       <AreasLayer areas={areas} selected={selected} onPick={onPick} basemap={basemap} outlineOnly={closeUp} />
       <HeatCanvas patches={recentWater} />
       <WaterLayer patches={water} selected={selectedWater} onPick={onPickWater} />
-      <Places places={places} />
+      <PlacePins places={places} />
     </MapContainer>
   );
 }

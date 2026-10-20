@@ -1,26 +1,37 @@
 import "leaflet/dist/leaflet.css";
 
-import type { LatLngBoundsExpression } from "leaflet";
-import { useEffect, useMemo, useState } from "react";
-import { MapContainer, Marker, TileLayer, Tooltip, useMap, useMapEvents } from "react-leaflet";
+import type { LatLngBoundsExpression, Map as LeafletMap } from "leaflet";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { MapContainer, Marker, Tooltip, useMap, useMapEvents } from "react-leaflet";
 import type { LatLon, StationSummary } from "../../api/types";
 import { InvalidateOnResize } from "../../components/InvalidateOnResize";
+import { BasemapTiles, MapHandle, PlacePins, type MapPlace } from "../../components/mapLayers";
 import { copy } from "../../copy";
+import type { Basemap } from "../../lib/basemaps";
 import { PIN_SIZE, pinIcon } from "../../lib/pins";
 import { stationTier, tierInfo } from "../../lib/tiers";
 
 const LABEL_ALL_ZOOM = 10;
+const CREDIT = "ข้อมูลน้ำ: ThaiWater (สสน.)";
 
 interface Props {
   stations: StationSummary[];
   selectedId: number | null;
   point: LatLon | null;
+  /** The point is a saved place, already drawn as a house pin: no "picked point" pin over it. */
+  pointIsPlace: boolean;
   /** Points to fit the view to (a river's stations, from the search); null leaves the view alone. */
   fitTo: LatLon[] | null;
   picking: boolean;
+  basemap: Basemap;
+  /** Saved places, as house pins. */
+  places: MapPlace[];
   onSelect: (id: number) => void;
   onPick: (p: LatLon) => void;
   onTilesFailed: () => void;
+  /** The Leaflet map, once made. The page draws its own zoom buttons: Leaflet's are off. */
+  onMap: (map: LeafletMap) => void;
+  onZoom: (zoom: number) => void;
 }
 
 function MapEvents({ onZoom, onClick }: { onZoom: (z: number) => void; onClick?: (p: LatLon) => void }) {
@@ -55,9 +66,31 @@ function FlyTo({ target }: { target: LatLon | null }) {
   return null;
 }
 
-export default function StationMap({ stations, selectedId, point, fitTo, picking, onSelect, onPick, onTilesFailed }: Props) {
+export default function StationMap({
+  stations,
+  selectedId,
+  point,
+  pointIsPlace,
+  fitTo,
+  picking,
+  basemap,
+  places,
+  onSelect,
+  onPick,
+  onTilesFailed,
+  onMap,
+  onZoom,
+}: Props) {
   const [zoom, setZoom] = useState(8);
   const [tileErrors, setTileErrors] = useState(0);
+  const onTileError = useCallback(() => setTileErrors((n) => n + 1), []);
+  const zoomed = useCallback(
+    (z: number) => {
+      setZoom(z);
+      onZoom(z);
+    },
+    [onZoom],
+  );
 
   const bounds = useMemo<LatLngBoundsExpression | undefined>(() => {
     if (!stations.length) return undefined;
@@ -85,14 +118,11 @@ export default function StationMap({ stations, selectedId, point, fitTo, picking
       zoom={bounds ? undefined : 8}
       className={`h-full w-full ${picking ? "cursor-crosshair" : ""}`}
       scrollWheelZoom
+      zoomControl={false}
     >
-      <TileLayer
-        url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
-        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> · ข้อมูลน้ำ: ThaiWater (สสน.)'
-        maxZoom={18}
-        eventHandlers={{ tileerror: () => setTileErrors((n) => n + 1) }}
-      />
-      <MapEvents onZoom={setZoom} onClick={picking ? onPick : undefined} />
+      <BasemapTiles basemap={basemap} credit={CREDIT} labelsUntilZoom={LABEL_ALL_ZOOM} onTileError={onTileError} />
+      <MapEvents onZoom={zoomed} onClick={picking ? onPick : undefined} />
+      <MapHandle onMap={onMap} />
       <InvalidateOnResize />
       <FlyTo target={selected ? { lat: selected.lat, lon: selected.lon } : point} />
       <FitTo points={selected ? null : fitTo} />
@@ -132,7 +162,9 @@ export default function StationMap({ stations, selectedId, point, fitTo, picking
         );
       })}
 
-      {point && (
+      <PlacePins places={places} />
+
+      {point && !pointIsPlace && (
         <Marker position={[point.lat, point.lon]} icon={pinIcon("here", 18)} zIndexOffset={2000}>
           <Tooltip direction="top" offset={[0, -12]}>
             {copy.map.pickedPoint}

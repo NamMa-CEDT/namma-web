@@ -18,3 +18,9 @@ export function readFloodFocus(params: URLSearchParams): FloodFocus | null {
   if (Math.abs(lat) > 90 || Math.abs(lon) > 180) return null;
   return { lat, lon, label: params.get("place") ?? "", approx: params.get("approx") === "1" };
 }
+
+/** /map?lat=…&lon=…&place=…: the station map on that point, its nearest stations listed, the place pinned. Read back
+ * with readFloodFocus (same parameters). */
+export function stationMapLink(p: FloodFocus): string {
+  return floodMapLink(p).replace(/^\/flood/, "/map");
+}

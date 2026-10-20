@@ -1,8 +1,9 @@
 import { lazy, Suspense } from "react";
+import { Link, useNavigate } from "react-router";
 import { useReadings, useStation } from "../../api/queries";
 import type { StationLink } from "../../api/types";
 import { Gauge } from "../../components/Gauge";
-import { ChevronLeftIcon } from "../../components/icons";
+import { ChevronLeftIcon, FloodIcon } from "../../components/icons";
 import { StaleNotice } from "../../components/Stale";
 import { ErrorState, Loading } from "../../components/States";
 import { TierBadge } from "../../components/TierBadge";
@@ -16,6 +17,8 @@ import {
   formatPlace,
   formatTrend,
 } from "../../lib/format";
+import type { ChatHandoff } from "../../lib/chatSession";
+import { floodMapLink } from "../../lib/floodLink";
 import { stationTier, tierReason } from "../../lib/tiers";
 
 const LevelChart = lazy(() => import("./LevelChart"));
@@ -71,6 +74,7 @@ export function StationSheet({
 }) {
   const station = useStation(id);
   const readings = useReadings(id, 72);
+  const navigate = useNavigate();
 
   if (station.isPending) return <Loading />;
   if (station.isError) return <ErrorState error={station.error} onRetry={() => station.refetch()} />;
@@ -143,6 +147,26 @@ export function StationSheet({
           <span className="num">{formatDateTime(s.latest?.ts)}</span> · {copy.station.estimated}
         </p>
       </section>
+
+      <div className="grid gap-2">
+        <button
+          type="button"
+          className="nm-btn nm-btn--primary nm-btn--block"
+          onClick={() => {
+            const name = `${s.name_th ?? copy.unknown}${s.oldcode ? ` (${s.oldcode})` : ""}`;
+            navigate("/chat", { state: { send: copy.map.askStationText(name) } satisfies ChatHandoff });
+          }}
+        >
+          {copy.map.askStation}
+        </button>
+        <Link
+          to={floodMapLink({ lat: s.lat, lon: s.lon, label: `สถานี${s.name_th ?? s.oldcode ?? ""}`, approx: false })}
+          className="nm-btn nm-btn--secondary nm-btn--block"
+        >
+          <FloodIcon className="text-[20px] text-river" />
+          {copy.map.floodAround}
+        </Link>
+      </div>
 
       <Links title={copy.station.upstream} links={s.upstream} onSelect={onSelect} />
       <Links title={copy.station.downstream} links={s.downstream} onSelect={onSelect} />
