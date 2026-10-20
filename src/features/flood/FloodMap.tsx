@@ -41,7 +41,7 @@ const CREDIT = "น้ำท่วม: GISTDA · ขอบเขต: กรม�
 const FLOODED_LABELS_ZOOM = 10;
 const ALL_LABELS_ZOOM = 12;
 
-const FILL_OPACITY: Record<FloodClass, number> = { many: 0.8, some: 0.65, none: 0 };
+const FILL_OPACITY: Record<FloodClass, number> = { many: 0.8, some: 0.65, few: 0.55, none: 0 };
 
 function ViewWatcher({ onView }: { onView: (v: MapView) => void }) {
   const map = useMap();

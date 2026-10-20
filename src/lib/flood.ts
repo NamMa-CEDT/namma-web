@@ -2,14 +2,17 @@
 // Every number shown comes from /api/flood (GISTDA's cells); nothing here estimates.
 import type { FloodArea, FloodHistoryArea, FloodLevel } from "../api/types";
 
-export type FloodClass = "many" | "some" | "none";
+export type FloodClass = "many" | "some" | "few" | "none";
 
 /** From about a quarter of the area under water, it is "ท่วมมาก". */
 export const MANY_SHARE = 0.25;
 
-/** The shade an area gets: flooded share of its whole area → ท่วมมาก / ท่วมบางส่วน / ไม่พบน้ำ. */
+/** From about 1 in 20 of the area under water, it is "ท่วมบางส่วน"; below that, "ท่วมน้อย". */
+export const SOME_SHARE = 0.05;
+
+/** The shade an area gets: flooded share of its whole area → ท่วมมาก / ท่วมบางส่วน / ท่วมน้อย / ไม่พบน้ำ. */
 export function floodClass(share: number): FloodClass {
-  return share >= MANY_SHARE ? "many" : share > 0 ? "some" : "none";
+  return share >= MANY_SHARE ? "many" : share >= SOME_SHARE ? "some" : share > 0 ? "few" : "none";
 }
 
 const RAI_PER_KM2 = 625;
@@ -42,7 +45,7 @@ export function historyClass(
 ): FloodClass {
   if (!h) return "none";
   if (year != null) return floodClass(historyShare(h, year, areaKm2));
-  if (level === "tambon") return h.years.length >= OFTEN_YEARS ? "many" : h.years.length > 0 ? "some" : "none";
+  if (level === "tambon") return h.years.length >= OFTEN_YEARS ? "many" : h.years.length > 1 ? "some" : h.years.length > 0 ? "few" : "none";
   const worst = worstYear(h);
   return worst ? floodClass(historyShare(h, worst.year, areaKm2)) : "none";
 }

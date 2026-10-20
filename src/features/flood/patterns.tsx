@@ -1,14 +1,15 @@
 import type { FloodClass } from "../../lib/flood";
 
-// DS option C fills: stripes = ท่วมมาก, dots = ท่วมบางส่วน, nothing = ไม่พบน้ำ. Patterns, so the three never rely on
+// DS option C fills: stripes = ท่วมมาก, dots = ท่วมบางส่วน, sparse light dots = ท่วมน้อย, nothing = ไม่พบน้ำ. Patterns, so they never rely on
 // telling shades of blue apart. Close up, the water itself: blue with a wave line, so it reads as water at a glance.
 // One colour set in both themes: the satellite imagery under them doesn't change.
 const MANY = "nm-flood-many";
 const SOME = "nm-flood-some";
+const FEW = "nm-flood-few";
 const WATER = "nm-flood-water";
 
 /** SVG fill for each class: the map's paths and the legend's swatches use the same patterns. */
-export const PATTERN_FILL: Record<FloodClass, string> = { many: `url(#${MANY})`, some: `url(#${SOME})`, none: "#000000" };
+export const PATTERN_FILL: Record<FloodClass, string> = { many: `url(#${MANY})`, some: `url(#${SOME})`, few: `url(#${FEW})`, none: "#000000" };
 export const WATER_FILL = `url(#${WATER})`;
 /** Edge of a water patch: light, so it shows on fields and on dark water alike. */
 export const WATER_EDGE = "#e6f5ff";
@@ -25,6 +26,10 @@ export function FloodPatterns() {
         <pattern id={SOME} width="10" height="10" patternUnits="userSpaceOnUse">
           <rect width="10" height="10" fill="#6ab0f0" />
           <circle cx="5" cy="5" r="1.7" fill="#ffffff" fillOpacity="0.8" />
+        </pattern>
+        <pattern id={FEW} width="14" height="14" patternUnits="userSpaceOnUse">
+          <rect width="14" height="14" fill="#b7dafa" />
+          <circle cx="7" cy="7" r="1.2" fill="#ffffff" fillOpacity="0.85" />
         </pattern>
         <pattern id={WATER} width="22" height="10" patternUnits="userSpaceOnUse">
           <rect width="22" height="10" fill="#2a8ce6" />
