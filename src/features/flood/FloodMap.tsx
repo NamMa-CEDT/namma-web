@@ -56,6 +56,13 @@ function ViewWatcher({ onView }: { onView: (v: MapView) => void }) {
   return null;
 }
 
+/** Hands the Leaflet map up, so the page's own zoom buttons (drawn over the map, outside it) can zoom it. */
+function MapHandle({ onMap }: { onMap: (map: L.Map) => void }) {
+  const map = useMap();
+  useEffect(() => onMap(map), [map, onMap]);
+  return null;
+}
+
 function FlyTo({ target }: { target: FlyTarget | null }) {
   const map = useMap();
   useEffect(() => {
@@ -368,6 +375,8 @@ interface Props {
   places: MapPlace[];
   onView: (v: MapView) => void;
   onTilesFailed: () => void;
+  /** The Leaflet map, once made. The page draws its own zoom buttons: Leaflet's are off. */
+  onMap: (map: L.Map) => void;
   /** Off when the map sits inside a scrolling page: the wheel scrolls the page, the buttons zoom. */
   scrollWheelZoom?: boolean;
 }
@@ -385,6 +394,7 @@ export default function FloodMap({
   places,
   onView,
   onTilesFailed,
+  onMap,
   scrollWheelZoom = true,
 }: Props) {
   const [tileErrors, setTileErrors] = useState(0);
@@ -400,6 +410,7 @@ export default function FloodMap({
       minZoom={5}
       className="h-full w-full"
       scrollWheelZoom={scrollWheelZoom}
+      zoomControl={false}
       attributionControl={false}
     >
       {basemap === "satellite" ? (
@@ -417,6 +428,7 @@ export default function FloodMap({
         />
       )}
       <InvalidateOnResize />
+      <MapHandle onMap={onMap} />
       <ViewWatcher onView={onView} />
       <FlyTo target={flyTo} />
       <AreasLayer areas={areas} selected={selected} onPick={onPick} basemap={basemap} outlineOnly={closeUp} />

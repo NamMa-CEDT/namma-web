@@ -1,4 +1,5 @@
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { flushSync } from "react-dom";
 import { Link, useNavigate } from "react-router";
 import { API_MODE } from "../../api/client";
 import {
@@ -33,6 +34,7 @@ import {
 } from "../../lib/flood";
 import { formatDate, formatDateTime, formatDistance } from "../../lib/format";
 import { distanceToWaterKm, viewBox, waterPatches, type WaterPatch } from "../../lib/water";
+import type { Map as LeafletMap } from "leaflet";
 import type { Basemap, FlyTarget, MapArea, MapView } from "./FloodMap";
 import { HEAT_GRADIENT, heatColor } from "./heat";
 import { FloodPatterns, Swatch } from "./patterns";
@@ -79,7 +81,7 @@ function legendText(history: boolean, year: number | null, zoomedIn: boolean): L
 
 function Legend({ text, stage }: { text: LegendText; stage: Stage }) {
   return (
-    <div className="rounded-sm border border-line bg-surface-raised px-3 py-2 shadow-float">
+    <div className="rounded-md border border-line-strong bg-surface-raised px-3 py-2 shadow-float">
       <div className="text-caption font-semibold text-ink">{text.title}</div>
       {stage === "water" ? (
         <ul className="m-0 mt-1 flex list-none flex-col gap-0.5 p-0 text-caption text-ink">
@@ -113,18 +115,33 @@ function Legend({ text, stage }: { text: LegendText; stage: Stage }) {
   );
 }
 
-/** "ทุกปี", 2011 … 2024: which year of the history the map shades. */
-function YearChips({ years, year, onYear }: { years: number[]; year: number | null; onYear: (y: number | null) => void }) {
+/** "ทุกปี", 2011 … 2024: which year of the history the map shades. `scroll`: one row that scrolls sideways on a phone
+ * (the map options sheet), instead of wrapping. */
+function YearChips({
+  years,
+  year,
+  onYear,
+  scroll = false,
+}: {
+  years: number[];
+  year: number | null;
+  onYear: (y: number | null) => void;
+  scroll?: boolean;
+}) {
   const options: (number | null)[] = [null, ...years];
   return (
-    <div role="group" aria-label={copy.flood.history.yearLabel} className="flex flex-wrap gap-1.5">
+    <div
+      role="group"
+      aria-label={copy.flood.history.yearLabel}
+      className={`flex flex-wrap gap-1.5 ${scroll ? "max-sm:flex-nowrap max-sm:overflow-x-auto max-sm:[scrollbar-width:none]" : ""}`}
+    >
       {options.map((y) => (
         <button
           key={y ?? "all"}
           type="button"
           aria-pressed={y === year}
           onClick={() => onYear(y)}
-          className={`num min-h-9 rounded-pill border px-3 text-caption font-semibold ${
+          className={`num min-h-9 shrink-0 rounded-pill border px-3 text-caption font-semibold ${
             y === year ? "border-river bg-river text-on-river" : "border-line-strong text-ink-muted hover:text-ink"
           }`}
         >
@@ -170,6 +187,227 @@ function Segmented<T extends string>({
         </button>
       ))}
     </div>
+  );
+}
+
+// The basemap picture buttons: one real tile of each, the upper Gulf of Thailand at zoom 8.
+const BASEMAP_THUMB: Record<Basemap, string> = {
+  satellite: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/8/118/199",
+  streets: "https://tile.openstreetmap.org/8/199/118.png",
+};
+
+const HINT_KEY = "namma.mapOptionsSeen";
+
+/** Whether this browser has opened the map options (or closed their hint); a convenience only, so any storage failure
+ * shows the hint again. */
+function readHintSeen(): boolean {
+  try {
+    return localStorage.getItem(HINT_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
+function saveHintSeen(): void {
+  try {
+    localStorage.setItem(HINT_KEY, "1");
+  } catch {
+    // Private mode or blocked storage: the hint comes back next visit.
+  }
+}
+
+function Icon({ d, className = "", weight = 2 }: { d: string; className?: string; weight?: number }) {
+  return (
+    <svg
+      aria-hidden="true"
+      width="20"
+      height="20"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={weight}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={`shrink-0 ${className}`}
+    >
+      <path d={d} />
+    </svg>
+  );
+}
+const ICON = {
+  plus: "M12 5v14M5 12h14",
+  minus: "M5 12h14",
+  layers: "m12 3 9 5-9 5-9-5 9-5ZM3 13l9 5 9-5",
+  close: "M6 6l12 12M18 6 6 18",
+  check: "m5 12 5 5 9-10",
+};
+
+/**
+ * The map's own buttons (DS map controls option B): one 44px column top-left, zoom in / out over a layers button, so
+ * the rest of the map stays clear. Open, the map options (layer, history year, basemap) come up as a sheet from the
+ * bottom on a phone, a card beside the column on larger screens. Until this browser has opened them once (or closed
+ * the hint), a hint bubble beside the layers button says what's in there.
+ */
+function MapHud({
+  map,
+  zoom,
+  open,
+  setOpen,
+  layer,
+  onLayer,
+  years,
+  year,
+  onYear,
+  basemap,
+  onBasemap,
+}: {
+  map: LeafletMap | null;
+  zoom: number | null;
+  open: boolean;
+  setOpen: (open: boolean) => void;
+  layer: (typeof LAYERS)[number];
+  onLayer: (l: (typeof LAYERS)[number]) => void;
+  /** The history layer's years; empty on the live layers. */
+  years: number[];
+  year: number | null;
+  onYear: (y: number | null) => void;
+  basemap: Basemap;
+  onBasemap: (b: Basemap) => void;
+}) {
+  const layersBtn = useRef<HTMLButtonElement>(null);
+  const closeBtn = useRef<HTMLButtonElement>(null);
+  const close = () => {
+    setOpen(false);
+    layersBtn.current?.focus({ preventScroll: true });
+  };
+  const [hint, setHint] = useState(() => !readHintSeen());
+  const hideHint = () => {
+    setHint(false);
+    saveHintSeen();
+  };
+  const openByTap = () => {
+    hideHint();
+    flushSync(() => setOpen(true));
+    closeBtn.current?.focus({ preventScroll: true });
+  };
+
+  const h = copy.flood.history;
+  const atMin = map != null && zoom != null && zoom <= map.getMinZoom();
+  const atMax = map != null && zoom != null && zoom >= map.getMaxZoom();
+  const zoomBtn = "flex aspect-square w-full items-center justify-center rounded-[8px] text-ink hover:bg-surface-sunken disabled:opacity-40 disabled:hover:bg-transparent";
+
+  return (
+    <>
+      <div className="pointer-events-none absolute top-2.5 left-2.5 z-[500] flex flex-col items-start gap-2">
+        <div className="pointer-events-auto flex w-11 flex-col gap-0.5 rounded-md border border-line-strong bg-surface-raised p-0.5 shadow-float">
+          <button type="button" aria-label={copy.flood.zoomIn} disabled={!map || atMax} onClick={() => map?.zoomIn()} className={zoomBtn}>
+            <Icon d={ICON.plus} />
+          </button>
+          <button type="button" aria-label={copy.flood.zoomOut} disabled={!map || atMin} onClick={() => map?.zoomOut()} className={zoomBtn}>
+            <Icon d={ICON.minus} />
+          </button>
+        </div>
+        <div className="relative">
+          <button
+            ref={layersBtn}
+            type="button"
+            aria-label={copy.flood.mapControls}
+            aria-expanded={open}
+            aria-controls="map-options"
+            onClick={() => (open ? close() : openByTap())}
+            className={`pointer-events-auto flex size-11 items-center justify-center rounded-md border shadow-float ${
+              open ? "border-river bg-river text-on-river" : "border-line-strong bg-surface-raised text-river hover:bg-surface-sunken"
+            }`}
+          >
+            <Icon d={ICON.layers} className="size-[22px]" />
+          </button>
+          {hint && !open && (
+            <div className="pointer-events-auto absolute top-1/2 left-full ml-3 flex w-56 -translate-y-1/2 items-start gap-1 rounded-md bg-river py-1.5 pr-1 pl-3 text-on-river shadow-float">
+              {/* The arrow: a turned square tucked under the bubble's left edge, pointing at the button. */}
+              <span aria-hidden="true" className="absolute top-1/2 -left-1.5 size-3 -translate-y-1/2 rotate-45 bg-river" />
+              <button type="button" onClick={openByTap} className="relative flex-1 text-left text-caption font-semibold">
+                {copy.flood.mapControlsHint}
+              </button>
+              <button
+                type="button"
+                aria-label={copy.flood.close}
+                onClick={hideHint}
+                className="relative flex size-8 shrink-0 items-center justify-center rounded-sm hover:bg-[rgba(255,255,255,0.15)]"
+              >
+                <Icon d={ICON.close} className="size-4" />
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {open && (
+        <>
+          <div aria-hidden="true" onClick={close} className="absolute inset-0 z-[600] bg-[rgba(4,12,24,0.3)] sm:hidden" />
+          {/* Phone: a sheet along the map's bottom edge. Larger: a card beside the 44px column (10px + 44px + 8px in). */}
+          <section
+            id="map-options"
+            role="dialog"
+            aria-label={copy.flood.mapControls}
+            onKeyDown={(e) => e.key === "Escape" && close()}
+            className="absolute z-[600] flex flex-col gap-2 overflow-y-auto border-line-strong bg-surface-raised shadow-float max-sm:inset-x-0 max-sm:bottom-0 max-sm:max-h-[85%] max-sm:rounded-t-lg max-sm:border-t max-sm:px-4 max-sm:pt-1.5 max-sm:pb-4 sm:top-2.5 sm:left-[3.875rem] sm:max-h-[calc(100%-1.25rem)] sm:w-72 sm:max-w-[calc(100%-4.5rem)] sm:rounded-lg sm:border sm:p-3 sm:pt-2"
+          >
+            <span aria-hidden="true" className="mx-auto h-1 w-9 shrink-0 rounded-pill bg-line-strong sm:hidden" />
+            <div className="-mr-1.5 flex items-center justify-between gap-2">
+              <h2 className="m-0 flex items-center gap-2 text-label font-semibold text-ink">
+                <Icon d={ICON.layers} className="text-river" />
+                {copy.flood.mapControls}
+              </h2>
+              <button
+                ref={closeBtn}
+                type="button"
+                aria-label={copy.flood.close}
+                onClick={close}
+                className="flex size-9 items-center justify-center rounded-sm text-ink-muted hover:bg-surface-sunken hover:text-ink"
+              >
+                <Icon d={ICON.close} />
+              </button>
+            </div>
+
+            <p className="m-0 text-caption font-semibold text-ink-muted">{copy.flood.periodLabel}</p>
+            <Segmented
+              flush
+              label={copy.flood.periodLabel}
+              options={LAYERS}
+              value={layer}
+              onChange={onLayer}
+              name={(l) => (l === "history" ? h.tab : copy.flood.periodShort[l])}
+            />
+            {years.length > 0 && <YearChips scroll years={years} year={year} onYear={onYear} />}
+
+            <p className="m-0 mt-1 text-caption font-semibold text-ink-muted">{copy.flood.basemap}</p>
+            <div role="group" aria-label={copy.flood.basemap} className="grid grid-cols-2 gap-2">
+              {(["satellite", "streets"] as const).map((b) => (
+                <button
+                  key={b}
+                  type="button"
+                  aria-pressed={b === basemap}
+                  onClick={() => onBasemap(b)}
+                  className={`relative flex flex-col gap-1 rounded-md border p-1 pb-1.5 text-caption font-semibold ${
+                    b === basemap
+                      ? "border-river text-river shadow-[inset_0_0_0_1px_var(--river)]"
+                      : "border-line text-ink hover:border-line-strong"
+                  }`}
+                >
+                  <img src={BASEMAP_THUMB[b]} alt="" loading="lazy" className="h-14 w-full rounded-[7px] bg-surface-sunken object-cover" />
+                  {copy.flood[b]}
+                  {b === basemap && (
+                    <span className="absolute top-2 right-2 flex size-5 items-center justify-center rounded-full bg-river text-on-river">
+                      <Icon d={ICON.check} weight={3.5} className="size-3" />
+                    </span>
+                  )}
+                </button>
+              ))}
+            </div>
+          </section>
+        </>
+      )}
+    </>
   );
 }
 
@@ -812,7 +1050,8 @@ export function FloodExplorer({
   const [flyTo, setFlyTo] = useState<FlyTarget | null>(null);
   const [tilesFailed, setTilesFailed] = useState(false);
   const [picked, setPicked] = useState<Picked | null>(null);
-  const [controlsOpen, setControlsOpen] = useState(true);
+  const [controlsOpen, setControlsOpen] = useState(false);
+  const [leaflet, setLeaflet] = useState<LeafletMap | null>(null);
   const detail = useRef<HTMLDivElement>(null);
   const mapEl = useRef<HTMLDivElement>(null);
 
@@ -1010,86 +1249,31 @@ export function FloodExplorer({
           places={mapPlaces}
           onView={onView}
           onTilesFailed={onTilesFailed}
+          onMap={setLeaflet}
           scrollWheelZoom={!embedded}
         />
       </Suspense>
 
-      {/* Leaflet's zoom buttons sit top-left; the map controls (period, history year, basemap) sit in a collapsible
-          panel top-right. */}
-      <div className="pointer-events-none absolute top-2.5 right-2 left-[3.5rem] z-[500] flex justify-end">
-        <div className="pointer-events-auto flex w-64 max-w-full flex-col gap-2 rounded-md border border-line-strong bg-surface-raised p-2 shadow-float">
-          <button
-            type="button"
-            aria-expanded={controlsOpen}
-            onClick={() => setControlsOpen((o) => !o)}
-            className={`flex min-h-9 w-full items-center justify-between gap-2 border-b px-1 pb-2 text-label font-semibold text-ink hover:text-river ${
-              controlsOpen ? "border-line" : "border-transparent"
-            }`}
-          >
-            {copy.flood.mapControls}
-            <svg
-              aria-hidden="true"
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className={`text-ink-muted transition-transform ${controlsOpen ? "rotate-180" : ""}`}
-            >
-              <path d="m6 9 6 6 6-6" />
-            </svg>
-          </button>
-          {controlsOpen && (
-            <>
-              <p className="m-0 px-1 text-caption text-ink-muted">{copy.flood.periodLabel}</p>
-              <Segmented
-                flush
-                label={copy.flood.periodLabel}
-                options={LAYERS}
-                value={history ? "history" : period}
-                onChange={(l) => (l === "history" ? onScope({ history: true }) : onScope({ period: l, history: false }))}
-                name={(l) => (l === "history" ? copy.flood.history.tab : copy.flood.periodShort[l])}
-              />
-              {history && hist.data && hist.data.years.length > 0 && (
-                <label className="pointer-events-auto flex items-center justify-between gap-2 rounded-sm border border-line bg-surface px-3 py-1.5 text-label font-semibold max-sm:hidden">
-                  {copy.flood.history.yearLabel}
-                  <select
-                    value={year ?? ""}
-                    onChange={(e) => onScope({ year: e.target.value ? Number(e.target.value) : null })}
-                    className="num min-h-8 bg-transparent font-semibold text-ink"
-                  >
-                    <option value="">{copy.flood.history.allYears}</option>
-                    {hist.data.years.map((y) => (
-                      <option key={y} value={y}>
-                        {y}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-              )}
-              <p className="m-0 px-1 text-caption text-ink-muted">{copy.flood.basemap}</p>
-              <Segmented
-                flush
-                label={copy.flood.basemap}
-                options={["satellite", "streets"] as const}
-                value={basemap}
-                onChange={setBasemap}
-                name={(b) => copy.flood[b]}
-              />
-            </>
-          )}
-        </div>
-      </div>
+      <MapHud
+        map={leaflet}
+        zoom={view?.zoom ?? null}
+        open={controlsOpen}
+        setOpen={setControlsOpen}
+        layer={history ? "history" : period}
+        onLayer={(l) => (l === "history" ? onScope({ history: true }) : onScope({ period: l, history: false }))}
+        years={history ? (hist.data?.years ?? []) : []}
+        year={year}
+        onYear={(y) => onScope({ year: y })}
+        basemap={basemap}
+        onBasemap={setBasemap}
+      />
       <div className="absolute bottom-6 left-2 z-[500] hidden sm:block">
         <Legend text={legend} stage={stage} />
       </div>
       {status && (
         <p
           role="status"
-          className="pointer-events-auto absolute right-2 bottom-6 z-[500] m-0 max-w-[15rem] rounded-sm border border-line bg-surface-raised px-3 py-2 text-caption text-ink shadow-float"
+          className="pointer-events-auto absolute right-2 bottom-6 z-[500] m-0 max-w-[15rem] rounded-md border border-line-strong bg-surface-raised px-3 py-2 text-caption text-ink shadow-float"
         >
           {status}
         </p>
