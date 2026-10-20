@@ -4,8 +4,9 @@ import { useState } from "react";
 import { loadState, resetState, updateState } from "../../api/mock/store";
 import { useStations } from "../../api/queries";
 import type { RiskTier } from "../../api/types";
-import { loginDemo, logout, useSession } from "../../auth/session";
+import { loginDemo, useSession } from "../../auth/session";
 import { copy } from "../../copy";
+import { LogoutButton } from "../account/LogoutButton";
 import { tierInfo } from "../../lib/tiers";
 
 const TIERS: RiskTier[] = ["normal", "watch", "warning", "danger"];
@@ -39,9 +40,7 @@ export default function DemoPanel() {
             <button type="button" className="nm-btn nm-btn--secondary nm-btn--sm px-3" onClick={() => loginDemo().then(refresh)}>
               user
             </button>
-            <button type="button" className="nm-btn nm-btn--secondary nm-btn--sm px-3" onClick={() => void logout().then(refresh)}>
-              logout
-            </button>
+            {session && <LogoutButton small onDone={refresh} />}
           </div>
 
           <p className="m-0 mt-3 text-caption font-semibold text-ink-muted">{copy.demo.raiseTier}</p>

@@ -1,16 +1,14 @@
-import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router";
-import { logout, useSession } from "../../auth/session";
+import { useSession } from "../../auth/session";
 import { UserIcon } from "../../components/icons";
 import { copy } from "../../copy";
+import { LogoutButton } from "./LogoutButton";
 
 /** Header account button: the profile picture (or a plain icon) only. Tapping it opens a small menu with the name and sign in/out. */
 export function AccountMenu() {
   const session = useSession();
-  const qc = useQueryClient();
   const [open, setOpen] = useState(false);
-  const [busy, setBusy] = useState(false);
   const wrap = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -28,14 +26,6 @@ export function AccountMenu() {
       document.removeEventListener("keydown", onKey);
     };
   }, [open]);
-
-  const signOut = async () => {
-    setBusy(true);
-    await logout();
-    void qc.invalidateQueries({ queryKey: ["profile"] });
-    setBusy(false);
-    setOpen(false);
-  };
 
   return (
     <div ref={wrap} className="relative">
@@ -78,9 +68,7 @@ export function AccountMenu() {
               <Link to="/account" onClick={() => setOpen(false)} className="nm-btn nm-btn--sm nm-btn--secondary nm-btn--block no-underline">
                 {copy.account.nav}
               </Link>
-              <button type="button" className="nm-btn nm-btn--sm nm-btn--secondary nm-btn--block" disabled={busy} onClick={() => void signOut()}>
-                {copy.account.logout}
-              </button>
+              <LogoutButton small block onDone={() => setOpen(false)} />
             </>
           ) : (
             <>

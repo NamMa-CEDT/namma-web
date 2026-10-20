@@ -132,6 +132,8 @@
 .nm-btn--danger, .nm-btn--danger:hover, .nm-btn--danger:visited { background: var(--tier-danger); color: var(--on-tier-danger); }
 .nm-btn--call, .nm-btn--call:hover, .nm-btn--call:visited { background: var(--surface-raised); color: var(--tier-danger-ink); border: 2px solid var(--tier-danger-ink); }
 .nm-btn--line, .nm-btn--line:hover, .nm-btn--line:visited { background: var(--line-green); color: var(--on-line-green); font-size: 18px; font-weight: 700; }
+/* A small LINE button sits in a row next to other small buttons: same type as they have. */
+.nm-btn--line.nm-btn--sm { font-size: 16px; font-weight: 600; }
 .nm-btn--block { display: flex; width: 100%; }
 .nm-btn:disabled, .nm-btn[aria-disabled="true"] { background: var(--surface-sunken); color: var(--ink-muted); border-color: var(--line); box-shadow: none; cursor: not-allowed; }
 
@@ -371,6 +373,15 @@
   .nm-badge--unknown { background: var(--surface-sunken); color: var(--ink-muted); }
   /* Header-sized button (44px tap target). */
   .nm-btn--sm { min-height: 44px; padding: 8px 16px; }
+  /* Google sign-in: our button underneath, Google's own button invisible on top takes the click
+     (GoogleButton in AccountPage). The wrapper shows hover and focus, since the iframe gets them. */
+  .nm-google { position: relative; display: grid; }
+  .nm-google .nm-btn { pointer-events: none; }
+  .nm-google:hover .nm-btn { box-shadow: inset 0 0 0 999px rgba(0, 0, 0, 0.08); }
+  .nm-google:focus-within .nm-btn { outline: 2px solid var(--focus); outline-offset: 2px; }
+  .nm-google__hit { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; overflow: hidden; opacity: 0.01; }
+  /* Google's large button is 40px tall; stretch it over our 44–48px button so every pixel clicks. */
+  .nm-google__hit > div { transform: scaleY(1.25); }
   .nm-chip:disabled { color: var(--ink-muted); cursor: not-allowed; }
   /* DS disabled state for icon buttons (the send button before anything is typed). */
   .nm-icon-btn:disabled,

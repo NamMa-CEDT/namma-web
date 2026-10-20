@@ -12,29 +12,44 @@ import {
   loginDemo,
   loginGoogle,
   loginLine,
-  logout,
   takeLinePending,
   unlink,
   useSession,
 } from "../../auth/session";
-import { CaretRightIcon, ChatIcon, FloodIcon, LineIcon, PinIcon, UserIcon, UsersIcon } from "../../components/icons";
+import { CaretRightIcon, ChatIcon, FloodIcon, GoogleIcon, LineIcon, PinIcon, UserIcon, UsersIcon } from "../../components/icons";
 import { copy } from "../../copy";
 import { GOOGLE_CLIENT_ID, renderGoogleButton } from "../../lib/google";
+import { LogoutButton } from "./LogoutButton";
 
-/** Google's own button (its brand rules). Without a client id in the build, a note says why it is missing.
- *  `fill` sizes it to its container (Google allows 200–400px). */
-function GoogleButton({ onToken, fill = false }: { onToken: (idToken: string) => void; fill?: boolean }) {
-  const el = useRef<HTMLDivElement>(null);
+/** Google sign-in in our nm-btn style. Google's own button is drawn invisibly on top of ours and takes the
+ *  click, so the popup and ID token are Google's as before (.nm-google in index.css). Without a client id in
+ *  the build, our button shows disabled with a note saying why. `fill` makes it as wide as its container. */
+function GoogleButton({ onToken, label, fill = false, small = false }: { onToken: (idToken: string) => void; label: string; fill?: boolean; small?: boolean }) {
+  const wrap = useRef<HTMLDivElement>(null);
+  const hit = useRef<HTMLDivElement>(null);
   const cb = useRef(onToken);
   cb.current = onToken;
   const [failed, setFailed] = useState(false);
   useEffect(() => {
-    if (!el.current || !GOOGLE_CLIENT_ID) return;
-    const width = fill ? Math.max(200, Math.min(400, Math.floor(el.current.offsetWidth))) : undefined;
-    renderGoogleButton(el.current, (t) => cb.current(t), width).catch(() => setFailed(true));
-  }, [fill]);
-  if (!GOOGLE_CLIENT_ID || failed) return <p className="m-0 text-center text-caption text-ink-muted">{copy.account.googleMissing}</p>;
-  return <div ref={el} className={fill ? "flex min-h-11 w-full justify-center" : "min-h-11"} />;
+    if (!hit.current || !wrap.current || !GOOGLE_CLIENT_ID) return;
+    // Google allows 200–400px; match ours so the whole button is clickable.
+    const width = Math.max(200, Math.min(400, Math.ceil(wrap.current.offsetWidth)));
+    renderGoogleButton(hit.current, (t) => cb.current(t), width).catch(() => setFailed(true));
+  }, []);
+  const off = !GOOGLE_CLIENT_ID || failed;
+  const btn = `nm-btn nm-btn--secondary${small ? " nm-btn--sm" : ""}${fill ? " nm-btn--block" : ""}`;
+  return (
+    <div className={`grid gap-1 ${fill ? "" : "justify-items-end"}`}>
+      <div ref={wrap} className={off ? "grid" : "nm-google"}>
+        <span className={btn} aria-hidden={!off} aria-disabled={off || undefined}>
+          <GoogleIcon className={small ? "text-[18px]" : "text-[20px]"} />
+          {label}
+        </span>
+        {!off && <div ref={hit} className="nm-google__hit" />}
+      </div>
+      {off && <p className="m-0 text-center text-caption text-ink-muted">{copy.account.googleMissing}</p>}
+    </div>
+  );
 }
 
 function errorText(e: unknown): string {
@@ -104,7 +119,7 @@ function SignIn() {
             {copy.account.or}
             <span className="h-px flex-1 bg-line" />
           </div>
-          <GoogleButton fill onToken={(t) => void attempt(loginGoogle(t))} />
+          <GoogleButton fill label={copy.account.googleSignIn} onToken={(t) => void attempt(loginGoogle(t))} />
         </div>
 
         {note && <p className="m-0 rounded-md bg-tier-normal-soft px-3 py-2 text-body text-tier-normal-ink">{note}</p>}
@@ -170,99 +185,104 @@ function Account() {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- runs once, on the way back from LINE
   }, []);
 
-  const row =(provider: Provider, label: string, linked: boolean, detail: string | null, action: ReactNode) => (
-    <li className="flex flex-wrap items-center justify-between gap-3 border-b border-line py-3 last:border-b-0">
-      <div className="min-w-0">
-        <div className="text-body font-semibold">{label}</div>
-        <div className="text-caption text-ink-muted">{linked ? (detail ?? copy.account.linked) : copy.account.notLinked}</div>
+  const row = (opts: { provider: Provider; icon: ReactNode; label: string; linked: boolean; detail: string | null; hint?: string; action: ReactNode }) => (
+    <li className="flex items-center gap-3 border-b border-line px-4 py-3 last:border-b-0">
+      <span className="inline-flex size-10 flex-none items-center justify-center rounded-full bg-surface-sunken">{opts.icon}</span>
+      <div className="min-w-0 flex-1">
+        <div className="text-body font-semibold">{opts.label}</div>
+        <div className="truncate text-caption text-ink-muted">{opts.linked ? (opts.detail ?? copy.account.linked) : copy.account.notLinked}</div>
+        {!opts.linked && opts.hint && <div className="text-caption text-ink-muted">{opts.hint}</div>}
       </div>
-      {linked ? (
-        // The last way to sign in can't be unlinked (delete the account instead).
-        both && (
-          <button type="button" className="nm-btn nm-btn--secondary nm-btn--sm" disabled={busy} onClick={() => void run(() => unlink(provider))}>
-            {copy.account.unlink}
-          </button>
-        )
-      ) : (
-        action
-      )}
+      <div className="flex-none">
+        {opts.linked
+          ? // The last way to sign in can't be unlinked (delete the account instead).
+            both && (
+              <button type="button" className="nm-btn nm-btn--secondary nm-btn--sm" disabled={busy} onClick={() => void run(() => unlink(opts.provider))}>
+                {copy.account.unlink}
+              </button>
+            )
+          : opts.action}
+      </div>
     </li>
   );
 
   return (
-    <section className="grid gap-6">
-      <div className="flex items-center gap-3">
-        {session.picture_url ? (
-          <img src={session.picture_url} alt="" className="size-12 rounded-full" />
-        ) : (
-          <UserIcon className="text-[48px] text-ink-muted" />
-        )}
-        <div>
-          <div className="text-caption text-ink-muted">{copy.account.signedInAs}</div>
-          <h1 className="m-0 text-title font-semibold">{session.display_name}</h1>
+    <div className="grid gap-4">
+      <section className="overflow-hidden rounded-lg border border-line bg-surface-raised shadow-float">
+        {/* Header band, as on the sign-in card: who is signed in. */}
+        <div className="flex items-center gap-4 bg-river-soft px-5 py-6 sm:px-6">
+          {session.picture_url ? (
+            <img src={session.picture_url} alt="" referrerPolicy="no-referrer" className="size-14 flex-none rounded-full object-cover ring-2 ring-surface-raised" />
+          ) : (
+            <span className="inline-flex size-14 flex-none items-center justify-center rounded-full bg-river text-on-river">
+              <UserIcon className="text-[28px]" />
+            </span>
+          )}
+          <div className="min-w-0">
+            <div className="text-caption text-ink-muted">{copy.account.signedInAs}</div>
+            <h1 className="m-0 truncate text-heading font-semibold sm:text-title">{session.display_name}</h1>
+          </div>
         </div>
-      </div>
 
-      <div className="grid gap-1">
-        <h2 className="m-0 text-heading font-semibold">{copy.account.ways}</h2>
-        <ul className="m-0 list-none p-0">
-          {row(
-            "line",
-            copy.account.line,
-            ids.line,
-            null,
-            canLineLogin ? (
-              <div className="grid justify-items-end gap-1">
-                <button type="button" className="nm-btn nm-btn--line nm-btn--sm" disabled={busy} onClick={() => void run(linkLine)}>
-                  <LineIcon className="text-[18px]" />
-                  {copy.account.lineLink}
-                </button>
-                <span className="text-caption text-ink-muted">{copy.account.lineNote}</span>
-              </div>
-            ) : (
-              <span className="text-caption text-ink-muted">{copy.account.lineNote}</span>
-            ),
+        <div className="grid gap-5 p-5 sm:p-6">
+          <div className="grid gap-2">
+            <h2 className="m-0 text-label font-semibold text-ink-muted">{copy.account.ways}</h2>
+            <ul className="m-0 list-none rounded-md border border-line p-0">
+              {row({
+                provider: "line",
+                icon: <LineIcon className="text-[22px] text-line-green" />,
+                label: copy.account.line,
+                linked: ids.line,
+                detail: null,
+                hint: copy.account.lineNote,
+                action: canLineLogin && (
+                  <button type="button" className="nm-btn nm-btn--line nm-btn--sm" disabled={busy} onClick={() => void run(linkLine)}>
+                    <LineIcon className="text-[18px]" />
+                    {copy.account.connect}
+                  </button>
+                ),
+              })}
+              {row({
+                provider: "google",
+                icon: <GoogleIcon className="text-[20px]" />,
+                label: copy.account.google,
+                linked: !!ids.google,
+                detail: ids.google,
+                action: <GoogleButton small label={copy.account.connect} onToken={(t) => void run(() => link("google", t))} />,
+              })}
+            </ul>
+          </div>
+
+          {error && (
+            <p className="nm-field-error m-0" role="alert">
+              {error}
+            </p>
           )}
-          {row(
-            "google",
-            copy.account.google,
-            !!ids.google,
-            ids.google,
-            <GoogleButton onToken={(t) => void run(() => link("google", t))} />,
-          )}
-        </ul>
-      </div>
 
-      {error && (
-        <p className="nm-field-error m-0" role="alert">
-          {error}
-        </p>
-      )}
+          <LogoutButton block />
+        </div>
+      </section>
 
-      <button type="button" className="nm-btn nm-btn--secondary justify-self-start" disabled={busy} onClick={() => void run(logout)}>
-        {copy.account.logout}
-      </button>
-
-      <div className="grid gap-2 rounded-md border border-line p-4">
+      <section className="grid gap-2 rounded-lg border border-line p-5">
         <h2 className="m-0 text-heading font-semibold">{copy.account.deleteTitle}</h2>
         <p className="m-0 text-body text-ink-muted">{copy.account.deleteBody}</p>
         {confirmDelete ? (
           <div className="flex flex-wrap gap-2">
             {/* DS: danger red is for rescue only, never "delete". */}
-            <button type="button" className="nm-btn nm-btn--secondary" disabled={busy} onClick={() => void run(deleteAccount)}>
+            <button type="button" className="nm-btn nm-btn--secondary nm-btn--sm" disabled={busy} onClick={() => void run(deleteAccount)}>
               {copy.account.deleteConfirm}
             </button>
-            <button type="button" className="nm-btn nm-btn--secondary" onClick={() => setConfirmDelete(false)}>
+            <button type="button" className="nm-btn nm-btn--secondary nm-btn--sm" onClick={() => setConfirmDelete(false)}>
               {copy.account.cancel}
             </button>
           </div>
         ) : (
-          <button type="button" className="nm-btn nm-btn--secondary justify-self-start" onClick={() => setConfirmDelete(true)}>
+          <button type="button" className="nm-btn nm-btn--secondary nm-btn--sm justify-self-start" onClick={() => setConfirmDelete(true)}>
             {copy.account.deleteAsk}
           </button>
         )}
-      </div>
-    </section>
+      </section>
+    </div>
   );
 }
 
@@ -274,7 +294,7 @@ export default function AccountPage() {
       <div
         className={
           session
-            ? "mx-auto grid max-w-xl gap-8 px-4 py-8 sm:px-6"
+            ? "mx-auto grid max-w-md gap-4 px-4 py-8"
             : "mx-auto grid min-h-full max-w-md content-center gap-4 px-4 py-8"
         }
       >
