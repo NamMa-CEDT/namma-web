@@ -26,6 +26,9 @@ import {
   formatRai,
   historyClass,
   historyShare,
+  lastSeen,
+  seasonClass,
+  type MapClass,
   placeName,
   placeParts,
   shareWords,
@@ -38,11 +41,13 @@ import type { Map as LeafletMap } from "leaflet";
 import type { Basemap, FlyTarget, MapArea, MapView } from "./FloodMap";
 import { HEAT_GRADIENT, heatColor } from "./heat";
 import { FloodPatterns, Swatch } from "./patterns";
+import { TambonStory } from "./TambonStory";
 
 const FloodMap = lazy(() => import("./FloodMap"));
 
-// The map's layer switch: the latest satellite layers, or the 2011– history.
-const LAYERS = ["3days", "7days", "history"] as const;
+// The map's layer switch: the latest satellite layers (30 days: where water is now and where it has gone down), or
+// the 2011– history.
+const LAYERS = ["3days", "7days", "30days", "history"] as const;
 // How close to fly when a row is tapped: an amphoe at 11, a tambon at 12.
 const FLY_ZOOM: Record<FloodLevel, number> = { province: 9, amphoe: 11, tambon: 12 };
 const MAX_PLACES = 3;
@@ -53,6 +58,7 @@ const WATER_ZOOM = 13;
 type Stage = "province" | "tambon" | "water";
 const MAX_PROVINCES = 6;
 const CLASSES: FloodClass[] = ["many", "some", "few", "none"];
+const SEASON_CLASSES: MapClass[] = ["many", "some", "earlier", "none"];
 const TOTAL_PROVINCES = 77;
 export interface FloodScope {
   period: FloodPeriod;
@@ -67,16 +73,21 @@ export interface FloodScope {
 /** What the legend says: the live layer, or the history layer for one year / all years, zoomed out / in. */
 interface LegendText {
   title: string;
-  labels: Record<FloodClass, string>;
+  classes: MapClass[];
+  labels: Partial<Record<MapClass, string>>;
   note: string;
+  /** The 30-day map: close up, water seen only weeks ago is drawn apart from the heat. */
+  season?: boolean;
 }
 
-function legendText(history: boolean, year: number | null, zoomedIn: boolean): LegendText {
+function legendText(history: boolean, year: number | null, zoomedIn: boolean, season: boolean): LegendText {
   const h = copy.flood.history;
-  if (!history) return { title: copy.flood.legend, labels: copy.flood.cls, note: copy.flood.legendNote };
-  if (year != null) return { title: h.legendYear(year), labels: copy.flood.cls, note: copy.flood.legendNote };
-  if (zoomedIn) return { title: h.legendOften, labels: h.often, note: h.oftenNote };
-  return { title: h.legendWorst, labels: copy.flood.cls, note: h.worstNote };
+  const se = copy.flood.season;
+  if (season) return { title: se.legend, classes: SEASON_CLASSES, labels: se.cls, note: se.note, season };
+  if (!history) return { title: copy.flood.legend, classes: CLASSES, labels: copy.flood.cls, note: copy.flood.legendNote };
+  if (year != null) return { title: h.legendYear(year), classes: CLASSES, labels: copy.flood.cls, note: copy.flood.legendNote };
+  if (zoomedIn) return { title: h.legendOften, classes: CLASSES, labels: h.often, note: h.oftenNote };
+  return { title: h.legendWorst, classes: CLASSES, labels: copy.flood.cls, note: h.worstNote };
 }
 
 function Legend({ text, stage }: { text: LegendText; stage: Stage }) {
@@ -93,6 +104,12 @@ function Legend({ text, stage }: { text: LegendText; stage: Stage }) {
               <span>{copy.flood.heatHigh}</span>
             </span>
           </li>
+          {text.season && (
+            <li className="flex items-center gap-2">
+              <Swatch cls="earlier" />
+              {copy.flood.season.legendEarlier}
+            </li>
+          )}
           <li className="flex items-center gap-2">
             <Swatch cls="border" />
             {copy.flood.legendBorder}
@@ -101,7 +118,7 @@ function Legend({ text, stage }: { text: LegendText; stage: Stage }) {
       ) : (
         <>
           <ul className="m-0 mt-1 flex list-none flex-col gap-0.5 p-0 text-caption text-ink">
-            {CLASSES.map((c) => (
+            {text.classes.map((c) => (
               <li key={c} className="flex items-center gap-2">
                 <Swatch cls={c} />
                 {text.labels[c]}
@@ -655,12 +672,14 @@ function meanShare(patch: WaterPatch): number {
 /** A patch of water picked close up (design "3 · ซูมใกล้"): how big, what's in it, how far from home. */
 function WaterCard({
   patch,
+  period,
   observed,
   places,
   onClose,
   onAsk,
 }: {
   patch: WaterPatch;
+  period: FloodPeriod;
   observed: string | null;
   places: SavedPlace[];
   onClose: () => void;
@@ -668,6 +687,8 @@ function WaterCard({
 }) {
   const where = { province: patch.province, amphoe: patch.amphoe, tambon: patch.tambon };
   const parts = placeParts(where);
+  // 30-day map: water seen only weeks ago, which may have gone down.
+  const earlier = patch.seen === "30days";
   const head = patch.tambon ? copy.flood.waterIn(parts[0]) : copy.flood.waterTitle;
   const stats = [
     patch.buildings != null && `${copy.flood.stats.buildings} ${formatCount(patch.buildings)}`,
@@ -682,9 +703,21 @@ function WaterCard({
     <section aria-labelledby="flood-area-h" className="flex flex-col gap-3 px-4 py-4">
       <CardHead head={head} rest={patch.tambon ? parts.slice(1) : parts} onClose={onClose} />
       <div className="flex items-center gap-2">
-        <span aria-hidden="true" className="block h-4 w-[22px] shrink-0 rounded-[5px]" style={{ background: heatColor(meanShare(patch)) }} />
-        <p className="num m-0 text-reading-lg font-semibold">{copy.flood.waterRai(patchRai(patch.area_rai))}</p>
+        {earlier ? (
+          <Swatch cls="earlier" />
+        ) : (
+          <span aria-hidden="true" className="block h-4 w-[22px] shrink-0 rounded-[5px]" style={{ background: heatColor(meanShare(patch)) }} />
+        )}
+        <p className="num m-0 text-reading-lg font-semibold">
+          {(earlier ? copy.flood.waterRaiEarlier : copy.flood.waterRai)(patchRai(patch.area_rai))}
+        </p>
       </div>
+      {patch.seen && period !== "3days" && (
+        <p className="m-0 flex items-center gap-2 text-body">
+          <Swatch cls={seasonClass(patch.seen)} />
+          {copy.flood.season.seenLong[patch.seen]}
+        </p>
+      )}
       {(stats.length > 0 || home) && (
         <p className="num m-0 text-body">
           {[
@@ -739,12 +772,14 @@ function LandCard({
 /** The tambon picked on the map or in the list (DS option C card): how much of it is under water, in words. */
 function AreaCard({
   picked,
+  period,
   observed,
   places,
   onClose,
   onAsk,
 }: {
   picked: PickedTambon;
+  period: FloodPeriod;
   observed: string | null;
   places: SavedPlace[];
   onClose: () => void;
@@ -783,7 +818,10 @@ function AreaCard({
 
       <div className="flex items-center gap-2">
         <Swatch cls={cls} />
-        <p className="m-0 text-reading-lg font-semibold">{copy.flood.clsLong[cls]}</p>
+        <p className="m-0 text-reading-lg font-semibold">
+          {copy.flood.clsLong[cls]}
+          {period === "30days" && cls !== "none" && <span className="text-body font-normal text-ink-muted"> {copy.flood.inMonth}</span>}
+        </p>
       </div>
       <p className="num m-0 text-body">
         {row
@@ -800,6 +838,8 @@ function AreaCard({
           {copy.flood.imageDate} {formatDate(observed)}
         </p>
       )}
+
+      <TambonStory code={shape?.properties.code ?? row?.code ?? null} />
 
       <button type="button" className="nm-btn nm-btn--primary nm-btn--block" onClick={() => onAsk(copy.flood.askAreaText(placeName(where)))}>
         {copy.flood.askArea}
@@ -997,15 +1037,15 @@ function HistoryCard({
   );
 }
 
-function Notes({ legend, stage, history }: { legend: LegendText; stage: Stage; history: boolean }) {
+function Notes({ legend, stage, history, season }: { legend: LegendText; stage: Stage; history: boolean; season: boolean }) {
   const h = copy.flood.history;
   return (
     <div className="grid gap-2 border-t border-line px-4 pt-3 pb-4 text-caption text-ink-muted">
       <div className="sm:hidden">
         <Legend text={legend} stage={stage} />
       </div>
-      <p className="m-0">{history ? h.subtitle : copy.flood.subtitle}</p>
-      <p className="m-0">{history ? h.tapHint : copy.flood.tapHint}</p>
+      <p className="m-0">{history ? h.subtitle : season ? copy.flood.season.subtitle : copy.flood.subtitle}</p>
+      <p className="m-0">{history ? h.tapHint : season ? copy.flood.season.tapHint : copy.flood.tapHint}</p>
       <p className="m-0">{history ? h.caveat : copy.flood.caveat}</p>
       <p className="m-0">
         {copy.footer.unofficial} · {copy.footer.emergency}{" "}
@@ -1036,10 +1076,14 @@ export function FloodExplorer({
   const { period, province, amphoe } = scope;
   const history = scope.history ?? false;
   const year = scope.year ?? null;
+  // The 30-day map shades each area by how lately water was seen there: it needs the shorter layers too.
+  const season = !history && period === "30days";
   const navigate = useNavigate();
   const hist = useFloodHistory(history);
   const areas = useFloodAreas(period, province, amphoe);
   const provinceRows = useFloodAreas(period);
+  const provinceRows3 = useFloodAreas("3days", null, null, season);
+  const provinceRows7 = useFloodAreas("7days", null, null, season);
   const provinceShapes = useProvinceShapes();
   const profile = useProfile(loadSessionId());
   const places = useMemo(() => profile.data?.places.slice(0, MAX_PLACES) ?? [], [profile.data]);
@@ -1066,6 +1110,8 @@ export function FloodExplorer({
   );
   const tambonShapes = useTambonShapes(inView.map((p) => p.properties.code));
   const tambonRows = useFloodTambons(period, inView.map((p) => p.properties.province));
+  const tambonRows3 = useFloodTambons("3days", inView.map((p) => p.properties.province), season);
+  const tambonRows7 = useFloodTambons("7days", inView.map((p) => p.properties.province), season);
   const tambonHist = useFloodHistoryTambons(
     inView.map((p) => p.properties.code),
     history,
@@ -1076,16 +1122,22 @@ export function FloodExplorer({
 
   // useQueries hands back new arrays every render: rebuild only when some result's data changed.
   const shapesKey = tambonShapes.map((q) => q.dataUpdatedAt).join();
-  const rowsKey = tambonRows.map((q) => q.dataUpdatedAt).join();
+  const rowsKey = [tambonRows, tambonRows3, tambonRows7].map((qs) => qs.map((q) => q.dataUpdatedAt).join()).join("|");
   const histKey = tambonHist.map((q) => q.dataUpdatedAt).join();
   const tambons = useMemo(() => {
-    const out: { shape: AreaShape; row: FloodArea | null; hist: FloodHistoryArea | null }[] = [];
+    const out: { shape: AreaShape; row: FloodArea | null; hist: FloodHistoryArea | null; seen: FloodPeriod | null }[] = [];
     tambonShapes.forEach((q, i) => {
       if (!q.data) return;
       const joined = joinAreas(q.data.features, tambonRows[i]?.data?.areas ?? [], "tambon");
+      const joined3 = joinAreas(q.data.features, tambonRows3[i]?.data?.areas ?? [], "tambon");
+      const joined7 = joinAreas(q.data.features, tambonRows7[i]?.data?.areas ?? [], "tambon");
       const hist = new Map((tambonHist[i]?.data?.areas ?? []).map((a) => [a.code, a]));
-      for (const shape of q.data.features)
-        out.push({ shape, row: joined.get(shape.properties.code) ?? null, hist: hist.get(shape.properties.code) ?? null });
+      for (const shape of q.data.features) {
+        const code = shape.properties.code;
+        const row = joined.get(code) ?? null;
+        const seen = lastSeen((p) => (p === "3days" ? joined3.has(code) : p === "7days" ? joined7.has(code) : row != null));
+        out.push({ shape, row, hist: hist.get(code) ?? null, seen });
+      }
     });
     return out;
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -1107,23 +1159,27 @@ export function FloodExplorer({
       });
     }
     if (zoomedIn) {
-      return tambons.map(({ shape, row }) => ({
+      return tambons.map(({ shape, row, seen }) => ({
         shape,
-        cls: row ? floodClass(row.area_km2 / shape.properties.area_km2) : "none",
+        cls: season ? seasonClass(seen) : row ? floodClass(row.area_km2 / shape.properties.area_km2) : "none",
         label: shape.properties.tambon,
       }));
     }
     const shapes = provinceShapes.data?.features ?? [];
     const joined = joinAreas(shapes, provinceRows.data?.areas ?? [], "province");
+    const joined3 = joinAreas(shapes, provinceRows3.data?.areas ?? [], "province");
+    const joined7 = joinAreas(shapes, provinceRows7.data?.areas ?? [], "province");
     return shapes.map((shape) => {
-      const row = joined.get(shape.properties.code);
+      const code = shape.properties.code;
+      const row = joined.get(code);
+      const seen = lastSeen((p) => (p === "3days" ? joined3.has(code) : p === "7days" ? joined7.has(code) : row != null));
       return {
         shape,
-        cls: row ? floodClass(row.area_km2 / shape.properties.area_km2) : "none",
+        cls: season ? seasonClass(seen) : row ? floodClass(row.area_km2 / shape.properties.area_km2) : "none",
         label: row ? shape.properties.province : null,
       };
     });
-  }, [history, year, hist.data, zoomedIn, tambons, provinceShapes.data, provinceRows.data]);
+  }, [history, season, year, hist.data, zoomedIn, tambons, provinceShapes.data, provinceRows.data, provinceRows3.data, provinceRows7.data]);
 
   const onView = useCallback((v: MapView) => setView(v), []);
   const onTilesFailed = useCallback(() => setTilesFailed(true), []);
@@ -1198,7 +1254,7 @@ export function FloodExplorer({
     const shape = provinceShapes.data?.features.find((f) => f.properties.code === code);
     if (shape?.properties.bbox) setFlyTo({ bounds: shape.properties.bbox });
   };
-  const legend = legendText(history, year, zoomedIn);
+  const legend = legendText(history, year, zoomedIn, season);
   const histCopied = new Set(hist.data?.provinces ?? []);
 
   const loadingShapes = provinceShapes.isPending || tambonShapes.some((q) => q.isPending);
@@ -1320,11 +1376,25 @@ export function FloodExplorer({
             <HistoryPanel data={hist.data} year={year} onYear={(y) => onScope({ year: y })} onPick={pickHistoryProvince} />
           )
         ) : picked?.kind === "water" ? (
-          <WaterCard patch={picked.patch} observed={areas.data?.observed_to ?? null} places={places} onClose={() => setPicked(null)} onAsk={ask} />
+          <WaterCard
+            patch={picked.patch}
+            period={period}
+            observed={areas.data?.observed_to ?? null}
+            places={places}
+            onClose={() => setPicked(null)}
+            onAsk={ask}
+          />
         ) : picked?.kind === "land" ? (
           <LandCard shape={picked.shape} nearestKm={picked.nearestKm} onClose={() => setPicked(null)} onAsk={ask} />
         ) : picked ? (
-          <AreaCard picked={picked} observed={areas.data?.observed_to ?? null} places={places} onClose={() => setPicked(null)} onAsk={ask} />
+          <AreaCard
+            picked={picked}
+            period={period}
+            observed={areas.data?.observed_to ?? null}
+            places={places}
+            onClose={() => setPicked(null)}
+            onAsk={ask}
+          />
         ) : areas.isPending ? (
           <Loading />
         ) : areas.isError ? (
@@ -1339,7 +1409,7 @@ export function FloodExplorer({
         )}
       </div>
 
-      <Notes legend={legend} stage={stage} history={history} />
+      <Notes legend={legend} stage={stage} history={history} season={season} />
     </aside>
   );
 

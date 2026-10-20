@@ -1,4 +1,15 @@
-import { areaName, floodClass, formatKm2, formatRai, historyClass, placeName, shareWords, worstYear } from "./flood";
+import {
+  areaName,
+  floodClass,
+  formatKm2,
+  formatRai,
+  historyClass,
+  lastSeen,
+  placeName,
+  seasonClass,
+  shareWords,
+  worstYear,
+} from "./flood";
 
 it("shades an area by how much of it is under water", () => {
   expect([0, 0.001, 0.049, 0.05, 0.24, 0.25, 0.9].map(floodClass)).toEqual(["none", "few", "few", "some", "some", "many", "many"]);
@@ -48,4 +59,13 @@ test("history layer: a year by its flooded share, all years by how often (tambon
   expect(historyClass(undefined, 6.11, null, "tambon")).toBe("none");
   expect(worstYear(h)).toEqual({ year: 2011, rai: 3000 });
   expect(historyClass(h, 2500, null, "province")).toBe("few");                            // worst year: 3,000 rai of 2,500 km²
+});
+
+it("says how lately water was seen from which layers hold it", () => {
+  const holds = (...periods: string[]) => (p: string) => periods.includes(p);
+  expect(lastSeen(holds("3days", "7days", "30days"))).toBe("3days");
+  expect(lastSeen(holds("7days", "30days"))).toBe("7days");
+  expect(lastSeen(holds("30days"))).toBe("30days");
+  expect(lastSeen(holds())).toBeNull();
+  expect(["3days", "7days", "30days", null].map((p) => seasonClass(p as never))).toEqual(["many", "some", "earlier", "none"]);
 });

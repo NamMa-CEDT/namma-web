@@ -124,7 +124,8 @@ describe("flood (mock sample of GISTDA's layers)", () => {
     expect(areas.map((a) => a.area_km2)).toEqual([...areas.map((a) => a.area_km2)].sort((a, b) => b - a));
     expect(d.total.cells).toBe(areas.reduce((s, a) => s + a.cells, 0));
     expect(d.total.area_km2).toBeCloseTo(sum(areas), 2);
-    expect(d.total.area_rai).toBe(Math.round(d.total.area_km2 * 625));
+    // rai is rounded from the unrounded km², as the backend does: within 1 of the rounded km² × 625.
+    expect(Math.abs(d.total.area_rai - d.total.area_km2 * 625)).toBeLessThanOrEqual(1);
   });
 
   it("drills down to amphoe inside a province", async () => {
@@ -138,10 +139,42 @@ describe("flood (mock sample of GISTDA's layers)", () => {
     expect(tambons.map((t) => t.tambon).sort()).toEqual(["บางหลวงโดด", "สะพานไทย"]);
   });
 
-  it("the 7-day layer holds the 3-day one", async () => {
+  it("the 7-day layer holds the 3-day one, and the 30-day one both", async () => {
     const three = (await call("GET", "/api/flood/areas?period=3days")).json.data.total;
     const seven = (await call("GET", "/api/flood/areas?period=7days")).json.data.total;
+    const month = (await call("GET", "/api/flood/areas?period=30days")).json.data;
     expect(seven.cells).toBeGreaterThan(three.cells);
+    expect(month.total.cells).toBeGreaterThan(seven.cells);
+    expect(Date.parse(month.observed_from)).toBeLessThan(Date.parse(month.observed_to) - 7 * 86_400_000);
+    // Water seen only weeks ago upstream: Chai Nat is in the 30-day layer, not in the 7-day one.
+    const provinces = async (p: string) => ((await call("GET", `/api/flood/areas?period=${p}`)).json.data.areas as Area[]).map((a) => a.province);
+    expect(await provinces("30days")).toContain("ชัยนาท");
+    expect(await provinces("7days")).not.toContain("ชัยนาท");
+  });
+
+  it("says how lately water was seen in each cell", async () => {
+    const bbox = "100.10,14.25,100.65,15.80";
+    const month = (await call("GET", `/api/flood/cells?bbox=${bbox}&res=9&period=30days&limit=20000`)).json.data;
+    const seen = new Set((month.cells as { seen: string }[]).map((c) => c.seen));
+    expect([...seen].sort()).toEqual(["30days", "3days", "7days"]);
+    expect((month.windows as { period: string }[]).map((w) => w.period)).toEqual(["3days", "7days", "30days"]);
+    const three = (await call("GET", `/api/flood/cells?bbox=${bbox}&res=9&period=3days`)).json.data;
+    expect(new Set((three.cells as { seen: string }[]).map((c) => c.seen))).toEqual(new Set(["3days"]));
+    expect(three.windows).toHaveLength(1);
+  });
+
+  it("tells one tambon's flood story", async () => {
+    const now = (await call("GET", "/api/flood/tambon?code=140513")).json.data; // บางหลวงโดด: water now
+    expect(now).toMatchObject({ tambon: "บางหลวงโดด", last_seen: "3days" });
+    expect(now.windows.map((w: { period: string }) => w.period)).toEqual(["3days", "7days", "30days"]);
+    expect(now.record.length).toBeGreaterThan(1);
+    expect(now.history.years_covered[0]).toBe(2011);
+    const gone = (await call("GET", "/api/flood/tambon?code=180406")).json.data; // Chai Nat: weeks ago only
+    expect(gone).toMatchObject({ last_seen: "30days", history: null });
+    const dry = (await call("GET", "/api/flood/tambon?code=140199")).json.data; // Ayutthaya is copied: never flooded
+    expect(dry).toMatchObject({ last_seen: null, history: { years: [] } });
+    expect((await call("GET", "/api/flood/tambon?code=909090")).status).toBe(404);
+    expect((await call("GET", "/api/flood/tambon?code=12")).status).toBe(400);
   });
 
   it("returns the cells in view, and parents that sum them when zoomed out", async () => {

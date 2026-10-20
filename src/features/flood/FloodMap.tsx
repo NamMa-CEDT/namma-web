@@ -7,7 +7,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { MapContainer, TileLayer, useMap, useMapEvents } from "react-leaflet";
 import { InvalidateOnResize } from "../../components/InvalidateOnResize";
 import type { AreaShape } from "../../lib/boundaries";
-import type { FloodClass } from "../../lib/flood";
+import type { MapClass } from "../../lib/flood";
 import type { WaterPatch } from "../../lib/water";
 import { heatPalette } from "./heat";
 import { PATTERN_FILL, WATER_EDGE } from "./patterns";
@@ -19,7 +19,7 @@ export type MapView = { bbox: [number, number, number, number]; zoom: number };
 /** One shaded area on the map: a province zoomed out, a tambon zoomed in. */
 export interface MapArea {
   shape: AreaShape;
-  cls: FloodClass;
+  cls: MapClass;
   /** Thai name drawn on the map; null = none (unflooded provinces, to keep the country view calm). */
   label: string | null;
 }
@@ -41,7 +41,7 @@ const CREDIT = "น้ำท่วม: GISTDA · ขอบเขต: กรม�
 const FLOODED_LABELS_ZOOM = 10;
 const ALL_LABELS_ZOOM = 12;
 
-const FILL_OPACITY: Record<FloodClass, number> = { many: 0.8, some: 0.65, few: 0.55, none: 0 };
+const FILL_OPACITY: Record<MapClass, number> = { many: 0.8, some: 0.65, few: 0.55, earlier: 0.7, none: 0 };
 
 function ViewWatcher({ onView }: { onView: (v: MapView) => void }) {
   const map = useMap();
@@ -309,15 +309,17 @@ function WaterLayer({
     for (const p of patches) {
       const isSel = p.id === selected;
       const shape: MultiPolygon = { type: "MultiPolygon", coordinates: p.polygons };
-      const layer = L.geoJSON(
-        shape,
-        {
-          pane: WATER_PANE,
-          // The heat canvas underneath does the colour; this is the shoreline, and the tap target (an invisible fill
-          // still takes clicks).
-          style: { color: WATER_EDGE, weight: isSel ? 4 : 1.5, opacity: 0.95, lineJoin: "round", fillColor: "#000000", fillOpacity: 0 },
-        },
-      );
+      // Recent water: the heat canvas underneath does the colour; this is the shoreline, and the tap target (an
+      // invisible fill still takes clicks). Water seen only weeks ago (30-day map): no heat, the pale "earlier" fill
+      // and a dashed shore, so it reads as where the water was.
+      const earlier = p.seen === "30days";
+      const layer = L.geoJSON(shape, {
+        pane: WATER_PANE,
+        style: earlier
+          ? { color: WATER_EDGE, weight: isSel ? 4 : 1.5, opacity: 0.95, dashArray: "5 4", lineJoin: "round",
+              fillColor: PATTERN_FILL.earlier, fillOpacity: FILL_OPACITY.earlier }
+          : { color: WATER_EDGE, weight: isSel ? 4 : 1.5, opacity: 0.95, lineJoin: "round", fillColor: "#000000", fillOpacity: 0 },
+      });
       layer.on("click", (e: L.LeafletMouseEvent) => {
         L.DomEvent.stopPropagation(e);
         pick.current(p.id);
@@ -402,6 +404,8 @@ export default function FloodMap({
     if (tileErrors === 8) onTilesFailed();
   }, [tileErrors, onTilesFailed]);
   const onTileError = { tileerror: () => setTileErrors((n) => n + 1) };
+  // The heat is for water seen lately; water seen only weeks ago (30-day map) is drawn by WaterLayer alone.
+  const recentWater = useMemo(() => water.filter((p) => p.seen !== "30days"), [water]);
 
   return (
     <MapContainer
@@ -432,7 +436,7 @@ export default function FloodMap({
       <ViewWatcher onView={onView} />
       <FlyTo target={flyTo} />
       <AreasLayer areas={areas} selected={selected} onPick={onPick} basemap={basemap} outlineOnly={closeUp} />
-      <HeatCanvas patches={water} />
+      <HeatCanvas patches={recentWater} />
       <WaterLayer patches={water} selected={selectedWater} onPick={onPickWater} />
       <Places places={places} />
     </MapContainer>

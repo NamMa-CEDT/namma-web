@@ -6,7 +6,7 @@ import type { Fact, FloodLevel, FloodPeriod, Profile, SessionUser } from "../typ
 import { copy } from "../../copy";
 import { respond, type ChatSessionState } from "./chatScript";
 import * as data from "./data";
-import { floodAreas, floodCells, floodHistory, floodNear } from "./flood";
+import { floodAreas, floodCells, floodHistory, floodNear, floodTambon } from "./flood";
 import { chatState, loadState, updateState, type MockState } from "./store";
 
 interface Ctx {
@@ -97,7 +97,7 @@ route("GET", "/api/shelters", ({ query }) => ({
 
 // --- flood (a labelled sample, see ./flood.ts) --------------------------------
 
-const FLOOD_PERIODS: FloodPeriod[] = ["3days", "7days"];
+const FLOOD_PERIODS: FloodPeriod[] = ["3days", "7days", "30days"];
 const FLOOD_LEVELS: FloodLevel[] = ["province", "amphoe", "tambon"];
 
 function floodPeriod(q: URLSearchParams): FloodPeriod | null {
@@ -148,6 +148,13 @@ route("GET", "/api/flood/history", ({ query }) => {
     return fail(400, "bad_request", "level must be province, or tambon with province");
   }
   return { data: floodHistory(level, province) };
+});
+
+route("GET", "/api/flood/tambon", ({ query }) => {
+  const code = query.get("code") ?? "";
+  if (!/^\d{6}$/.test(code)) return fail(400, "bad_request", "code must be a 6-digit tambon code");
+  const story = floodTambon(code, data.ingestedAt());
+  return story ? { data: story } : fail(404, "not_found", "no flood data for this sub-district code");
 });
 
 // --- chat ---------------------------------------------------------------------

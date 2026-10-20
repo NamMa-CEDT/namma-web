@@ -2,7 +2,8 @@
 // where the water is instead of a field of hexagons. A patch = cells that touch; its outline comes from h3-js
 // (cellsToMultiPolygon) and is rounded with Chaikin's corner cutting. Its numbers are sums of its cells.
 import { cellToLatLng, cellsToMultiPolygon, gridDisk, latLngToCell } from "h3-js";
-import type { FloodCell } from "../api/types";
+import type { FloodCell, FloodPeriod } from "../api/types";
+import { PERIODS } from "./flood";
 
 const RAI_PER_KM2 = 625;
 
@@ -23,6 +24,8 @@ export interface WaterPatch {
   tambon: string | null;
   /** Newest image date among its cells. */
   observed_at: string | null;
+  /** How lately water was seen in it: its freshest cell's `seen`; null when the backend sends none. */
+  seen: FloodPeriod | null;
 }
 
 /** One Chaikin pass per iteration over a closed GeoJSON ring (first point repeated last). */
@@ -84,9 +87,11 @@ function dominant(cells: FloodCell[]): Pick<WaterPatch, "province" | "amphoe" | 
   return { province: top?.province ?? null, amphoe: top?.amphoe ?? null, tambon: top?.tambon ?? null };
 }
 
-/** GISTDA's res-9 cells in view → patches of water, largest first. */
+/** GISTDA's res-9 cells in view → patches of water, largest first. Water seen only weeks ago (seen "30days") never
+ * joins a patch of recent water: the 30-day map draws the two differently. */
 export function waterPatches(cells: FloodCell[]): WaterPatch[] {
-  return components(cells)
+  const earlier = (c: FloodCell) => c.seen === "30days";
+  return [...components(cells.filter((c) => !earlier(c))), ...components(cells.filter(earlier))]
     .map((group) => {
       const largest = group.reduce((a, b) => (b.area_km2 > a.area_km2 ? b : a));
       const polygons = cellsToMultiPolygon(
@@ -105,6 +110,7 @@ export function waterPatches(cells: FloodCell[]): WaterPatch[] {
         population: sumOrNull(group, "population"),
         ...dominant(group),
         observed_at: dates.length ? dates.reduce((a, b) => (Date.parse(b) > Date.parse(a) ? b : a)) : null,
+        seen: PERIODS.find((p) => group.some((c) => c.seen === p)) ?? null,
       };
     })
     .sort((a, b) => b.area_km2 - a.area_km2);
