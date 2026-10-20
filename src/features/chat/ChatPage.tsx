@@ -264,60 +264,62 @@ export default function ChatPage() {
               ),
             )}
             {pending && <TypingBubble />}
+          </div>
+
+          {/* In the scroll, after the last turn. Phones: not pinned, so a long answer gets the whole small screen.
+              Desktop: sticky, so the box stays in view as before. */}
+          <div className="mx-auto w-full max-w-3xl bg-surface px-4 pb-3 sm:px-6 lg:sticky lg:bottom-0">
+            {consentAsk ? (
+              // Asking permission to remember health info: the consent card takes the chat box's place until answered.
+              <ConsentCard choices={quickReplies} disabled={pending} onPick={pick} />
+            ) : (
+              <>
+                <QuickReplies items={quickReplies} disabled={pending} onPick={pick} />
+                {suggestions.length > 0 && (
+                  // A short list above the composer: with every command showing it scrolls instead of pushing the chat away.
+                  <div
+                    className="mb-2 flex max-h-64 flex-col overflow-y-auto rounded-md border border-line bg-surface-raised py-1 shadow-float"
+                    role="group"
+                    aria-label={copy.chat.commands.label}
+                  >
+                    {suggestions.map((c) => (
+                      <button
+                        key={c.name}
+                        type="button"
+                        onClick={() => {
+                          setText("");
+                          run(c);
+                        }}
+                        className="flex min-h-11 items-baseline gap-3 px-3 text-left text-label hover:bg-surface-sunken"
+                      >
+                        <span className="w-20 shrink-0 font-mono font-semibold text-river">/{c.name}</span>
+                        <span className="min-w-0 text-ink-muted">{copy.chat.commands[c.name]}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+                {notice && <p className="m-0 whitespace-pre-line pb-1 text-caption text-ink-muted">{notice}</p>}
+                <Composer
+                  compact
+                  value={text}
+                  onChange={setText}
+                  onSend={sendText}
+                  onLocation={() => void sendLocation()}
+                  disabled={pending}
+                  label={copy.chat.inputLabel}
+                  placeholder={items.length ? copy.chat.placeholder : copy.home.placeholder}
+                  inputRef={input}
+                />
+              </>
+            )}
+            <p className="m-0 pt-1.5 text-center text-caption text-ink-muted">
+              {copy.legal.aiNote} ·{" "}
+              <Link to="/privacy" className="underline">
+                {copy.legal.privacyLink}
+              </Link>
+            </p>
             <div ref={bottom} />
           </div>
-        </div>
-
-        <div className="mx-auto w-full max-w-3xl px-4 pb-3 sm:px-6">
-          {consentAsk ? (
-            // Asking permission to remember health info: the consent card takes the chat box's place until answered.
-            <ConsentCard choices={quickReplies} disabled={pending} onPick={pick} />
-          ) : (
-            <>
-              <QuickReplies items={quickReplies} disabled={pending} onPick={pick} />
-              {suggestions.length > 0 && (
-                // A short list above the composer: with every command showing it scrolls instead of pushing the chat away.
-                <div
-                  className="mb-2 flex max-h-64 flex-col overflow-y-auto rounded-md border border-line bg-surface-raised py-1 shadow-float"
-                  role="group"
-                  aria-label={copy.chat.commands.label}
-                >
-                  {suggestions.map((c) => (
-                    <button
-                      key={c.name}
-                      type="button"
-                      onClick={() => {
-                        setText("");
-                        run(c);
-                      }}
-                      className="flex min-h-11 items-baseline gap-3 px-3 text-left text-label hover:bg-surface-sunken"
-                    >
-                      <span className="w-20 shrink-0 font-mono font-semibold text-river">/{c.name}</span>
-                      <span className="min-w-0 text-ink-muted">{copy.chat.commands[c.name]}</span>
-                    </button>
-                  ))}
-                </div>
-              )}
-              {notice && <p className="m-0 whitespace-pre-line pb-1 text-caption text-ink-muted">{notice}</p>}
-              <Composer
-                compact
-                value={text}
-                onChange={setText}
-                onSend={sendText}
-                onLocation={() => void sendLocation()}
-                disabled={pending}
-                label={copy.chat.inputLabel}
-                placeholder={items.length ? copy.chat.placeholder : copy.home.placeholder}
-                inputRef={input}
-              />
-            </>
-          )}
-          <p className="m-0 pt-1.5 text-center text-caption text-ink-muted">
-            {copy.legal.aiNote} ·{" "}
-            <Link to="/privacy" className="underline">
-              {copy.legal.privacyLink}
-            </Link>
-          </p>
         </div>
       </section>
     </div>
