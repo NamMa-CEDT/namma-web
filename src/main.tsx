@@ -9,7 +9,7 @@ import { createRoot } from "react-dom/client";
 import { HashRouter, Navigate, Route, Routes } from "react-router";
 import { ApiError, API_MODE, MOCK_STORE_KEY } from "./api/client";
 import { Shell } from "./app/Shell";
-import { autoLineSignIn, initSession } from "./auth/session";
+import { autoLineSignIn, getSession, initSession, subscribeSession } from "./auth/session";
 
 const HomePage = lazy(() => import("./features/home/HomePage"));
 const ChatPage = lazy(() => import("./features/chat/ChatPage"));
@@ -36,8 +36,18 @@ if (API_MODE === "mock") {
   });
 }
 
+// Signed out: drop everything cached about the person (their profile: places, memory, facts). Station and flood
+// data aren't anyone's and stay.
+let signedIn = false;
+subscribeSession(() => {
+  const now = getSession() !== null;
+  if (signedIn && !now) queryClient.removeQueries({ queryKey: ["profile"] });
+  signedIn = now;
+});
+
 // Session first: on day 5 this is liff.init(), which must finish before the router reads the URL.
 initSession().then(() => {
+  signedIn = getSession() !== null;
   createRoot(document.getElementById("root")!).render(
     <StrictMode>
       <QueryClientProvider client={queryClient}>

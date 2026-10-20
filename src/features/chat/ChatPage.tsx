@@ -2,6 +2,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router";
 import { api } from "../../api/client";
+import { useSession } from "../../auth/session";
 import { keys, useProfile } from "../../api/queries";
 import type { ChatRequest, ChatResponse, QuickReply, Source } from "../../api/types";
 import { Composer } from "../../components/Composer";
@@ -9,7 +10,7 @@ import { FloodIcon, MapIcon, SidebarIcon } from "../../components/icons";
 import { HotlineNotice } from "../../components/HotlineNotice";
 import { LineQrDialog } from "../../components/LineQrDialog";
 import { copy } from "../../copy";
-import { load, loadSessionId, newId, save, saveSessionId, type ChatHandoff } from "../../lib/chatSession";
+import { CHAT_ITEMS_KEY, load, loadSessionId, newId, save, saveSessionId, type ChatHandoff } from "../../lib/chatSession";
 import { COMMANDS, parseCommand, suggestCommands, type Command } from "../../lib/commands";
 import { floodMapLink, stationMapLink } from "../../lib/floodLink";
 import { looksLikeEmergency } from "../../lib/danger";
@@ -25,7 +26,6 @@ type Item =
   | { id: string; role: "user"; text: string; request: Omit<ChatRequest, "session_id">; failed?: boolean }
   | { id: string; role: "assistant"; response: ChatResponse };
 
-const ITEMS_KEY = "namma.chat.items";
 const DESKTOP = "(min-width: 64rem)"; // Tailwind lg: where ProfilePanel is a column, not a drawer
 
 /** One 1784 card per emergency exchange, not one per reply. */
@@ -40,8 +40,8 @@ function previousWasEmergency(items: Item[], index: number): boolean {
 export default function ChatPage() {
   // The browser's anonymous user on the backend (web:<id>): kept across new chats so memory and consent stay,
   // as they do for a signed-in account. ลบข้อมูลทั้งหมด is how to wipe them.
-  const [sessionId] = useState(loadSessionId);
-  const [items, setItems] = useState<Item[]>(() => load(ITEMS_KEY, []));
+  const [sessionId, setSessionId] = useState(loadSessionId);
+  const [items, setItems] = useState<Item[]>(() => load(CHAT_ITEMS_KEY, []));
   const [text, setText] = useState("");
   const [pending, setPending] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
@@ -60,13 +60,24 @@ export default function ChatPage() {
   const profile = useProfile(sessionId);
   const hasMemory = !!profile.data && profile.data.places.length + profile.data.facts.length > 0;
 
+  // Signed out (here or in another tab): the transcript and the anonymous chat go with the account.
+  const session = useSession();
+  const wasSignedIn = useRef(session !== null);
+  useEffect(() => {
+    if (wasSignedIn.current && !session) {
+      setItems([]);
+      setSessionId(loadSessionId());
+    }
+    wasSignedIn.current = session !== null;
+  }, [session]);
+
   // Block bodies: effects must return nothing (newer Chromium's scrollIntoView returns a Promise,
   // which React would then call as a cleanup).
   useEffect(() => {
     saveSessionId(sessionId);
   }, [sessionId]);
   useEffect(() => {
-    save(ITEMS_KEY, items);
+    save(CHAT_ITEMS_KEY, items);
   }, [items]);
   useEffect(() => {
     bottom.current?.scrollIntoView({ behavior: "smooth", block: "end" });

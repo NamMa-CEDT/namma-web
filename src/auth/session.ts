@@ -4,9 +4,9 @@
 import { useSyncExternalStore } from "react";
 import { api, API_MODE } from "../api/client";
 import type { LoginResponse, Provider, SessionUser } from "../api/types";
-import { loadSessionId } from "../lib/chatSession";
+import { forgetChat, loadSessionId } from "../lib/chatSession";
 import { initLiff, inLineApp, LIFF_ID, lineIdToken, lineLogout, lineSignedIn } from "../lib/liff";
-import { readStoredSession, setToken, writeStoredSession, type StoredSession } from "./token";
+import { readStoredSession, SESSION_KEY, setToken, writeStoredSession, type StoredSession } from "./token";
 
 let current: StoredSession | null = null;
 const listeners = new Set<() => void>();
@@ -16,6 +16,22 @@ function set(s: StoredSession | null) {
   setToken(s?.token ?? null);
   writeStoredSession(s);
   listeners.forEach((fn) => fn());
+}
+
+// Signed in or out in another tab: follow it here. Signing out there forgets this tab's chat too.
+window.addEventListener("storage", (e) => {
+  if (e.key !== SESSION_KEY) return;
+  const next = readStoredSession();
+  if (current && !next) forgetChat();
+  current = next;
+  setToken(next?.token ?? null);
+  listeners.forEach((fn) => fn());
+});
+
+/** Runs `fn` whenever the session changes (sign-in, sign-out, here or in another tab). Returns the unsubscribe. */
+export function subscribeSession(fn: () => void): () => void {
+  listeners.add(fn);
+  return () => listeners.delete(fn);
 }
 
 /** Must finish before the router mounts (LIFF restores the URL during init). A LIFF failure must not stop the app. */
@@ -66,13 +82,7 @@ export function getSession(): StoredSession | null {
 }
 
 export function useSession(): StoredSession | null {
-  return useSyncExternalStore(
-    (fn) => {
-      listeners.add(fn);
-      return () => listeners.delete(fn);
-    },
-    () => current,
-  );
+  return useSyncExternalStore(subscribeSession, () => current);
 }
 
 // Mock mode always; against the real backend only with VITE_DEMO_LOGIN=1 (the backend must also run
@@ -181,10 +191,11 @@ export async function logout(): Promise<void> {
   signOutEverywhere();
 }
 
-/** Forgets our session and LIFF's cached LINE login, so the next "sign in with LINE" doesn't come back as the
- *  last person who used this browser. */
+/** Forgets our session, LIFF's LINE login and this browser's chat (transcript and anonymous chat id), so the next
+ *  person in this browser sees none of it and "sign in with LINE" doesn't come back as the last person. */
 function signOutEverywhere() {
   setAutoOff(true);
+  forgetChat();
   try {
     lineLogout();
   } catch {

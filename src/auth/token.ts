@@ -1,5 +1,5 @@
 // Session token storage, shared by the API client and the session module (no import cycle).
-const KEY = "namma.session";
+export const SESSION_KEY = "namma.session";
 
 export interface StoredSession {
   token: string;
@@ -10,7 +10,7 @@ export interface StoredSession {
 
 export function readStoredSession(): StoredSession | null {
   try {
-    const raw = localStorage.getItem(KEY);
+    const raw = localStorage.getItem(SESSION_KEY);
     return raw ? (JSON.parse(raw) as StoredSession) : null;
   } catch {
     return null;
@@ -19,8 +19,8 @@ export function readStoredSession(): StoredSession | null {
 
 export function writeStoredSession(s: StoredSession | null): void {
   try {
-    if (s) localStorage.setItem(KEY, JSON.stringify(s));
-    else localStorage.removeItem(KEY);
+    if (s) localStorage.setItem(SESSION_KEY, JSON.stringify(s));
+    else localStorage.removeItem(SESSION_KEY);
   } catch {
     // Private mode or blocked storage: the session lasts until reload.
   }

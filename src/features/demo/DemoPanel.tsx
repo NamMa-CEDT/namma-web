@@ -6,6 +6,7 @@ import { useStations } from "../../api/queries";
 import type { RiskTier } from "../../api/types";
 import { loginDemo, useSession } from "../../auth/session";
 import { copy } from "../../copy";
+import { CHAT_ITEMS_KEY } from "../../lib/chatSession";
 import { LogoutButton } from "../account/LogoutButton";
 import { tierInfo } from "../../lib/tiers";
 
@@ -102,7 +103,7 @@ export default function DemoPanel() {
             className="nm-btn nm-btn--secondary nm-btn--block mt-3"
             onClick={() => {
               resetState();
-              sessionStorage.removeItem("namma.chat.items");
+              sessionStorage.removeItem(CHAT_ITEMS_KEY);
               refresh();
             }}
           >

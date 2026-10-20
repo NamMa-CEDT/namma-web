@@ -3,6 +3,8 @@
 // that chat into the account (chat_session on POST /api/auth/*). The chat transcript stays per tab.
 
 const SESSION_KEY = "namma.chat.session";
+/** The chat transcript of this tab (sessionStorage). */
+export const CHAT_ITEMS_KEY = "namma.chat.items";
 
 // crypto.randomUUID needs a secure context; plain-http LAN testing on a phone doesn't have one.
 export function newId(): string {
@@ -49,6 +51,18 @@ export function saveSessionId(id: string): void {
   } catch {
     save(SESSION_KEY, id);
   }
+}
+
+/** On sign-out: forget this tab's transcript and start a new anonymous chat id, so the next person in this browser
+ *  doesn't see the last one's chat or the places and memory saved under the old id. */
+export function forgetChat(): void {
+  try {
+    sessionStorage.removeItem(CHAT_ITEMS_KEY);
+    sessionStorage.removeItem(SESSION_KEY);
+  } catch {
+    // blocked storage: nothing kept
+  }
+  saveSessionId(newId());
 }
 
 /** What another page asks the chat to do on arrival (react-router location state). */
