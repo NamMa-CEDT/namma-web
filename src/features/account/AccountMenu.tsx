@@ -58,25 +58,37 @@ export function AccountMenu() {
         <div
           role="dialog"
           aria-label={copy.account.nav}
-          className="absolute right-0 top-full z-[1100] mt-2 grid w-64 gap-3 rounded-md border border-line bg-surface-raised p-4 shadow-float"
+          className="absolute right-0 top-full z-[1100] mt-2 grid w-56 gap-2 rounded-md border border-line bg-surface-raised p-3 shadow-float"
         >
           {session ? (
             <>
-              <div className="min-w-0">
-                <div className="text-caption text-ink-muted">{copy.account.signedInAs}</div>
-                <div className="truncate text-body font-semibold">{session.display_name}</div>
+              <div className="flex min-w-0 items-center gap-2 border-b border-line pb-2">
+                {session.picture_url ? (
+                  <img src={session.picture_url} alt="" referrerPolicy="no-referrer" className="size-9 flex-none rounded-full object-cover" />
+                ) : (
+                  <span className="inline-flex size-9 flex-none items-center justify-center rounded-full bg-surface-sunken text-ink-muted">
+                    <UserIcon className="text-[18px]" />
+                  </span>
+                )}
+                <div className="min-w-0">
+                  <div className="text-caption text-ink-muted">{copy.account.signedInAs}</div>
+                  <div className="truncate text-label font-semibold">{session.display_name}</div>
+                </div>
               </div>
-              <Link to="/account" onClick={() => setOpen(false)} className="nm-btn nm-btn--secondary nm-btn--block no-underline">
+              <Link to="/account" onClick={() => setOpen(false)} className="nm-btn nm-btn--sm nm-btn--secondary nm-btn--block no-underline">
                 {copy.account.nav}
               </Link>
-              <button type="button" className="nm-btn nm-btn--secondary nm-btn--block" disabled={busy} onClick={() => void signOut()}>
+              <button type="button" className="nm-btn nm-btn--sm nm-btn--secondary nm-btn--block" disabled={busy} onClick={() => void signOut()}>
                 {copy.account.logout}
               </button>
             </>
           ) : (
-            <Link to="/account" onClick={() => setOpen(false)} className="nm-btn nm-btn--primary nm-btn--block no-underline">
-              {copy.account.signIn}
-            </Link>
+            <>
+              <p className="m-0 text-caption text-ink-muted">{copy.account.signInTitle}</p>
+              <Link to="/account" onClick={() => setOpen(false)} className="nm-btn nm-btn--sm nm-btn--primary nm-btn--block no-underline">
+                {copy.account.signIn}
+              </Link>
+            </>
           )}
           <Link to="/about" onClick={() => setOpen(false)} className="inline-flex min-h-11 items-center justify-center text-body text-ink-muted underline">
             {copy.about.nav}

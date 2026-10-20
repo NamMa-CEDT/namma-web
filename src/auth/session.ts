@@ -1,10 +1,11 @@
-// The signed-in account. Sign in with Google (ID token from Google's button) or, once the LINE Login channel
-// exists, LINE (initSession() will run liff.init() and exchange liff.getIDToken()). Signing in sends this
-// browser's anonymous chat session, so what the person already told NamMa joins their account.
+// The signed-in account. Sign in with Google (ID token from Google's button) or LINE (LIFF gives an ID token,
+// see lib/liff.ts). Signing in sends this browser's anonymous chat session, so what the person already told
+// NamMa joins their account.
 import { useSyncExternalStore } from "react";
 import { api, API_MODE } from "../api/client";
 import type { LoginResponse, Provider, SessionUser } from "../api/types";
 import { loadSessionId } from "../lib/chatSession";
+import { initLiff, LIFF_ID, lineIdToken, lineSignedIn, startLineLogin } from "../lib/liff";
 import { readStoredSession, setToken, writeStoredSession, type StoredSession } from "./token";
 
 let current: StoredSession | null = null;
@@ -17,8 +18,9 @@ function set(s: StoredSession | null) {
   listeners.forEach((fn) => fn());
 }
 
-/** Must finish before the router mounts (LIFF restores the URL during init). */
+/** Must finish before the router mounts (LIFF restores the URL during init). A LIFF failure must not stop the app. */
 export async function initSession(): Promise<void> {
+  await initLiff().catch(() => false);
   current = readStoredSession();
   setToken(current?.token ?? null);
 }
@@ -54,6 +56,55 @@ export async function loginDemo(name?: string): Promise<LoginResponse> {
 /** Sign in with a Google ID token (Google's button). Creates the account on first sign-in. */
 export async function loginGoogle(idToken: string): Promise<LoginResponse> {
   return signedIn(await api.login(idToken, loadSessionId(), "google"));
+}
+
+/** LINE Login works only against the real backend and only when the build has a LIFF id (VITE_LIFF_ID). */
+export const canLineLogin = API_MODE === "http" && LIFF_ID !== null;
+
+// Set before the trip to LINE's login page, so the account page can finish the job when the person comes back.
+const LINE_PENDING_KEY = "namma.line.pending";
+export type LinePending = "login" | "link";
+
+/** What the account page should finish after a LINE round trip, once. */
+export function takeLinePending(): LinePending | null {
+  try {
+    const v = sessionStorage.getItem(LINE_PENDING_KEY);
+    sessionStorage.removeItem(LINE_PENDING_KEY);
+    return v === "login" || v === "link" ? v : null;
+  } catch {
+    return null;
+  }
+}
+
+/** The LINE ID token, or null after sending the browser to LINE (the page is leaving). */
+async function lineToken(intent: LinePending): Promise<string | null> {
+  await initLiff();
+  if (!lineSignedIn()) {
+    try {
+      sessionStorage.setItem(LINE_PENDING_KEY, intent);
+    } catch {
+      // Blocked storage: the person presses the button again after coming back.
+    }
+    startLineLogin(window.location.href);
+    return null;
+  }
+  const token = lineIdToken();
+  if (!token) throw new Error("LINE gave no ID token");
+  return token;
+}
+
+/** Sign in with LINE. Resolves null when the browser is leaving for LINE. */
+export async function loginLine(): Promise<LoginResponse | null> {
+  const token = await lineToken("login");
+  if (!token) return null;
+  return signedIn(await api.login(token, loadSessionId(), "line"));
+}
+
+/** Add LINE to the signed-in account. Resolves null when the browser is leaving for LINE. */
+export async function linkLine(): Promise<SessionUser | null> {
+  const token = await lineToken("link");
+  if (!token) return null;
+  return link("line", token);
 }
 
 /** Add a second way to sign in to the signed-in account. */

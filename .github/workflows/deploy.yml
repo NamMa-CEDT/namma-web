@@ -34,12 +34,12 @@ jobs:
       - name: Build
         env:
           VITE_API_MODE: http
-          # DEMO LOGIN IS ON for the demo. Remove this line before going public (namma-backend TODOs #6).
-          VITE_DEMO_LOGIN: "1"
           # Google Sign-In OAuth client (public; origin https://110.238.115.73.sslip.io).
           VITE_GOOGLE_CLIENT_ID: 937445394459-ai0lmgclpod66nnine51k9ihvpelamrq.apps.googleusercontent.com
           # NamMa LINE OA add-friend link (public): shows the LINE buttons and the /line QR.
           VITE_LINE_OA_URL: https://line.me/R/ti/p/@753kmkri
+          # LIFF app for LINE Login (public; endpoint https://110.238.115.73.sslip.io/, scopes profile + openid).
+          VITE_LIFF_ID: 2012097979-ri6smuhj
         run: npm run build
       - name: SSH key
         env:
