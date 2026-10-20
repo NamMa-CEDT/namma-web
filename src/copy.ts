@@ -423,6 +423,8 @@ export const copy = {
     riversLargest: "ยังไม่มีแม่น้ำที่ถึงเกณฑ์เฝ้าระวัง แม่น้ำสายหลัก:",
     riverStations: (name: string) => `สถานีตาม${name}`,
     riverBack: "กลับไปรายการแม่น้ำ",
+    riverLine: (name: string, n: number) => `${name} · ${n} สถานี · แตะเพื่อดูตามลำน้ำ`,
+    legendRiver: "สถานีบนแม่น้ำเดียวกัน",
     riverHidden: (n: number) => `ซ่อนสถานี สสน. ${n} แห่ง เปิดได้ในตัวเลือกแผนที่`,
     showMoreStations: (n: number) => `แสดงอีก ${n} สถานี`,
     stationsBy: (agencies: string) => `สถานีวัดของ${agencies}`,

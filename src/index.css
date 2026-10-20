@@ -449,6 +449,20 @@
   color: var(--ink);
   font: 400 14px/22px var(--font-body);
 }
+/* Station map: each river's gauges joined upstream → downstream, under the pins. */
+.leaflet-container path.nm-river-line {
+  stroke: var(--water);
+  stroke-opacity: 0.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  fill: none;
+}
+.leaflet-container path.nm-river-line--on {
+  stroke-opacity: 1;
+}
+.leaflet-container path.nm-river-line--off {
+  stroke-opacity: 0.3;
+}
 .leaflet-tooltip.station-code {
   background: var(--surface-raised);
   border: 1px solid var(--line-strong);

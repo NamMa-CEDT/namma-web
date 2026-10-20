@@ -63,6 +63,10 @@ export interface StationSummary {
   /** The gauge this one duplicates (another agency at the same spot): the map draws and counts only that one.
    * Absent from older backends and the fixtures. */
   same_place_as?: number | null;
+  /** The river it is on (River.key) and its place along it, upstream first: what the map's river lines join.
+   * Absent from older backends. */
+  river_key?: string | null;
+  river_order?: number | null;
   latest: LatestReading | null;
   risk: StationRisk | null;
 }

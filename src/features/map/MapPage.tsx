@@ -1,7 +1,7 @@
 import type { Map as LeafletMap } from "leaflet";
 import { lazy, Suspense, useCallback, useMemo, useState } from "react";
 import { useSearchParams } from "react-router";
-import { API_MODE } from "../../api/client";
+import { api, API_MODE } from "../../api/client";
 import { useNearest, useProfile, useRivers, useStations } from "../../api/queries";
 import type { LatLon, River, SavedPlace, StationSummary } from "../../api/types";
 import { HouseIcon, LocateIcon } from "../../components/icons";
@@ -15,6 +15,7 @@ import { loadSessionId } from "../../lib/chatSession";
 import { readFloodFocus } from "../../lib/floodLink";
 import { formatBankGap, formatDistance } from "../../lib/format";
 import { getCurrentPosition } from "../../lib/geolocation";
+import { riverLines } from "../../lib/riverLines";
 import { stationTier, TIER_ORDER, tierInfo, type TierKey } from "../../lib/tiers";
 import { RiverList, RiverStrip, StripRow } from "./RiverStrip";
 import { StationName, StationSheet } from "./StationSheet";
@@ -39,6 +40,10 @@ function Legend() {
             {tierInfo(k).label}
           </li>
         ))}
+        <li className="flex items-center gap-2 text-caption text-ink">
+          <span aria-hidden="true" className="h-[3px] w-4 shrink-0 rounded-full bg-water" />
+          {copy.map.legendRiver}
+        </li>
       </ul>
     </div>
   );
@@ -359,6 +364,13 @@ export default function MapPage() {
     setRiver(r);
     setRiverText(r?.name_th ?? "");
   };
+  // A tap on a river line: the river from the list when it is there, else its own.
+  const pickRiverKey = (key: string) => {
+    select(null);
+    const known = rivers.data?.find((r) => r.key === key);
+    if (known) pickRiver(known);
+    else api.river(key).then(pickRiver, () => {});
+  };
 
   const onTilesFailed = useCallback(() => setTilesFailed(true), []);
   const onMap = useCallback((m: LeafletMap) => {
@@ -383,6 +395,9 @@ export default function MapPage() {
     (s: StationSummary) => s.id === selectedId || ((showHii || s.agency !== "HII") && s.same_place_as == null),
   );
   const visible = tier ? shown.filter((s) => stationTier(s) === tier || s.id === selectedId) : shown;
+  const lines = riverLines(shown, river ? [river, ...(rivers.data ?? [])] : (rivers.data ?? []));
+  const highlight =
+    river?.key ?? selected?.river_key ?? (selected ? lines.find((l) => l.ids.includes(selected.id))?.key : null) ?? null;
   const from: NearFrom | null =
     nearFrom ?? (focus ? { point: { lat: focus.lat, lon: focus.lon }, label: focus.label || null, placeId: null } : null);
 
@@ -399,7 +414,10 @@ export default function MapPage() {
             picking={picking}
             basemap={basemap}
             places={pins}
+            lines={lines}
+            highlight={highlight}
             onSelect={select}
+            onPickRiver={pickRiverKey}
             onPick={(p) => {
               setNearFrom({ point: p, label: null, placeId: null });
               setPicking(false);

@@ -68,7 +68,14 @@ export function listStations(overrides: Record<string, RiskTier>): StationSummar
   const known = new Set(corridor.map((s) => s.id));
   const rest = new Map<number, StationSummary>();
   for (const r of liveRivers(overrides)) for (const s of r.stations) if (!known.has(s.id)) rest.set(s.id, s);
-  return [...corridor, ...[...rest.values()].sort((a, b) => a.id - b.id)];
+  // Each station's river and place along it, as ingest.rivers stores them: the rivers fixture lists upstream first.
+  const along = new Map<number, { river_key: string; river_order: number }>();
+  for (const r of FX_RIVERS) r.stations.forEach((s, i) => along.set(s.id, { river_key: r.key, river_order: i + 1 }));
+  return [...corridor, ...[...rest.values()].sort((a, b) => a.id - b.id)].map((s) => ({
+    ...s,
+    river_key: along.get(s.id)?.river_key ?? null,
+    river_order: along.get(s.id)?.river_order ?? null,
+  }));
 }
 
 export function stationDetail(id: number, overrides: Record<string, RiskTier>): StationDetail | null {

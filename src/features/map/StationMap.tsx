@@ -2,13 +2,14 @@ import "leaflet/dist/leaflet.css";
 
 import type { LatLngBoundsExpression, Map as LeafletMap } from "leaflet";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { MapContainer, Marker, Tooltip, useMap, useMapEvents } from "react-leaflet";
+import { MapContainer, Marker, Polyline, Tooltip, useMap, useMapEvents } from "react-leaflet";
 import type { LatLon, StationSummary } from "../../api/types";
 import { InvalidateOnResize } from "../../components/InvalidateOnResize";
 import { BasemapTiles, MapHandle, PlacePins, type MapPlace } from "../../components/mapLayers";
 import { copy } from "../../copy";
 import type { Basemap } from "../../lib/basemaps";
 import { PIN_SIZE, pinIcon } from "../../lib/pins";
+import type { RiverLine } from "../../lib/riverLines";
 import { stationTier, tierInfo, type TierKey } from "../../lib/tiers";
 
 const LABEL_ALL_ZOOM = 10;
@@ -31,7 +32,12 @@ interface Props {
   basemap: Basemap;
   /** Saved places, as house pins. */
   places: MapPlace[];
+  /** Each river's stations joined upstream → downstream, under the pins. */
+  lines: RiverLine[];
+  /** The river to draw bold (the picked one, or the selected station's); the others fade. */
+  highlight: string | null;
   onSelect: (id: number) => void;
+  onPickRiver: (key: string) => void;
   onPick: (p: LatLon) => void;
   onTilesFailed: () => void;
   /** The Leaflet map, once made. The page draws its own zoom buttons: Leaflet's are off. */
@@ -82,7 +88,10 @@ export default function StationMap({
   picking,
   basemap,
   places,
+  lines,
+  highlight,
   onSelect,
+  onPickRiver,
   onPick,
   onTilesFailed,
   onMap,
@@ -136,6 +145,24 @@ export default function StationMap({
       <InvalidateOnResize />
       <FlyTo target={selected ? { lat: selected.lat, lon: selected.lon } : point} />
       <FitTo points={selected ? null : fitTo} />
+
+      {lines.map((l) => {
+        const on = l.key === highlight;
+        return (
+          <Polyline
+            // Remade when it turns bold or faint: react-leaflet updates pathOptions, but not the class.
+            key={`${l.key}:${on ? "on" : highlight ? "off" : "all"}`}
+            positions={l.points}
+            pathOptions={{
+              className: `nm-river-line${on ? " nm-river-line--on" : highlight ? " nm-river-line--off" : ""}`,
+              weight: on ? 5 : zoom <= COUNTRY_ZOOM ? 2 : 3,
+            }}
+            eventHandlers={picking ? undefined : { click: () => onPickRiver(l.key) }}
+          >
+            <Tooltip sticky>{copy.map.riverLine(l.name, l.ids.length)}</Tooltip>
+          </Polyline>
+        );
+      })}
 
       {ordered.map((s) => {
         const tier = stationTier(s);
