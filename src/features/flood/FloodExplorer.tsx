@@ -271,12 +271,25 @@ function Places({
   onAsk: (text: string) => void;
   onFocus: (place: SavedPlace) => void;
 }) {
+  // The first place always shows; the rest fold away, so many saved places don't push the map off the screen.
+  const [open, setOpen] = useState(false);
   if (!places.length) return null;
+  const shown = open ? places : places.slice(0, 1);
   return (
     <div className="flex flex-col gap-2">
-      {places.map((p) => (
+      {shown.map((p) => (
         <PlaceFlood key={p.id} place={p} period={period} onAsk={onAsk} onFocus={onFocus} />
       ))}
+      {places.length > 1 && (
+        <button
+          type="button"
+          aria-expanded={open}
+          onClick={() => setOpen(!open)}
+          className="min-h-11 self-start text-label font-semibold text-river underline-offset-3 hover:underline"
+        >
+          {open ? copy.flood.placesLess : copy.flood.placesMore(places.length - 1)}
+        </button>
+      )}
     </div>
   );
 }

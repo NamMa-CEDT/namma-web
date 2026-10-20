@@ -530,6 +530,8 @@ export const copy = {
     placeNear: (dist: string, rai: string, km: number) => `ใกล้สุด ${dist} · ในรัศมี ${km} กม. ท่วม ${rai}`,
     placeClear: (km: number) => `ไม่พบน้ำท่วมในรัศมี ${km} กม.`,
     placeApprox: "ตำแหน่งโดยประมาณ",
+    placesMore: (n: number) => `ดูที่บันทึกไว้อีก ${n} แห่ง`,
+    placesLess: "ซ่อนที่บันทึกไว้",
     // The 30-day layer: where water was seen lately, and where only weeks ago. The layers nest (GISTDA gives no date
     // per cell), and a place missing from the short ones may only have had no satellite pass: "seen", never "dried".
     season: {
