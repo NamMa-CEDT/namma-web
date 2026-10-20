@@ -1053,7 +1053,7 @@ export function FloodExplorer({
       className={
         embedded
           ? "relative h-[440px] overflow-hidden rounded-md border border-line lg:h-auto lg:min-w-0 lg:flex-1"
-          : "relative h-[50%] shrink-0 lg:h-full lg:min-w-0 lg:flex-1"
+          : "relative h-[60svh] min-h-80 shrink-0 lg:h-full lg:min-h-0 lg:min-w-0 lg:flex-1"
       }
     >
       <Suspense fallback={<Loading className="h-full" />}>
@@ -1128,7 +1128,7 @@ export function FloodExplorer({
       className={
         embedded
           ? "relative rounded-md border border-line bg-surface lg:max-h-[640px] lg:w-[380px] lg:shrink-0 lg:overflow-y-auto"
-          : "relative min-h-0 flex-1 overflow-y-auto border-t border-line bg-surface lg:w-[420px] lg:flex-none lg:border-t-0 lg:border-l"
+          : "relative border-t border-line bg-surface lg:min-h-0 lg:w-[420px] lg:flex-none lg:overflow-y-auto lg:border-t-0 lg:border-l"
       }
     >
       {!embedded && (
@@ -1199,13 +1199,15 @@ export function FloodExplorer({
     </aside>
   );
 
+  // Full page: on a phone the whole page scrolls (places, a tall map, then the panel), so saved places never squeeze
+  // the map; from lg the map and panel split the screen and the panel scrolls on its own.
   return (
-    <div className={embedded ? "flex flex-col gap-3" : "flex h-full flex-col"}>
+    <div className={embedded ? "flex flex-col gap-3" : "flex h-full flex-col overflow-y-auto lg:overflow-hidden"}>
       <FloodPatterns />
       <div className={embedded ? "" : "shrink-0 border-b border-line px-4 py-2 empty:hidden"}>
         <Places places={places} period={period} onAsk={ask} onFocus={focusPlace} />
       </div>
-      <div className={embedded ? "flex flex-col gap-3 lg:h-[640px] lg:flex-row" : "flex min-h-0 flex-1 flex-col lg:flex-row"}>
+      <div className={embedded ? "flex flex-col gap-3 lg:h-[640px] lg:flex-row" : "flex flex-col lg:min-h-0 lg:flex-1 lg:flex-row"}>
         {map}
         {panel}
       </div>
