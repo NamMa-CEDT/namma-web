@@ -359,4 +359,34 @@ describe("accounts", () => {
     expect((await call("DELETE", "/api/me", undefined, l.json.data.session_token)).json.data).toEqual({ deleted: true });
     expect((await call("POST", "/api/auth/line", { id_token: "demo:user:Bad Name" })).status).toBe(401);
   });
+
+  it("keeps consent per user: given once, it holds for later facts, other chats and the account", async () => {
+    const say = async (sid: string, req: Record<string, unknown>, token?: string) =>
+      (await call("POST", "/api/chat", { session_id: sid, ...req }, token)).json.data;
+    const profile = async (sid: string, token?: string) =>
+      (await call("GET", "/api/profile", undefined, token, sid)).json.data;
+
+    // Anonymous: the browser's chat session is the user.
+    await say("browser", { message: "ที่บ้านมียายติดเตียง" });
+    await say("browser", { postback: "consent:sensitive_memory:yes" });
+    const before = (await profile("browser")).facts.length;
+    const again = await say("browser", { message: "ที่บ้านมีเด็กเล็กด้วย" });
+    expect(again.quick_replies).toEqual([]);
+    const facts = (await profile("browser")).facts;
+    expect(facts.length).toBeGreaterThan(before);
+
+    // Signing in folds it into the account, consent included; a chat from another device sees the same.
+    const login = await call("POST", "/api/auth/line", { id_token: "demo:user:mali", chat_session: "browser" });
+    expect(login.json.data.merged_chat).toBe(true);
+    const t = login.json.data.session_token as string;
+    const elsewhere = await profile("other-device", t);
+    expect(elsewhere.consent.granted).toBe(true);
+    expect(elsewhere.facts).toEqual(facts);
+    expect((await say("other-device", { message: "ที่บ้านมีผู้ป่วย" }, t)).quick_replies).toEqual([]);
+
+    // Erasing the account takes its memory and consent with it.
+    await call("DELETE", "/api/me", undefined, t);
+    const back = await call("POST", "/api/auth/line", { id_token: "demo:user:mali" });
+    expect((await profile("x", back.json.data.session_token)).consent.granted).toBe(false);
+  });
 });

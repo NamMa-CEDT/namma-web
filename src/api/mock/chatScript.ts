@@ -350,6 +350,11 @@ export function respond(req: ChatRequest, s: ChatSessionState, deps: ChatDeps): 
   }
 
   const facts = extractVulnerable(text);
+  // Consent is the user's, given once (as on the backend): later health facts are saved without asking again.
+  if (facts.length && !place && s.consent === true) {
+    s.household = union(s.household, facts);
+    return reply(`บันทึกแล้ว: ที่บ้านมี${listVulnerable(facts)} ลบได้ทุกเมื่อในแถบ "ข้อมูลที่จำไว้"`);
+  }
   if (facts.length && !place) {
     s.pendingConsent = facts;
     return reply(

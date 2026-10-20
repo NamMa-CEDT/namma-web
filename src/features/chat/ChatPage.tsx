@@ -15,7 +15,7 @@ import { floodMapLink, stationMapLink } from "../../lib/floodLink";
 import { looksLikeEmergency } from "../../lib/danger";
 import { getCurrentPosition } from "../../lib/geolocation";
 import { LINE_OA_URL } from "../../lib/line";
-import { ConsentDialog, isConsentAsk } from "./ConsentDialog";
+import { ConsentCard, isConsentAsk } from "./ConsentCard";
 import { EmergencyCard, QuickReplies, ReplyText, Sources, TypingBubble } from "./parts";
 import { ProfilePanel } from "./ProfilePanel";
 import { ShelterCard, hasShelterDetail, type ShelterSource } from "./ShelterCard";
@@ -38,7 +38,9 @@ function previousWasEmergency(items: Item[], index: number): boolean {
 }
 
 export default function ChatPage() {
-  const [sessionId, setSessionId] = useState(loadSessionId);
+  // The browser's anonymous user on the backend (web:<id>): kept across new chats so memory and consent stay,
+  // as they do for a signed-in account. ลบข้อมูลทั้งหมด is how to wipe them.
+  const [sessionId] = useState(loadSessionId);
   const [items, setItems] = useState<Item[]>(() => load(ITEMS_KEY, []));
   const [text, setText] = useState("");
   const [pending, setPending] = useState(false);
@@ -143,7 +145,6 @@ export default function ChatPage() {
 
   const reset = () => {
     setItems([]);
-    setSessionId(newId());
     setNotice(null);
     setForgetAsking(false);
   };
@@ -268,49 +269,49 @@ export default function ChatPage() {
         </div>
 
         <div className="mx-auto w-full max-w-3xl px-4 pb-3 sm:px-6">
-          {/* Asking permission to remember health info: a modal with the person's PDPA rights, not chips. */}
-          <ConsentDialog
-            question={last?.role === "assistant" ? last.response.reply : ""}
-            choices={consentAsk ? quickReplies : []}
-            disabled={pending}
-            onPick={pick}
-          />
-          {!consentAsk && <QuickReplies items={quickReplies} disabled={pending} onPick={pick} />}
-          {suggestions.length > 0 && (
-            // A short list above the composer: with every command showing it scrolls instead of pushing the chat away.
-            <div
-              className="mb-2 flex max-h-64 flex-col overflow-y-auto rounded-md border border-line bg-surface-raised py-1 shadow-float"
-              role="group"
-              aria-label={copy.chat.commands.label}
-            >
-              {suggestions.map((c) => (
-                <button
-                  key={c.name}
-                  type="button"
-                  onClick={() => {
-                    setText("");
-                    run(c);
-                  }}
-                  className="flex min-h-11 items-baseline gap-3 px-3 text-left text-label hover:bg-surface-sunken"
+          {consentAsk ? (
+            // Asking permission to remember health info: the consent card takes the chat box's place until answered.
+            <ConsentCard choices={quickReplies} disabled={pending} onPick={pick} />
+          ) : (
+            <>
+              <QuickReplies items={quickReplies} disabled={pending} onPick={pick} />
+              {suggestions.length > 0 && (
+                // A short list above the composer: with every command showing it scrolls instead of pushing the chat away.
+                <div
+                  className="mb-2 flex max-h-64 flex-col overflow-y-auto rounded-md border border-line bg-surface-raised py-1 shadow-float"
+                  role="group"
+                  aria-label={copy.chat.commands.label}
                 >
-                  <span className="w-20 shrink-0 font-mono font-semibold text-river">/{c.name}</span>
-                  <span className="min-w-0 text-ink-muted">{copy.chat.commands[c.name]}</span>
-                </button>
-              ))}
-            </div>
+                  {suggestions.map((c) => (
+                    <button
+                      key={c.name}
+                      type="button"
+                      onClick={() => {
+                        setText("");
+                        run(c);
+                      }}
+                      className="flex min-h-11 items-baseline gap-3 px-3 text-left text-label hover:bg-surface-sunken"
+                    >
+                      <span className="w-20 shrink-0 font-mono font-semibold text-river">/{c.name}</span>
+                      <span className="min-w-0 text-ink-muted">{copy.chat.commands[c.name]}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+              {notice && <p className="m-0 whitespace-pre-line pb-1 text-caption text-ink-muted">{notice}</p>}
+              <Composer
+                compact
+                value={text}
+                onChange={setText}
+                onSend={sendText}
+                onLocation={() => void sendLocation()}
+                disabled={pending}
+                label={copy.chat.inputLabel}
+                placeholder={items.length ? copy.chat.placeholder : copy.home.placeholder}
+                inputRef={input}
+              />
+            </>
           )}
-          {notice && <p className="m-0 whitespace-pre-line pb-1 text-caption text-ink-muted">{notice}</p>}
-          <Composer
-            compact
-            value={text}
-            onChange={setText}
-            onSend={sendText}
-            onLocation={() => void sendLocation()}
-            disabled={pending}
-            label={copy.chat.inputLabel}
-            placeholder={items.length ? copy.chat.placeholder : copy.home.placeholder}
-            inputRef={input}
-          />
           <p className="m-0 pt-1.5 text-center text-caption text-ink-muted">
             {copy.legal.aiNote} ·{" "}
             <Link to="/privacy" className="underline">

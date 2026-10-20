@@ -9,6 +9,8 @@ export interface MockState {
   tierOverrides: Record<string, RiskTier>;
   chats: Record<string, ChatSessionState>;
   sessions: Record<string, SessionUser>;
+  /** Session token → account id. Optional: stores saved before it existed lack it. */
+  accounts?: Record<string, string>;
 }
 
 function seed(): MockState {
