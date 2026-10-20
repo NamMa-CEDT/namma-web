@@ -233,8 +233,10 @@ export default function ChatPage() {
             {copy.profile.openDrawer}
           </button>
         </div>
-        <div className="min-h-0 flex-1 overflow-y-auto" aria-live="polite">
-          <div className="mx-auto flex max-w-3xl flex-col gap-8 px-4 pt-6 pb-4 sm:px-6">
+        {/* Phones: the turns fill the space left over, so the chat box starts at the bottom of the screen, not under the
+            intro; once the chat is longer than the screen it scrolls with it as before. */}
+        <div className="flex min-h-0 flex-1 flex-col overflow-y-auto" aria-live="polite">
+          <div className="mx-auto flex w-full max-w-3xl flex-col gap-8 px-4 pt-6 pb-4 max-lg:flex-1 sm:px-6">
             <div className="flex items-start justify-between gap-3">
               <div className="nm-msg">{copy.chat.intro}</div>
               {items.length > 0 && (
@@ -279,7 +281,7 @@ export default function ChatPage() {
 
           {/* In the scroll, after the last turn. Phones: not pinned, so a long answer gets the whole small screen.
               Desktop: sticky, so the box stays in view as before. */}
-          <div className="mx-auto w-full max-w-3xl bg-surface px-4 pb-3 sm:px-6 lg:sticky lg:bottom-0">
+          <div className="mx-auto w-full max-w-3xl shrink-0 bg-surface px-4 pb-3 sm:px-6 lg:sticky lg:bottom-0">
             {consentAsk ? (
               // Asking permission to remember health info: the consent card takes the chat box's place until answered.
               <ConsentCard choices={quickReplies} disabled={pending} onPick={pick} />
