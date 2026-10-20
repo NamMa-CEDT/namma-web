@@ -1,7 +1,7 @@
 import { lazy, Suspense } from "react";
 import { Link, NavLink, Outlet, useLocation, useSearchParams } from "react-router";
 import { API_MODE } from "../api/client";
-import { AutoThemeIcon, ChatIcon, FloodIcon, LineIcon, MapIcon, MoonIcon, SunIcon } from "../components/icons";
+import { AutoThemeIcon, ChatIcon, FloodIcon, LineIcon, MapIcon, MoonIcon, PhoneIcon, SunIcon } from "../components/icons";
 import { LogoMark } from "../components/Logo";
 import { ErrorBoundary, Loading } from "../components/States";
 import { StaleBanner } from "../components/Stale";
@@ -80,6 +80,15 @@ export function Shell() {
           ))}
         </nav>
         <div className="ml-auto flex shrink-0 items-center gap-1 md:gap-2">
+          {/* Phones drop the footer strip for room, so the hotline moves up here. */}
+          <a
+            href={DDPM.telHref}
+            aria-label={`${copy.footer.emergency} ${DDPM.hotline}`}
+            className="inline-flex min-h-11 items-center gap-1 rounded-md px-2 font-semibold text-tier-danger-ink no-underline md:hidden"
+          >
+            <PhoneIcon className="text-[20px]" />
+            {DDPM.hotline}
+          </a>
           <button
             type="button"
             onClick={cycleTheme}
@@ -106,8 +115,8 @@ export function Shell() {
         </ErrorBoundary>
       </main>
 
-      {/* Always shown, chat included: with no call button in the header, this is the hotline on every page. */}
-      <footer className="border-t border-line bg-surface-raised px-4 py-1.5 text-caption text-ink-muted">
+      {/* Shown on every page from tablet up, chat included; phones get the header's call link instead. */}
+      <footer className="border-t border-line bg-surface-raised max-md:hidden px-4 py-1.5 text-caption text-ink-muted">
         <p className="m-0 flex flex-wrap items-center gap-x-2">
           <span className="font-semibold text-ink">{copy.footer.unofficial}</span>
           <span aria-hidden="true">·</span>
@@ -117,7 +126,7 @@ export function Shell() {
               {DDPM.hotline}
             </a>
           </span>
-          {/* Phones keep the footer to one line; the LINE contact is also in each HotlineNotice. */}
+          {/* Small tablets keep the footer to one line; the LINE contact is also in each HotlineNotice. */}
           <span className="max-sm:hidden" aria-hidden="true">
             ·
           </span>

@@ -21,6 +21,7 @@ import {
   Moon,
   PaperPlaneRight,
   PencilSimple,
+  Phone,
   SidebarSimple,
   Sun,
   Trash,
@@ -60,6 +61,7 @@ export const SearchIcon = wrap(MagnifyingGlass);
 export const SunIcon = wrap(Sun);
 export const MoonIcon = wrap(Moon);
 export const AutoThemeIcon = wrap(Desktop);
+export const PhoneIcon = wrap(Phone);
 
 /** LINE's speech-bubble glyph, only on LINE buttons and the @1784DDPM link (swap for the official asset). */
 export const SidebarIcon = wrap(SidebarSimple);
