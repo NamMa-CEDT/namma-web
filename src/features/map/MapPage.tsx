@@ -402,8 +402,9 @@ export default function MapPage() {
     nearFrom ?? (focus ? { point: { lat: focus.lat, lon: focus.lon }, label: focus.label || null, placeId: null } : null);
 
   return (
-    <div className="flex h-full flex-col lg:flex-row-reverse">
-      <div className="relative h-[46%] shrink-0 lg:h-full lg:min-w-0 lg:flex-1">
+    // On a phone the whole page scrolls under a tall map; from lg the map and panel split the screen.
+    <div className="flex h-full flex-col overflow-y-auto lg:flex-row-reverse lg:overflow-hidden">
+      <div className="relative h-[60svh] min-h-80 shrink-0 lg:h-full lg:min-h-0 lg:min-w-0 lg:flex-1">
         <Suspense fallback={<Loading className="h-full" />}>
           <StationMap
             stations={visible}
@@ -474,7 +475,7 @@ export default function MapPage() {
         </div>
       </div>
 
-      <aside className="min-h-0 flex-1 overflow-y-auto border-t border-line bg-surface lg:w-[420px] lg:flex-none lg:border-t-0 lg:border-r">
+      <aside className="border-t border-line bg-surface lg:min-h-0 lg:w-[420px] lg:flex-none lg:overflow-y-auto lg:border-t-0 lg:border-r">
         {selected ? (
           <StationSheet id={selected.id} onClose={() => select(null)} onSelect={select} />
         ) : (
