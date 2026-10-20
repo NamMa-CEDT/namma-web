@@ -37,7 +37,21 @@ export const copy = {
     title: "น้ำจะถึงบ้านคุณไหม",
     subtitle: "บอกเราว่าบ้านคุณหรือบ้านพ่อแม่อยู่ที่ไหน เราจะดูสถานีวัดน้ำที่ใกล้ที่สุด แล้วบอกว่าควรทำอะไรตอนนี้",
     composerLabel: "ถามเรื่องน้ำ หรือบอกที่อยู่บ้าน",
-    placeholder: "เช่น บ้านแม่อยู่บางบาล อยุธยา น้ำจะถึงไหม",
+    // Examples that rotate in the empty composer, in place of the old starter chips.
+    placeholder: [
+      "เช่น บ้านแม่อยู่บางบาล อยุธยา น้ำจะถึงไหม",
+      "เช่น บ้านพ่อแม่อยู่นครสวรรค์ ตอนนี้น้ำเป็นยังไง",
+      "เช่น หาศูนย์พักพิงแถวบางบาล",
+      "เช่น น้ำเข้าบ้านแล้ว ช่วยด้วย",
+      "เช่น พรุ่งนี้ควรขนของขึ้นที่สูงไหม",
+      "เช่น บ้านยายอยู่ท่าเรือ อยุธยา ต้องอพยพไหม",
+      "เช่น เมื่อไหร่น้ำจะลด",
+      "เช่น ตอนนี้ระดับน้ำเจ้าพระยาที่นครสวรรค์เท่าไหร่",
+      "เช่น ศูนย์พักพิงแถวสุพรรณบุรีรับสัตว์เลี้ยงไหม",
+      "เช่น ถนนไปบ้านลุงที่ชัยนาทยังผ่านได้ไหม",
+      "เช่น ควรเตรียมอะไรไว้ก่อนน้ำมา",
+      "เช่น ฝั่งตะวันออกของแม่น้ำน้ำท่วมถึงไหม",
+    ],
     riverTitle: "แม่น้ำตอนนี้",
     riverSubtitle: "ระดับน้ำของแต่ละสถานี เทียบกับตลิ่งของสถานีนั้น เรียงจากต้นน้ำลงมา",
     seeMap: "ดูแผนที่สถานี",
@@ -404,14 +418,6 @@ export const copy = {
     retry: "ลองอีกครั้ง",
     sentLocation: "ส่งตำแหน่งปัจจุบันแล้ว",
     emergencyTitle: "ถ้าอยู่ในอันตรายตอนนี้ โทรขอความช่วยเหลือก่อนค่ะ",
-    // DS starter chips: what a person would say, 20 characters or fewer. `fill` starts the sentence in the
-    // composer for the person to finish (it needs their place); `send` sends at once.
-    starters: [
-      { label: "น้ำจะถึงบ้านไหม", fill: "บ้านอยู่" },
-      { label: "ดูบ้านพ่อแม่", fill: "บ้านพ่อแม่อยู่" },
-      { label: "หาศูนย์พักพิง", fill: "ศูนย์พักพิงแถว" },
-      { label: "น้ำเข้าบ้านแล้ว", send: "น้ำเข้าบ้านแล้ว ช่วยด้วย", urgent: true },
-    ] as Starter[],
     newChat: "เริ่มคุยใหม่",
     sourcesLabel: "ที่มา",
     // Slash commands (lib/commands.ts): what each one does, shown in the menu that opens on "/" and by /help.
@@ -432,7 +438,7 @@ export const copy = {
       line: "เพิ่มเพื่อน LINE รับแจ้งเตือน",
       account: "ไปหน้าบัญชี",
     },
-    // What /shelter starts in the composer and what /sos sends (the same words as the starter chips).
+    // What /shelter starts in the composer and what /sos sends.
     commandText: { shelter: "ศูนย์พักพิงแถว", sos: "น้ำเข้าบ้านแล้ว ช่วยด้วย" },
     unknownCommand: (word: string) => `ไม่รู้จักคำสั่ง /${word} พิมพ์ / เพื่อดูคำสั่งที่ใช้ได้`,
     nothingToForget: "ยังไม่มีข้อมูลที่จำไว้ค่ะ",
@@ -469,7 +475,6 @@ export const copy = {
   },
 };
 
-export type Starter = { label: string; fill?: string; send?: string; urgent?: boolean };
 
 export function agencyName(agency: string | null): string {
   switch (agency) {

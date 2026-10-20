@@ -289,10 +289,17 @@
 .nm-composer__input { display: block; width: 100%; min-height: 84px; box-sizing: border-box; resize: none; border: 0; padding: var(--space-1) var(--space-2); background: transparent; color: var(--ink); font: 400 18px/30px var(--font-body); }
 .nm-composer__input:focus { outline: none; }
 .nm-composer__input::placeholder { color: var(--ink-muted); }
+.nm-composer__field { position: relative; min-width: 0; }
+.nm-composer--compact .nm-composer__field { flex: 1 1 240px; }
+.nm-composer--compact .nm-composer__input { flex: none; width: 100%; }
+/* Rotating example: fades and slides in, holds, fades out; one cycle = the 3.5 s rotation in Composer.tsx. */
+.nm-composer__hint { position: absolute; inset: var(--space-1) var(--space-2) auto; font: 400 18px/30px var(--font-body); color: var(--ink-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; pointer-events: none; animation: nm-hint 3.5s ease-in-out both; }
+.nm-composer--compact .nm-composer__hint { inset: 0 var(--space-2); display: flex; align-items: center; }
+@keyframes nm-hint { 0% { opacity: 0; transform: translateY(10px); } 12% { opacity: 1; transform: none; } 88% { opacity: 1; transform: none; } 100% { opacity: 0; transform: translateY(-10px); } }
 .nm-composer__bar { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); }
 .nm-composer__spacer { flex: 1 1 auto; }
 .nm-composer--compact { flex-direction: row; flex-wrap: wrap; align-items: center; padding: var(--space-2); }
-.nm-composer--compact .nm-composer__input { flex: 1 1 240px; width: auto; min-height: 44px; }
+.nm-composer--compact .nm-composer__input { min-height: 44px; }
 .nm-icon-btn { display: inline-flex; align-items: center; justify-content: center; gap: var(--space-2); min-width: 44px; min-height: 44px; padding: 0 var(--space-3); box-sizing: border-box; border: 1px solid var(--line-strong); border-radius: var(--radius-md); background: var(--surface-raised); color: var(--ink); font: 600 15px/24px var(--font-body); cursor: pointer; text-decoration: none; }
 .nm-icon-btn:hover { box-shadow: inset 0 0 0 999px rgba(0, 0, 0, 0.06); }
 .nm-icon-btn--send, .nm-icon-btn--send:hover { background: var(--river); border-color: var(--river); color: var(--on-river); }

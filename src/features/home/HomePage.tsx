@@ -6,17 +6,16 @@ import { HotlineNotice } from "../../components/HotlineNotice";
 import { RiverProfile } from "../../components/RiverProfile";
 import { RiverSearch } from "../../components/RiverSearch";
 import { ErrorState, Loading } from "../../components/States";
-import { copy, type Starter } from "../../copy";
+import { copy } from "../../copy";
 import { loadSessionId, type ChatHandoff } from "../../lib/chatSession";
 import { LINE_OA_URL } from "../../lib/line";
-import { StarterChips } from "../chat/parts";
 import { FloodExplorer, type FloodScope } from "../flood/FloodExplorer";
 
 const TABS = ["flood", "river"] as const;
 type Tab = (typeof TABS)[number];
 
 /**
- * DS new-user page: the question, the composer and starter chips above the bank line; below it, what the water is
+ * DS new-user page: the question, the composer above the bank line; below it, what the water is
  * doing now in two tabs (DS option G): น้ำท่วม, GISTDA's satellite flood map first, then แม่น้ำ, the live
  * RiverProfile (staff gauges, river line, cross-sections). Then the three setup steps. Sending opens the chat.
  */
@@ -42,7 +41,6 @@ export default function HomePage() {
   const place = useProfile(loadSessionId()).data?.places[0];
   const rivers = useRivers(place ? { lat: place.lat, lon: place.lon } : null, riverQuery);
   const go = (handoff: ChatHandoff) => navigate("/chat", { state: handoff });
-  const pick = (s: Starter) => go(s.send ? { send: s.send } : { fill: `${s.fill ?? s.label} ` });
   // ARIA tabs: arrows move between the two tabs and open the one they land on.
   const onTabKey = (e: KeyboardEvent<HTMLButtonElement>) => {
     if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
@@ -68,7 +66,6 @@ export default function HomePage() {
             label={copy.home.composerLabel}
             placeholder={copy.home.placeholder}
           />
-          <StarterChips onPick={pick} center />
         </div>
       </div>
 

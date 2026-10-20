@@ -1,4 +1,4 @@
-import { useId, type FormEvent, type KeyboardEvent, type RefObject } from "react";
+import { useEffect, useId, useState, type FormEvent, type KeyboardEvent, type RefObject } from "react";
 import { copy } from "../copy";
 import { useSpeech } from "../lib/speech";
 import { ArrowUpIcon, MicIcon, PinIcon } from "./icons";
@@ -25,10 +25,20 @@ export function Composer({
   disabled?: boolean;
   compact?: boolean;
   label: string;
-  placeholder: string;
+  /** A list of examples rotates every few seconds while the box is empty. */
+  placeholder: string | readonly string[];
   inputRef?: RefObject<HTMLTextAreaElement | HTMLInputElement | null>;
 }) {
   const id = useId();
+  const examples = typeof placeholder === "string" ? [placeholder] : placeholder;
+  const [n, setN] = useState(0);
+  useEffect(() => {
+    if (examples.length < 2 || value) return;
+    const t = setInterval(() => setN((i) => i + 1), 3500);
+    return () => clearInterval(t);
+  }, [examples.length, value]);
+  const shown = examples[n % examples.length] ?? "";
+  const rotating = examples.length > 1;
   const speech = useSpeech((heard) => onChange(value ? `${value} ${heard}` : heard));
   const canSend = !disabled && value.trim().length > 0;
 
@@ -74,34 +84,42 @@ export function Composer({
       <label className="nm-sr" htmlFor={id}>
         {label}
       </label>
-      {compact ? (
-        // One line under an ongoing chat (DS nm-composer--compact): an input, so a long placeholder never wraps.
-        <input
-          ref={inputRef as RefObject<HTMLInputElement | null>}
-          id={id}
-          type="text"
-          className="nm-composer__input min-w-0 basis-[120px] truncate"
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          onKeyDown={onKeyDown}
-          placeholder={speech.listening ? copy.composer.listening : placeholder}
-          autoComplete="off"
-          enterKeyHint="send"
-        />
-      ) : (
-        <textarea
-          ref={inputRef as RefObject<HTMLTextAreaElement | null>}
-          id={id}
-          className="nm-composer__input"
-          rows={3}
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          onKeyDown={onKeyDown}
-          placeholder={speech.listening ? copy.composer.listening : placeholder}
-          autoComplete="off"
-          enterKeyHint="send"
-        />
-      )}
+      <div className="nm-composer__field">
+        {compact ? (
+          // One line under an ongoing chat (DS nm-composer--compact): an input, so a long placeholder never wraps.
+          <input
+            ref={inputRef as RefObject<HTMLInputElement | null>}
+            id={id}
+            type="text"
+            className="nm-composer__input truncate"
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            onKeyDown={onKeyDown}
+            placeholder={speech.listening ? copy.composer.listening : rotating ? undefined : shown}
+            autoComplete="off"
+            enterKeyHint="send"
+          />
+        ) : (
+          <textarea
+            ref={inputRef as RefObject<HTMLTextAreaElement | null>}
+            id={id}
+            className="nm-composer__input"
+            rows={3}
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            onKeyDown={onKeyDown}
+            placeholder={speech.listening ? copy.composer.listening : rotating ? undefined : shown}
+            autoComplete="off"
+            enterKeyHint="send"
+          />
+        )}
+        {/* The browser can't animate a placeholder, so rotating examples are drawn over the empty box. */}
+        {rotating && !value && !speech.listening && (
+          <span key={n % examples.length} className="nm-composer__hint" aria-hidden="true">
+            {shown}
+          </span>
+        )}
+      </div>
       {compact ? (
         <>
           {location}

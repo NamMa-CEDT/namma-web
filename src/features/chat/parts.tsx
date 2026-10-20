@@ -2,7 +2,7 @@ import { Link } from "react-router";
 import type { QuickReply, Source } from "../../api/types";
 import { HotlineNotice } from "../../components/HotlineNotice";
 import { LocateIcon, PinIcon } from "../../components/icons";
-import { copy, type Starter } from "../../copy";
+import { copy } from "../../copy";
 import { looksLikeEmergency } from "../../lib/danger";
 import { formatDistance, formatTime } from "../../lib/format";
 
@@ -153,15 +153,3 @@ export function TypingBubble() {
   );
 }
 
-/** DS starter chips under an empty composer. The danger starter is `--urgent` and sends at once (hotline reply). */
-export function StarterChips({ onPick, center = false }: { onPick: (s: Starter) => void; center?: boolean }) {
-  return (
-    <div className={`nm-row ${center ? "justify-center" : ""}`}>
-      {copy.chat.starters.map((s) => (
-        <button key={s.label} type="button" onClick={() => onPick(s)} className={`nm-chip ${s.urgent ? "nm-chip--urgent" : ""}`}>
-          {s.label}
-        </button>
-      ))}
-    </div>
-  );
-}

@@ -8,13 +8,13 @@ import { Composer } from "../../components/Composer";
 import { SidebarIcon } from "../../components/icons";
 import { HotlineNotice } from "../../components/HotlineNotice";
 import { LineQrDialog } from "../../components/LineQrDialog";
-import { copy, type Starter } from "../../copy";
+import { copy } from "../../copy";
 import { load, loadSessionId, newId, save, saveSessionId, type ChatHandoff } from "../../lib/chatSession";
 import { COMMANDS, parseCommand, suggestCommands, type Command } from "../../lib/commands";
 import { looksLikeEmergency } from "../../lib/danger";
 import { getCurrentPosition } from "../../lib/geolocation";
 import { LINE_OA_URL } from "../../lib/line";
-import { EmergencyCard, QuickReplies, ReplyText, Sources, StarterChips, TypingBubble } from "./parts";
+import { EmergencyCard, QuickReplies, ReplyText, Sources, TypingBubble } from "./parts";
 import { ProfilePanel } from "./ProfilePanel";
 import { ShelterCard, hasShelterDetail, type ShelterSource } from "./ShelterCard";
 import { StationCard, hasReading } from "./StationCard";
@@ -119,7 +119,6 @@ export default function ChatPage() {
       el.setSelectionRange(el.value.length, el.value.length);
     });
   };
-  const startWith = (st: Starter) => (st.send ? sendText(st.send) : fill(`${st.fill ?? st.label} `));
 
   // Arriving from the landing page: do what it asked, once.
   // The ref guards against React StrictMode running the effect twice for the same navigation.
@@ -233,7 +232,6 @@ export default function ChatPage() {
                 </button>
               )}
             </div>
-            {items.length === 0 && <StarterChips onPick={startWith} />}
 
             {items.map((item, i) =>
               item.role === "user" ? (
