@@ -119,7 +119,7 @@ function StaffGauges({ rivers }: { rivers: River[] }) {
 
 /** The three ways to draw the same readings (River Now redesign): staff gauges, river line (E), cross-sections (F). */
 export type RiverView = "staff" | "line" | "sections";
-export const RIVER_VIEWS: RiverView[] = ["staff", "line", "sections"];
+export const RIVER_VIEWS: RiverView[] = ["line", "sections", "staff"];
 const VIEW_KEY = "namma.riverView";
 
 /** The last chart this browser picked; a convenience only, so any storage failure falls back to the gauges. */
