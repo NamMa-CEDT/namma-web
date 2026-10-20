@@ -1,8 +1,9 @@
 import { lazy, Suspense, useCallback, useState } from "react";
+import { Link, useNavigate } from "react-router";
 import { useReadings, useStation } from "../../api/queries";
 import type { StationLink } from "../../api/types";
 import { Gauge } from "../../components/Gauge";
-import { ChevronLeftIcon } from "../../components/icons";
+import { ChevronLeftIcon, FloodIcon } from "../../components/icons";
 import { LineQrDialog } from "../../components/LineQrDialog";
 import { StaleNotice } from "../../components/Stale";
 import { ErrorState, Loading } from "../../components/States";
@@ -17,6 +18,8 @@ import {
   formatPlace,
   formatTrend,
 } from "../../lib/format";
+import type { ChatHandoff } from "../../lib/chatSession";
+import { floodMapLink } from "../../lib/floodLink";
 import { lineMessageUrl } from "../../lib/line";
 import { stationTier, tierReason } from "../../lib/tiers";
 
@@ -75,6 +78,7 @@ export function StationSheet({
   const readings = useReadings(id, 72);
   const [lineQr, setLineQr] = useState(false);
   const closeLineQr = useCallback(() => setLineQr(false), []);
+  const navigate = useNavigate();
 
   if (station.isPending) return <Loading />;
   if (station.isError) return <ErrorState error={station.error} onRetry={() => station.refetch()} />;
@@ -150,14 +154,33 @@ export function StationSheet({
         </p>
       </section>
 
-      {lineAlertUrl && (
-        <>
-          <button type="button" className="nm-btn nm-btn--line nm-btn--block" onClick={() => setLineQr(true)}>
-            {copy.station.lineAlert.button}
-          </button>
-          <LineQrDialog url={lineAlertUrl} open={lineQr} onClose={closeLineQr} text={copy.station.lineAlert} />
-        </>
-      )}
+      <div className="grid gap-2">
+        <button
+          type="button"
+          className="nm-btn nm-btn--primary nm-btn--block"
+          onClick={() => {
+            const name = `${s.name_th ?? copy.unknown}${s.oldcode ? ` (${s.oldcode})` : ""}`;
+            navigate("/chat", { state: { send: copy.map.askStationText(name) } satisfies ChatHandoff });
+          }}
+        >
+          {copy.map.askStation}
+        </button>
+        <Link
+          to={floodMapLink({ lat: s.lat, lon: s.lon, label: `สถานี${s.name_th ?? s.oldcode ?? ""}`, approx: false })}
+          className="nm-btn nm-btn--secondary nm-btn--block"
+        >
+          <FloodIcon className="text-[20px] text-river" />
+          {copy.map.floodAround}
+        </Link>
+        {lineAlertUrl && (
+          <>
+            <button type="button" className="nm-btn nm-btn--line nm-btn--block" onClick={() => setLineQr(true)}>
+              {copy.station.lineAlert.button}
+            </button>
+            <LineQrDialog url={lineAlertUrl} open={lineQr} onClose={closeLineQr} text={copy.station.lineAlert} />
+          </>
+        )}
+      </div>
 
       <Links title={copy.station.upstream} links={s.upstream} onSelect={onSelect} />
       <Links title={copy.station.downstream} links={s.downstream} onSelect={onSelect} />

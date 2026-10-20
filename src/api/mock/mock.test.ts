@@ -32,10 +32,13 @@ beforeEach(() => {
 });
 
 describe("stations", () => {
-  it("lists the corridor with envelope meta", async () => {
+  it("lists the whole network, corridor first, with envelope meta", async () => {
     const { status, json } = await call("GET", "/api/stations");
     expect(status).toBe(200);
-    expect(json.data.length).toBe(22);
+    expect(json.data.length).toBeGreaterThan(100);
+    expect(new Set(json.data.map((s: { id: number }) => s.id)).size).toBe(json.data.length);
+    expect(json.data[0].stem_order).not.toBeNull();
+    expect(json.data.some((s: { river: string }) => s.river === "แม่น้ำชี")).toBe(true);
     expect(json.meta.ingested_at).toMatch(/\+07:00$/);
     const c35 = json.data.find((s: { oldcode: string }) => s.oldcode === "C.35");
     expect(c35.latest.diff_wl_bank).not.toBeNull();
@@ -53,6 +56,16 @@ describe("stations", () => {
     expect(json.data).toHaveLength(2);
     expect(json.data[0].oldcode).toBe("C.37");
     expect(json.data[0].distance_km).toBeGreaterThan(0);
+  });
+
+  it("returns detail for a station off the corridor, with no banks or links", async () => {
+    const list = (await call("GET", "/api/stations")).json.data as { id: number; stem_order: number | null; role: string | null }[];
+    const far = list.find((s) => s.stem_order == null && s.role == null)!;
+    const { status, json } = await call("GET", `/api/stations/${far.id}`);
+    expect(status).toBe(200);
+    expect(json.data.min_bank).toBeNull();
+    expect(json.data.upstream).toEqual([]);
+    expect((await call("GET", `/api/stations/${far.id}/readings?hours=72`)).status).toBe(200);
   });
 
   it("returns detail with upstream links and readings", async () => {
@@ -358,5 +371,35 @@ describe("accounts", () => {
     expect(l.json.data.user.display_name).toBe("somchai");
     expect((await call("DELETE", "/api/me", undefined, l.json.data.session_token)).json.data).toEqual({ deleted: true });
     expect((await call("POST", "/api/auth/line", { id_token: "demo:user:Bad Name" })).status).toBe(401);
+  });
+
+  it("keeps consent per user: given once, it holds for later facts, other chats and the account", async () => {
+    const say = async (sid: string, req: Record<string, unknown>, token?: string) =>
+      (await call("POST", "/api/chat", { session_id: sid, ...req }, token)).json.data;
+    const profile = async (sid: string, token?: string) =>
+      (await call("GET", "/api/profile", undefined, token, sid)).json.data;
+
+    // Anonymous: the browser's chat session is the user.
+    await say("browser", { message: "ที่บ้านมียายติดเตียง" });
+    await say("browser", { postback: "consent:sensitive_memory:yes" });
+    const before = (await profile("browser")).facts.length;
+    const again = await say("browser", { message: "ที่บ้านมีเด็กเล็กด้วย" });
+    expect(again.quick_replies).toEqual([]);
+    const facts = (await profile("browser")).facts;
+    expect(facts.length).toBeGreaterThan(before);
+
+    // Signing in folds it into the account, consent included; a chat from another device sees the same.
+    const login = await call("POST", "/api/auth/line", { id_token: "demo:user:mali", chat_session: "browser" });
+    expect(login.json.data.merged_chat).toBe(true);
+    const t = login.json.data.session_token as string;
+    const elsewhere = await profile("other-device", t);
+    expect(elsewhere.consent.granted).toBe(true);
+    expect(elsewhere.facts).toEqual(facts);
+    expect((await say("other-device", { message: "ที่บ้านมีผู้ป่วย" }, t)).quick_replies).toEqual([]);
+
+    // Erasing the account takes its memory and consent with it.
+    await call("DELETE", "/api/me", undefined, t);
+    const back = await call("POST", "/api/auth/line", { id_token: "demo:user:mali" });
+    expect((await profile("x", back.json.data.session_token)).consent.granted).toBe(false);
   });
 });

@@ -329,7 +329,7 @@ export function respond(req: ChatRequest, s: ChatSessionState, deps: ChatDeps): 
 
   if (OUT_OF_AREA.test(text) && !findPlace(text)) {
     return reply(
-      "ตอนนี้น้ำมาทดลองเฉพาะลุ่มเจ้าพระยา ตั้งแต่นครสวรรค์ถึงกรุงเทพฯ ยังไม่มีข้อมูลสถานีสำหรับพื้นที่นี้\nส่งตำแหน่งหรือพิมพ์อำเภอในลุ่มเจ้าพระยาได้ หรือติดตามประกาศ ปภ. 1784",
+      "โหมดจำลองนี้ตอบได้เฉพาะพื้นที่ตัวอย่างในลุ่มเจ้าพระยา ยังตอบเรื่องพื้นที่นี้ไม่ได้\nดูระดับน้ำสถานีทั่วประเทศได้ที่แผนที่สถานี ส่งตำแหน่งมาได้ หรือติดตามประกาศ ปภ. 1784",
       { quick_replies: ASK_LOCATION },
     );
   }
@@ -350,6 +350,11 @@ export function respond(req: ChatRequest, s: ChatSessionState, deps: ChatDeps): 
   }
 
   const facts = extractVulnerable(text);
+  // Consent is the user's, given once (as on the backend): later health facts are saved without asking again.
+  if (facts.length && !place && s.consent === true) {
+    s.household = union(s.household, facts);
+    return reply(`บันทึกแล้ว: ที่บ้านมี${listVulnerable(facts)} ลบได้ทุกเมื่อในแถบ "ข้อมูลที่จำไว้"`);
+  }
   if (facts.length && !place) {
     s.pendingConsent = facts;
     return reply(

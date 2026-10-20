@@ -5,16 +5,17 @@ import { api } from "../../api/client";
 import { keys, useProfile } from "../../api/queries";
 import type { ChatRequest, ChatResponse, QuickReply, Source } from "../../api/types";
 import { Composer } from "../../components/Composer";
-import { MapIcon, SidebarIcon } from "../../components/icons";
+import { FloodIcon, MapIcon, SidebarIcon } from "../../components/icons";
 import { HotlineNotice } from "../../components/HotlineNotice";
 import { LineQrDialog } from "../../components/LineQrDialog";
 import { copy } from "../../copy";
 import { load, loadSessionId, newId, save, saveSessionId, type ChatHandoff } from "../../lib/chatSession";
 import { COMMANDS, parseCommand, suggestCommands, type Command } from "../../lib/commands";
-import { floodMapLink } from "../../lib/floodLink";
+import { floodMapLink, stationMapLink } from "../../lib/floodLink";
 import { looksLikeEmergency } from "../../lib/danger";
 import { getCurrentPosition } from "../../lib/geolocation";
 import { LINE_OA_URL } from "../../lib/line";
+import { ConsentCard, isConsentAsk } from "./ConsentCard";
 import { EmergencyCard, QuickReplies, ReplyText, Sources, TypingBubble } from "./parts";
 import { ProfilePanel } from "./ProfilePanel";
 import { ShelterCard, hasShelterDetail, type ShelterSource } from "./ShelterCard";
@@ -37,7 +38,9 @@ function previousWasEmergency(items: Item[], index: number): boolean {
 }
 
 export default function ChatPage() {
-  const [sessionId, setSessionId] = useState(loadSessionId);
+  // The browser's anonymous user on the backend (web:<id>): kept across new chats so memory and consent stay,
+  // as they do for a signed-in account. ลบข้อมูลทั้งหมด is how to wipe them.
+  const [sessionId] = useState(loadSessionId);
   const [items, setItems] = useState<Item[]>(() => load(ITEMS_KEY, []));
   const [text, setText] = useState("");
   const [pending, setPending] = useState(false);
@@ -142,7 +145,6 @@ export default function ChatPage() {
 
   const reset = () => {
     setItems([]);
-    setSessionId(newId());
     setNotice(null);
     setForgetAsking(false);
   };
@@ -194,6 +196,7 @@ export default function ChatPage() {
 
   const last = items[items.length - 1];
   const quickReplies = last?.role === "assistant" && !pending ? last.response.quick_replies : [];
+  const consentAsk = isConsentAsk(quickReplies);
 
   return (
     <div className="flex h-full flex-col lg:flex-row">
@@ -266,50 +269,49 @@ export default function ChatPage() {
         </div>
 
         <div className="mx-auto w-full max-w-3xl px-4 pb-3 sm:px-6">
-          {quickReplies.some((q) => q.type === "postback" && q.data.startsWith("consent:")) && (
-            // Asking permission to remember health info: point to the person's rights (PDPA).
-            <p className="m-0 pb-1.5 text-caption text-ink-muted">
-              <Link to="/pdpa" className="underline">
-                {copy.legal.pdpaLink}
-              </Link>
-            </p>
-          )}
-          <QuickReplies items={quickReplies} disabled={pending} onPick={pick} />
-          {suggestions.length > 0 && (
-            // A short list above the composer: with every command showing it scrolls instead of pushing the chat away.
-            <div
-              className="mb-2 flex max-h-64 flex-col overflow-y-auto rounded-md border border-line bg-surface-raised py-1 shadow-float"
-              role="group"
-              aria-label={copy.chat.commands.label}
-            >
-              {suggestions.map((c) => (
-                <button
-                  key={c.name}
-                  type="button"
-                  onClick={() => {
-                    setText("");
-                    run(c);
-                  }}
-                  className="flex min-h-11 items-baseline gap-3 px-3 text-left text-label hover:bg-surface-sunken"
+          {consentAsk ? (
+            // Asking permission to remember health info: the consent card takes the chat box's place until answered.
+            <ConsentCard choices={quickReplies} disabled={pending} onPick={pick} />
+          ) : (
+            <>
+              <QuickReplies items={quickReplies} disabled={pending} onPick={pick} />
+              {suggestions.length > 0 && (
+                // A short list above the composer: with every command showing it scrolls instead of pushing the chat away.
+                <div
+                  className="mb-2 flex max-h-64 flex-col overflow-y-auto rounded-md border border-line bg-surface-raised py-1 shadow-float"
+                  role="group"
+                  aria-label={copy.chat.commands.label}
                 >
-                  <span className="w-20 shrink-0 font-mono font-semibold text-river">/{c.name}</span>
-                  <span className="min-w-0 text-ink-muted">{copy.chat.commands[c.name]}</span>
-                </button>
-              ))}
-            </div>
+                  {suggestions.map((c) => (
+                    <button
+                      key={c.name}
+                      type="button"
+                      onClick={() => {
+                        setText("");
+                        run(c);
+                      }}
+                      className="flex min-h-11 items-baseline gap-3 px-3 text-left text-label hover:bg-surface-sunken"
+                    >
+                      <span className="w-20 shrink-0 font-mono font-semibold text-river">/{c.name}</span>
+                      <span className="min-w-0 text-ink-muted">{copy.chat.commands[c.name]}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+              {notice && <p className="m-0 whitespace-pre-line pb-1 text-caption text-ink-muted">{notice}</p>}
+              <Composer
+                compact
+                value={text}
+                onChange={setText}
+                onSend={sendText}
+                onLocation={() => void sendLocation()}
+                disabled={pending}
+                label={copy.chat.inputLabel}
+                placeholder={items.length ? copy.chat.placeholder : copy.home.placeholder}
+                inputRef={input}
+              />
+            </>
           )}
-          {notice && <p className="m-0 whitespace-pre-line pb-1 text-caption text-ink-muted">{notice}</p>}
-          <Composer
-            compact
-            value={text}
-            onChange={setText}
-            onSend={sendText}
-            onLocation={() => void sendLocation()}
-            disabled={pending}
-            label={copy.chat.inputLabel}
-            placeholder={items.length ? copy.chat.placeholder : copy.home.placeholder}
-            inputRef={input}
-          />
           <p className="m-0 pt-1.5 text-center text-caption text-ink-muted">
             {copy.legal.aiNote} ·{" "}
             <Link to="/privacy" className="underline">
@@ -345,10 +347,16 @@ function Answer({ response: r, firstEmergency }: { response: ChatResponse; first
       <ReplyText text={r.reply} />
       {/* Right under the text that names the place, before the cards about it. */}
       {r.place && (
-        <Link to={floodMapLink(r.place)} className="nm-btn nm-btn--secondary nm-btn--sm">
-          <MapIcon className="shrink-0 text-[20px] text-river" />
-          {copy.chat.openFloodMap}
-        </Link>
+        <div className="flex flex-wrap gap-2">
+          <Link to={floodMapLink(r.place)} className="nm-btn nm-btn--secondary nm-btn--sm">
+            <FloodIcon className="shrink-0 text-[20px] text-river" />
+            {copy.chat.openFloodMap}
+          </Link>
+          <Link to={stationMapLink(r.place)} className="nm-btn nm-btn--secondary nm-btn--sm">
+            <MapIcon className="shrink-0 text-[20px] text-river" />
+            {copy.chat.openStationMap}
+          </Link>
+        </div>
       )}
       {cards.map((s) => (
         <StationCard key={s.station_id} source={s} />

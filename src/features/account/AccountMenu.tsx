@@ -78,6 +78,9 @@ export function AccountMenu() {
               {copy.account.signIn}
             </Link>
           )}
+          <Link to="/about" onClick={() => setOpen(false)} className="inline-flex min-h-11 items-center justify-center text-body text-ink-muted underline">
+            {copy.about.nav}
+          </Link>
         </div>
       )}
     </div>

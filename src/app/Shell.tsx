@@ -27,6 +27,7 @@ const PAGE_TITLE: Record<string, string> = {
   "/flood": copy.nav.flood,
   "/map": copy.nav.map,
   "/account": copy.account.nav,
+  "/about": copy.about.nav,
 };
 
 function useDemoMode(): boolean {
@@ -62,7 +63,8 @@ export function Shell() {
         )}
         <span aria-hidden="true" className="hidden h-[22px] w-px bg-line md:block" />
         <nav className="hidden gap-0.5 md:flex" aria-label="หลัก">
-          {NAV.map(({ to, label }) => (
+          {/* About sits after the three sections here only; phones reach it from the account menu. */}
+          {[...NAV, { to: "/about", label: copy.about.nav }].map(({ to, label }) => (
             <NavLink
               key={to}
               to={to}

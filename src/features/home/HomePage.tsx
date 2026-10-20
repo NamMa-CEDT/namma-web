@@ -158,6 +158,9 @@ export default function HomePage() {
                 {copy.line.addFriend}
               </a>
             )}
+            <Link to="/about" className="inline-flex min-h-11 items-center font-semibold text-river">
+              {copy.about.nav}
+            </Link>
           </div>
         </section>
       </div>

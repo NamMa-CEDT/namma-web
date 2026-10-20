@@ -41,6 +41,15 @@ function userFor(token: string | null, s: MockState): SessionUser | null {
   return token ? (s.sessions[token] ?? null) : null;
 }
 
+/**
+ * Whose memory a request reads and writes, as on the backend: the signed-in account, else the browser's anonymous
+ * chat session. Memory, places and consent live there, so a new chat or another device keeps them.
+ */
+function ownerOf(token: string | null, chatSession: string | null, s: MockState): string | null {
+  const account = token ? s.accounts?.[token] : undefined;
+  return account ? `account:${account}` : chatSession;
+}
+
 function num(q: URLSearchParams, key: string): number | undefined {
   const v = q.get(key);
   return v == null || v === "" || Number.isNaN(Number(v)) ? undefined : Number(v);
@@ -162,8 +171,8 @@ route("GET", "/api/flood/tambon", ({ query }) => {
 route(
   "POST",
   "/api/chat",
-  ({ body }) => {
-    const req = body as Parameters<typeof respond>[0];
+  (ctx) => {
+    const req = ctx.body as Parameters<typeof respond>[0];
     if (!req?.session_id) return fail(400, "bad_request", "session_id is required");
     let out: Result = {};
     updateState((s) => {
@@ -172,7 +181,7 @@ route(
         shelters: (lat: number, lon: number, patientsOnly: boolean) =>
           data.shelters({ lat, lon, patients: patientsOnly }),
       };
-      out = { data: respond(req, chatState(s, req.session_id), deps) };
+      out = { data: respond(req, chatState(s, ownerOf(ctx.token, req.session_id, s) ?? req.session_id), deps) };
     });
     return out;
   },
@@ -192,6 +201,7 @@ function profileOf(c: ChatSessionState | undefined, s: MockState, lineLinked: bo
       const n = data.nearestStations(p.lat, p.lon, 1, s.tierOverrides)[0];
       return {
         ...p,
+        facts: [], // the mock chat keeps household facts for the person only
         nearest: n
           ? {
               station_id: n.id,
@@ -213,8 +223,8 @@ function profileOf(c: ChatSessionState | undefined, s: MockState, lineLinked: bo
 }
 
 function chatFor(ctx: Ctx, s: MockState): ChatSessionState | undefined {
-  const sid = ctx.headers.get("X-Chat-Session");
-  return sid ? s.chats[sid] : undefined;
+  const owner = ownerOf(ctx.token, ctx.headers.get("X-Chat-Session"), s);
+  return owner ? s.chats[owner] : undefined;
 }
 
 route("GET", "/api/profile", (ctx) => {
@@ -266,6 +276,17 @@ route("PATCH", "/api/profile/names", (ctx) => {
   return fail(404, "not_found", `${b?.list} has no ${b?.from}`);
 });
 
+route("DELETE", "/api/profile/places/:id/facts/:kind", (ctx) => {
+  if (!["household", "house", "assets", "history"].includes(ctx.params.kind)) {
+    return fail(400, "bad_request", `unknown kind: ${ctx.params.kind}`);
+  }
+  const s = loadState();
+  const c = chatFor(ctx, s);
+  const id = Number(ctx.params.id);
+  if (!c?.places?.some((p) => p.id === id)) return fail(404, "not_found", `place ${id} not found`);
+  return { data: profileOf(c, s, !!userFor(ctx.token, s)) }; // no place facts in the mock: nothing to delete
+});
+
 route("DELETE", "/api/profile/facts/:kind", (ctx) => {
   const kind = ctx.params.kind;
   if (!["household", "needs", "house", "assets", "history", "all"].includes(kind)) {
@@ -287,8 +308,8 @@ route("DELETE", "/api/profile/facts/:kind", (ctx) => {
 // --- auth ---------------------------------------------------------------------
 
 // Demo tokens, as on the backend: demo:user, demo:user:<name> (LINE), demo:google:<name>.
-// The mock keeps one account per demo id; its memory is the chat's (the mock has no account store).
-function mockLogin(idToken: string, provider: "line" | "google"): Result {
+// The mock keeps one account per demo id. Signing in folds the browser's anonymous chat into it, as the backend does.
+function mockLogin(idToken: string, provider: "line" | "google", chatSession: string | undefined): Result {
   const parts = idToken.split(":");
   const nameOk = (n: string | undefined) => !!n && /^[a-z0-9_-]{1,40}$/.test(n);
   let user: SessionUser;
@@ -304,14 +325,43 @@ function mockLogin(idToken: string, provider: "line" | "google"): Result {
     user = { display_name: parts[2] ?? "ผู้ใช้ทดลอง", picture_url: null, identities: { line: true, google: null } };
   }
   const token = `mock-${Math.random().toString(36).slice(2)}`;
+  const account = `${provider}:${parts[2] ?? ""}`;
+  let merged = false;
   updateState((s) => {
     s.sessions[token] = user;
+    (s.accounts ??= {})[token] = account;
+    const anon = chatSession ? s.chats[chatSession] : undefined;
+    if (!anon || !chatSession) return;
+    s.chats[`account:${account}`] = absorb(s.chats[`account:${account}`], anon);
+    delete s.chats[chatSession];
+    merged = true;
   });
-  return { data: { session_token: token, user, merged_chat: false } };
+  return { data: { session_token: token, user, merged_chat: merged } };
 }
 
-route("POST", "/api/auth/line", ({ body }) => mockLogin((body as { id_token?: string })?.id_token ?? "", "line"));
-route("POST", "/api/auth/google", ({ body }) => mockLogin((body as { id_token?: string })?.id_token ?? "", "google"));
+/** The anonymous chat joins the account: places and household add up; a yes in either is the account's yes. */
+function absorb(into: ChatSessionState | undefined, anon: ChatSessionState): ChatSessionState {
+  if (!into) return anon;
+  const places = [...(into.places ?? [])];
+  let next = Math.max(0, ...places.map((p) => p.id)) + 1;
+  for (const p of anon.places ?? []) if (!places.some((q) => q.label === p.label)) places.push({ ...p, id: next++ });
+  const granted = into.consent === true || anon.consent === true;
+  return {
+    ...into,
+    place: into.place ?? anon.place,
+    places,
+    household: [...new Set([...into.household, ...anon.household])],
+    consent: granted ? true : (into.consent ?? anon.consent),
+    consentTs: granted ? (into.consent === true ? into.consentTs : anon.consentTs) : (into.consentTs ?? anon.consentTs),
+    pendingConsent: into.pendingConsent ?? anon.pendingConsent,
+  };
+}
+
+type LoginBody = { id_token?: string; chat_session?: string } | null;
+route("POST", "/api/auth/line", ({ body }) => mockLogin((body as LoginBody)?.id_token ?? "", "line", (body as LoginBody)?.chat_session));
+route("POST", "/api/auth/google", ({ body }) =>
+  mockLogin((body as LoginBody)?.id_token ?? "", "google", (body as LoginBody)?.chat_session),
+);
 
 route("POST", "/api/auth/link/:provider", (ctx) => {
   const provider = ctx.params.provider;
@@ -352,7 +402,9 @@ route("DELETE", "/api/auth/link/:provider", (ctx) => {
 
 route("POST", "/api/auth/logout", (ctx) => {
   updateState((s) => {
-    if (ctx.token) delete s.sessions[ctx.token];
+    if (!ctx.token) return;
+    delete s.sessions[ctx.token];
+    delete s.accounts?.[ctx.token];
   });
   return { data: { signed_out: true } };
 });
@@ -360,7 +412,18 @@ route("POST", "/api/auth/logout", (ctx) => {
 route("DELETE", "/api/me", (ctx) => {
   if (!userFor(ctx.token, loadState())) return fail(401, "unauthorized", "login required");
   updateState((s) => {
-    if (ctx.token) delete s.sessions[ctx.token];
+    if (!ctx.token) return;
+    // Erasure: the account's memory and consent go with it, and every session signed in to it.
+    const account = s.accounts?.[ctx.token];
+    if (account) {
+      delete s.chats[`account:${account}`];
+      for (const [t, a] of Object.entries(s.accounts ?? {})) {
+        if (a !== account) continue;
+        delete s.sessions[t];
+        delete s.accounts?.[t];
+      }
+    }
+    delete s.sessions[ctx.token];
   });
   return { data: { deleted: true } };
 });
