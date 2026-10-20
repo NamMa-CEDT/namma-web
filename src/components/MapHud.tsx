@@ -118,21 +118,23 @@ export function MapHud({
             <HudIcon d={HUD_ICON.layers} className="size-[22px]" />
           </button>
           {hint && !open && (
-            <div className="pointer-events-auto absolute top-1/2 left-full ml-3 flex w-56 -translate-y-1/2 items-start gap-1 rounded-md bg-river py-1.5 pr-1 pl-3 text-on-river shadow-float">
+            // The whole bubble closes it: a tap anywhere on the tip, not only on the small X.
+            <button
+              type="button"
+              onClick={hideHint}
+              className="group pointer-events-auto absolute top-1/2 left-full ml-3 flex w-56 -translate-y-1/2 items-start gap-1 rounded-md bg-river py-1.5 pr-1 pl-3 text-left text-on-river shadow-float"
+            >
               {/* The arrow: a turned square tucked under the bubble's left edge, pointing at the button. */}
               <span aria-hidden="true" className="absolute top-1/2 -left-1.5 size-3 -translate-y-1/2 rotate-45 bg-river" />
-              <button type="button" onClick={openByTap} className="relative flex-1 text-left text-caption font-semibold">
-                {hintText}
-              </button>
-              <button
-                type="button"
-                aria-label={copy.flood.close}
-                onClick={hideHint}
-                className="relative flex size-8 shrink-0 items-center justify-center rounded-sm hover:bg-[rgba(255,255,255,0.15)]"
+              <span className="relative flex-1 text-caption font-semibold">{hintText}</span>
+              <span className="sr-only">{copy.flood.close}</span>
+              <span
+                aria-hidden="true"
+                className="relative flex size-8 shrink-0 items-center justify-center rounded-sm group-hover:bg-[rgba(255,255,255,0.15)]"
               >
                 <HudIcon d={HUD_ICON.close} className="size-4" />
-              </button>
-            </div>
+              </span>
+            </button>
           )}
         </div>
       </div>
