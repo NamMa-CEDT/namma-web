@@ -493,6 +493,18 @@ export const copy = {
     chartEmpty: "ยังไม่มีข้อมูลย้อนหลังของสถานีนี้",
     chartBankLine: "ระดับตลิ่ง",
     msl: "ม.รทก.",
+    // LINE alerts for this one station: the LINE QR dialog opens the OA chat with `message` typed in. The backend
+    // reads it (agent/chat.py STATION_ALERT_RE): keep "แจ้งเตือนสถานี", one word, then "#<id>".
+    lineAlert: {
+      button: "รับแจ้งเตือนสถานีนี้ทาง LINE",
+      message: (code: string | null, id: number) => `แจ้งเตือนสถานี ${code ? `${code} ` : ""}#${id}`,
+      title: "แจ้งเตือนสถานีนี้ทาง LINE",
+      scan:
+        "สแกนด้วยกล้องมือถือหรือแอป LINE แล้วกดส่งข้อความที่พิมพ์ไว้ให้ น้ำมาจะแจ้งเตือนเมื่อความเสี่ยงที่สถานีนี้สูงขึ้น " +
+        "(เพิ่มน้ำมาเป็นเพื่อนด้วย ข้อความเตือนจึงจะส่งถึง)",
+      qrAlt: "QR code เปิดแชทน้ำมาใน LINE พร้อมข้อความขอรับแจ้งเตือนสถานีนี้",
+      add: "เปิดแชทใน LINE",
+    },
   },
 
   shelter: {

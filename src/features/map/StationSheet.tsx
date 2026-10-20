@@ -1,8 +1,9 @@
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, useCallback, useState } from "react";
 import { useReadings, useStation } from "../../api/queries";
 import type { StationLink } from "../../api/types";
 import { Gauge } from "../../components/Gauge";
 import { ChevronLeftIcon } from "../../components/icons";
+import { LineQrDialog } from "../../components/LineQrDialog";
 import { StaleNotice } from "../../components/Stale";
 import { ErrorState, Loading } from "../../components/States";
 import { TierBadge } from "../../components/TierBadge";
@@ -16,6 +17,7 @@ import {
   formatPlace,
   formatTrend,
 } from "../../lib/format";
+import { lineMessageUrl } from "../../lib/line";
 import { stationTier, tierReason } from "../../lib/tiers";
 
 const LevelChart = lazy(() => import("./LevelChart"));
@@ -71,6 +73,8 @@ export function StationSheet({
 }) {
   const station = useStation(id);
   const readings = useReadings(id, 72);
+  const [lineQr, setLineQr] = useState(false);
+  const closeLineQr = useCallback(() => setLineQr(false), []);
 
   if (station.isPending) return <Loading />;
   if (station.isError) return <ErrorState error={station.error} onRetry={() => station.refetch()} />;
@@ -82,6 +86,8 @@ export function StationSheet({
   const discharge = formatDischarge(s.latest?.discharge);
   const upstreamOver = s.upstream.some((l) => stationTier(l.station) === "danger");
   const reason = tierReason(tier, s.risk?.hours_to_bank, upstreamOver);
+  // Hidden until the OA exists (VITE_LINE_OA_URL), like the chat's /line.
+  const lineAlertUrl = lineMessageUrl(copy.station.lineAlert.message(s.oldcode, s.id));
 
   return (
     <article className="grid gap-4 px-4 pt-2 pb-6">
@@ -143,6 +149,15 @@ export function StationSheet({
           <span className="num">{formatDateTime(s.latest?.ts)}</span> · {copy.station.estimated}
         </p>
       </section>
+
+      {lineAlertUrl && (
+        <>
+          <button type="button" className="nm-btn nm-btn--line nm-btn--block" onClick={() => setLineQr(true)}>
+            {copy.station.lineAlert.button}
+          </button>
+          <LineQrDialog url={lineAlertUrl} open={lineQr} onClose={closeLineQr} text={copy.station.lineAlert} />
+        </>
+      )}
 
       <Links title={copy.station.upstream} links={s.upstream} onSelect={onSelect} />
       <Links title={copy.station.downstream} links={s.downstream} onSelect={onSelect} />
