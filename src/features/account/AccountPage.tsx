@@ -69,9 +69,10 @@ function SignIn() {
   const attempt = (p: Promise<{ merged_chat?: boolean } | null>) =>
     p.then((r) => done(r?.merged_chat)).catch((e) => setError(errorText(e)));
 
-  // Back from LINE's login page: finish the sign-in that was started there.
+  // Back from LINE's login page: finish the sign-in that was started there. Never sends the browser to LINE
+  // by itself: when LINE didn't sign the person in (cancelled, back button), the button is there to try again.
   useEffect(() => {
-    if (takeLinePending() === "login") void attempt(loginLine());
+    if (takeLinePending() === "login") void attempt(loginLine(true));
     // eslint-disable-next-line react-hooks/exhaustive-deps -- runs once, on the way back from LINE
   }, []);
 
@@ -181,7 +182,7 @@ function Account() {
 
   // Back from LINE's login page after "เชื่อม LINE": finish the link.
   useEffect(() => {
-    if (takeLinePending() === "link") void run(linkLine);
+    if (takeLinePending() === "link") void run(() => linkLine(true));
     // eslint-disable-next-line react-hooks/exhaustive-deps -- runs once, on the way back from LINE
   }, []);
 

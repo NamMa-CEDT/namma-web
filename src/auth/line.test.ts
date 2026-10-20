@@ -94,6 +94,33 @@ describe("LINE login (LIFF)", () => {
     api.login.mockReset();
   });
 
+  it("coming back from LINE without signing in (cancelled, back button) stays on the page", async () => {
+    liff.isLoggedIn.mockReturnValue(false);
+
+    expect(await loginLine(true)).toBeNull();
+    expect(await linkLine(true)).toBeNull();
+
+    expect(liff.login).not.toHaveBeenCalled();
+    expect(api.login).not.toHaveBeenCalled();
+  });
+
+  it("coming back with an expired cached token stays on the page too", async () => {
+    liff.isLoggedIn.mockReturnValueOnce(true).mockReturnValueOnce(true).mockReturnValue(false);
+    liff.getIDToken.mockReturnValue("stale-token");
+    liff.getDecodedIDToken.mockReturnValue({ exp: Date.now() / 1000 - 60 });
+
+    expect(await loginLine(true)).toBeNull();
+
+    expect(liff.login).not.toHaveBeenCalled();
+  });
+
+  it("finishes the sign-in when LINE did sign the person in", async () => {
+    liff.isLoggedIn.mockReturnValue(true);
+    liff.getIDToken.mockReturnValue("line-id-token");
+
+    expect((await loginLine(true))?.session_token).toBe("s");
+  });
+
   it("signing out forgets LIFF's cached LINE login too", async () => {
     liff.isLoggedIn.mockReturnValue(true);
 

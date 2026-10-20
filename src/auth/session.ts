@@ -97,39 +97,41 @@ function toLine(intent: LinePending, retried = false): null {
 }
 
 /** The LINE ID token, or null after sending the browser to LINE (the page is leaving). LIFF keeps the last
- *  ID token after it expires, so an old one sends the person through LINE again for a new one. */
-async function lineToken(intent: LinePending): Promise<string | null> {
+ *  ID token after it expires, so an old one sends the person through LINE again for a new one. `resume` (back from
+ *  LINE, nothing pressed) never leaves the page: null when LINE didn't finish (cancelled, or an error page). */
+async function lineToken(intent: LinePending, resume: boolean): Promise<string | null> {
   await initLiff();
   if (lineSignedIn() && lineIdToken() && !lineIdTokenFresh()) lineLogout();
-  if (!lineSignedIn()) return toLine(intent);
+  if (!lineSignedIn()) return resume ? null : toLine(intent);
   const token = lineIdToken();
   if (!token) throw new Error("LINE gave no ID token");
   return token;
 }
 
 /** Runs `use` with a LINE ID token. When the backend rejects the token (expired by its clock, or from another
- *  LINE account cached in this browser), forgets it and goes to LINE once for a new one. */
-async function withLineToken<T>(intent: LinePending, use: (token: string) => Promise<T>): Promise<T | null> {
-  const token = await lineToken(intent);
-  if (!token) return null;
+ *  LINE account cached in this browser), forgets it and goes to LINE once for a new one, only from a button press. */
+async function withLineToken<T>(intent: LinePending, resume: boolean, use: (token: string) => Promise<T>): Promise<T | null> {
   const retried = takeFlag(LINE_RETRIED_KEY) === "1";
+  const token = await lineToken(intent, resume);
+  if (!token) return null;
   try {
     return await use(token);
   } catch (e) {
-    if (retried || !(e instanceof ApiError && e.status === 401 && e.code === "invalid_token")) throw e;
+    if (resume || retried || !(e instanceof ApiError && e.status === 401 && e.code === "invalid_token")) throw e;
     lineLogout();
     return toLine(intent, true);
   }
 }
 
-/** Sign in with LINE. Resolves null when the browser is leaving for LINE. */
-export async function loginLine(): Promise<LoginResponse | null> {
-  return withLineToken("login", async (token) => signedIn(await api.login(token, loadSessionId(), "line")));
+/** Sign in with LINE. Resolves null when the browser is leaving for LINE, or, with `resume` (finishing after the
+ *  trip to LINE), when LINE didn't sign the person in. */
+export async function loginLine(resume = false): Promise<LoginResponse | null> {
+  return withLineToken("login", resume, async (token) => signedIn(await api.login(token, loadSessionId(), "line")));
 }
 
-/** Add LINE to the signed-in account. Resolves null when the browser is leaving for LINE. */
-export async function linkLine(): Promise<SessionUser | null> {
-  return withLineToken("link", (token) => link("line", token));
+/** Add LINE to the signed-in account. Resolves null as loginLine does. */
+export async function linkLine(resume = false): Promise<SessionUser | null> {
+  return withLineToken("link", resume, (token) => link("line", token));
 }
 
 /** Add a second way to sign in to the signed-in account. */
