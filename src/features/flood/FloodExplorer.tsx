@@ -13,7 +13,7 @@ import {
   useTambonShapes,
 } from "../../api/queries";
 import type { FloodArea, FloodAreas, FloodHistory, FloodHistoryArea, FloodLevel, FloodPeriod, SavedPlace } from "../../api/types";
-import { BasemapPicker, MapHud } from "../../components/MapHud";
+import { BasemapPicker, HUD_ICON, HudIcon, MapHud, readHintSeen, saveHintSeen } from "../../components/MapHud";
 import { ErrorState, Loading } from "../../components/States";
 import { copy, DDPM } from "../../copy";
 import { containsPoint, joinAreas, nameKey, provincesInView, type AreaShape } from "../../lib/boundaries";
@@ -801,6 +801,8 @@ function Notes({ legend, stage, history, season }: { legend: LegendText; stage: 
  * tambon picked or the province → amphoe → tambon ranking. The /flood page fills the screen with it; the home page
  * embeds it as its first tab (`embedded`: fixed heights, the page scrolls instead of the panel).
  */
+const TIP_KEY = { tambons: "namma.floodTipTambonsSeen", water: "namma.floodTipWaterSeen" };
+
 export function FloodExplorer({
   scope,
   onScope,
@@ -843,6 +845,12 @@ export function FloodExplorer({
   const [basemap, setBasemap] = useState<Basemap>("satellite");
   const [flyTo, setFlyTo] = useState<FlyTarget | null>(null);
   const [tilesFailed, setTilesFailed] = useState(false);
+  // The two how-to tips (tap a province, zoom in for water) close on a tap and stay closed in this browser.
+  const [tipsSeen, setTipsSeen] = useState(() => ({ tambons: readHintSeen(TIP_KEY.tambons), water: readHintSeen(TIP_KEY.water) }));
+  const closeTip = (tip: keyof typeof TIP_KEY) => {
+    saveHintSeen(TIP_KEY[tip]);
+    setTipsSeen((seen) => ({ ...seen, [tip]: true }));
+  };
   const [picked, setPicked] = useState<Picked | null>(null);
   const [controlsOpen, setControlsOpen] = useState(false);
   const [leaflet, setLeaflet] = useState<LeafletMap | null>(null);
@@ -1030,11 +1038,12 @@ export function FloodExplorer({
             ? copy.flood.loadingWater
             : stage === "water" && cells.data?.truncated
               ? copy.flood.waterTruncated
-              : stage === "province"
+              : stage === "province" && !tipsSeen.tambons
                 ? copy.flood.zoomForTambons
-                : stage === "tambon" && !history
+                : stage === "tambon" && !history && !tipsSeen.water
                   ? copy.flood.zoomForWater
                   : null;
+  const tip = status === copy.flood.zoomForTambons ? "tambons" : status === copy.flood.zoomForWater ? "water" : null;
   const selectedArea =
     picked?.kind === "tambon" ? (picked.shape?.properties.code ?? null) : picked?.kind === "land" ? picked.shape.properties.code : null;
 
@@ -1091,13 +1100,28 @@ export function FloodExplorer({
       <div className="absolute bottom-6 left-2 z-[500] hidden sm:block">
         <Legend text={legend} stage={stage} />
       </div>
-      {status && (
-        <p
-          role="status"
-          className="pointer-events-auto absolute right-2 bottom-6 z-[500] m-0 max-w-[15rem] rounded-md border border-line-strong bg-surface-raised px-3 py-2 text-caption text-ink shadow-float"
+      {tip ? (
+        // A tip, not a problem: a tap anywhere on it closes it. Errors and loading notes below stay until resolved.
+        <button
+          type="button"
+          onClick={() => closeTip(tip)}
+          className="group pointer-events-auto absolute right-2 bottom-6 z-[500] flex max-w-[15rem] items-start gap-1 rounded-md border border-line-strong bg-surface-raised py-1 pr-1 pl-3 text-left text-caption text-ink shadow-float"
         >
-          {status}
-        </p>
+          <span className="flex-1 py-1">{status}</span>
+          <span className="sr-only">{copy.flood.close}</span>
+          <span aria-hidden="true" className="flex size-7 shrink-0 items-center justify-center rounded-sm text-ink-muted group-hover:bg-surface-sunken">
+            <HudIcon d={HUD_ICON.close} className="size-4" />
+          </span>
+        </button>
+      ) : (
+        status && (
+          <p
+            role="status"
+            className="pointer-events-auto absolute right-2 bottom-6 z-[500] m-0 max-w-[15rem] rounded-md border border-line-strong bg-surface-raised px-3 py-2 text-caption text-ink shadow-float"
+          >
+            {status}
+          </p>
+        )
       )}
     </div>
   );

@@ -4,9 +4,9 @@ import { flushSync } from "react-dom";
 import { copy } from "../copy";
 import { BASEMAP_THUMB, type Basemap } from "../lib/basemaps";
 
-/** Whether this browser has opened these map options (or closed their hint); a convenience only, so any storage
- * failure shows the hint again. */
-function readHintSeen(key: string): boolean {
+/** Whether this browser has closed a map tip (or opened these map options); a convenience only, so any storage
+ * failure shows the tip again. */
+export function readHintSeen(key: string): boolean {
   try {
     return localStorage.getItem(key) === "1";
   } catch {
@@ -14,7 +14,7 @@ function readHintSeen(key: string): boolean {
   }
 }
 
-function saveHintSeen(key: string): void {
+export function saveHintSeen(key: string): void {
   try {
     localStorage.setItem(key, "1");
   } catch {
