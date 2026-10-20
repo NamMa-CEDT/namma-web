@@ -1,6 +1,7 @@
 import { Component, type ReactNode } from "react";
 import { ApiError } from "../api/client";
 import { copy, DDPM } from "../copy";
+import { isChunkError, reloadForNewBuild } from "../lib/staleBuild";
 import { AlertIcon } from "./icons";
 
 export function Loading({ label = copy.errors.loading, className = "" }: { label?: string; className?: string }) {
@@ -31,15 +32,21 @@ export function EmptyState({ children, className = "" }: { children: ReactNode; 
   return <div className={`p-8 text-center text-body text-ink-muted ${className}`}>{children}</div>;
 }
 
-export class ErrorBoundary extends Component<{ children: ReactNode }, { error: Error | null }> {
-  state = { error: null as Error | null };
+export class ErrorBoundary extends Component<{ children: ReactNode }, { error: Error | null; reloading: boolean }> {
+  state = { error: null as Error | null, reloading: false };
 
   static getDerivedStateFromError(error: Error) {
     return { error };
   }
 
+  componentDidCatch(error: Error) {
+    // A page chunk from before the last deploy: reload into the new build instead of showing the crash screen.
+    if (isChunkError(error) && reloadForNewBuild()) this.setState({ reloading: true });
+  }
+
   render() {
     if (!this.state.error) return this.props.children;
+    if (this.state.reloading) return <Loading className="h-full" />;
     return (
       <div role="alert" className="flex h-full flex-col items-center justify-center gap-3 p-8 text-center">
         <AlertIcon className="text-[28px] text-ink-muted" />
