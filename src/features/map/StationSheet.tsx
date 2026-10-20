@@ -1,9 +1,10 @@
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, useCallback, useState } from "react";
 import { Link, useNavigate } from "react-router";
 import { useReadings, useStation } from "../../api/queries";
 import type { StationLink } from "../../api/types";
 import { Gauge } from "../../components/Gauge";
 import { ChevronLeftIcon, FloodIcon } from "../../components/icons";
+import { LineQrDialog } from "../../components/LineQrDialog";
 import { StaleNotice } from "../../components/Stale";
 import { ErrorState, Loading } from "../../components/States";
 import { TierBadge } from "../../components/TierBadge";
@@ -19,6 +20,7 @@ import {
 } from "../../lib/format";
 import type { ChatHandoff } from "../../lib/chatSession";
 import { floodMapLink } from "../../lib/floodLink";
+import { lineMessageUrl } from "../../lib/line";
 import { stationTier, tierReason } from "../../lib/tiers";
 
 const LevelChart = lazy(() => import("./LevelChart"));
@@ -74,6 +76,8 @@ export function StationSheet({
 }) {
   const station = useStation(id);
   const readings = useReadings(id, 72);
+  const [lineQr, setLineQr] = useState(false);
+  const closeLineQr = useCallback(() => setLineQr(false), []);
   const navigate = useNavigate();
 
   if (station.isPending) return <Loading />;
@@ -86,6 +90,8 @@ export function StationSheet({
   const discharge = formatDischarge(s.latest?.discharge);
   const upstreamOver = s.upstream.some((l) => stationTier(l.station) === "danger");
   const reason = tierReason(tier, s.risk?.hours_to_bank, upstreamOver);
+  // Hidden until the OA exists (VITE_LINE_OA_URL), like the chat's /line.
+  const lineAlertUrl = lineMessageUrl(copy.station.lineAlert.message(s.oldcode, s.id));
 
   return (
     <article className="grid gap-4 px-4 pt-2 pb-6">
@@ -166,6 +172,14 @@ export function StationSheet({
           <FloodIcon className="text-[20px] text-river" />
           {copy.map.floodAround}
         </Link>
+        {lineAlertUrl && (
+          <>
+            <button type="button" className="nm-btn nm-btn--line nm-btn--block" onClick={() => setLineQr(true)}>
+              {copy.station.lineAlert.button}
+            </button>
+            <LineQrDialog url={lineAlertUrl} open={lineQr} onClose={closeLineQr} text={copy.station.lineAlert} />
+          </>
+        )}
       </div>
 
       <Links title={copy.station.upstream} links={s.upstream} onSelect={onSelect} />

@@ -1,17 +1,31 @@
 import QRCode from "qrcode";
 import { useEffect, useId, useRef, useState } from "react";
 import { copy } from "../copy";
+import { lineOaId } from "../lib/line";
 import { CloseIcon } from "./icons";
 
+export type LineQrText = Pick<typeof copy.lineQr, "title" | "scan" | "qrAlt" | "add">;
+
 /**
- * Add-friend popup for the NamMa LINE OA: a QR to scan with a phone (the usual way from a desktop) and the
- * add-friend button (the usual way on the phone itself). The QR is drawn here from the link, never fetched.
+ * Popup for a NamMa LINE OA link: a QR to scan with a phone (the usual way from a desktop) and a button that opens it
+ * (the usual way on the phone itself). By default the add-friend link; `text` words it for another link, such as a
+ * station's alert message. The QR is drawn here from the link, never fetched.
  */
-export function LineQrDialog({ url, open, onClose }: { url: string; open: boolean; onClose: () => void }) {
+export function LineQrDialog({
+  url,
+  open,
+  onClose,
+  text = copy.lineQr,
+}: {
+  url: string;
+  open: boolean;
+  onClose: () => void;
+  text?: LineQrText;
+}) {
   const dialog = useRef<HTMLDialogElement>(null);
   const titleId = useId();
   const [qr, setQr] = useState<string | null>(null);
-  const handle = /\/(@[^/?#]+)/.exec(url)?.[1] ?? null;
+  const handle = lineOaId(url);
 
   useEffect(() => {
     let live = true;
@@ -42,7 +56,7 @@ export function LineQrDialog({ url, open, onClose }: { url: string; open: boolea
       <div className="flex flex-col items-center gap-4 p-5 text-center">
         <div className="flex w-full items-start justify-between gap-2">
           <h2 id={titleId} className="m-0 text-left text-heading font-semibold">
-            {copy.lineQr.title}
+            {text.title}
           </h2>
           <button
             type="button"
@@ -57,15 +71,15 @@ export function LineQrDialog({ url, open, onClose }: { url: string; open: boolea
         {/* Dark on white in both themes: phone cameras read a light-on-dark QR badly. */}
         <div className="rounded-md bg-white p-2">
           {qr ? (
-            <img src={qr} alt={copy.lineQr.qrAlt} width={208} height={208} className="block size-52" />
+            <img src={qr} alt={text.qrAlt} width={208} height={208} className="block size-52" />
           ) : (
             <div className="size-52" aria-hidden="true" />
           )}
         </div>
-        <p className="m-0 text-body text-ink-muted">{copy.lineQr.scan}</p>
+        <p className="m-0 text-body text-ink-muted">{text.scan}</p>
         {handle && <p className="m-0 font-mono text-label font-semibold">{handle}</p>}
         <a className="nm-btn nm-btn--line nm-btn--block no-underline" href={url} target="_blank" rel="noreferrer">
-          {copy.lineQr.add}
+          {text.add}
         </a>
       </div>
     </dialog>
