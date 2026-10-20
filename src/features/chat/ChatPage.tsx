@@ -2,15 +2,18 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router";
 import { api } from "../../api/client";
-import { keys } from "../../api/queries";
+import { keys, useProfile } from "../../api/queries";
 import type { ChatRequest, ChatResponse, QuickReply, Source } from "../../api/types";
 import { Composer } from "../../components/Composer";
 import { SidebarIcon } from "../../components/icons";
 import { HotlineNotice } from "../../components/HotlineNotice";
+import { LineQrDialog } from "../../components/LineQrDialog";
 import { copy, type Starter } from "../../copy";
 import { load, loadSessionId, newId, save, saveSessionId, type ChatHandoff } from "../../lib/chatSession";
+import { COMMANDS, parseCommand, suggestCommands, type Command } from "../../lib/commands";
 import { looksLikeEmergency } from "../../lib/danger";
 import { getCurrentPosition } from "../../lib/geolocation";
+import { LINE_OA_URL } from "../../lib/line";
 import { EmergencyCard, QuickReplies, ReplyText, Sources, StarterChips, TypingBubble } from "./parts";
 import { ProfilePanel } from "./ProfilePanel";
 import { ShelterCard, hasShelterDetail, type ShelterSource } from "./ShelterCard";
@@ -21,6 +24,7 @@ type Item =
   | { id: string; role: "assistant"; response: ChatResponse };
 
 const ITEMS_KEY = "namma.chat.items";
+const DESKTOP = "(min-width: 64rem)"; // Tailwind lg: where ProfilePanel is a column, not a drawer
 
 /** One 1784 card per emergency exchange, not one per reply. */
 function previousWasEmergency(items: Item[], index: number): boolean {
@@ -40,11 +44,17 @@ export default function ChatPage() {
   // Phones: the remembered-info panel is a drawer over the chat.
   const [drawer, setDrawer] = useState(false);
   const closeDrawer = useCallback(() => setDrawer(false), []);
+  // The panel's ลบข้อมูลทั้งหมด confirm step, open from the button or from /forget.
+  const [forgetAsking, setForgetAsking] = useState(false);
+  const [lineQr, setLineQr] = useState(false);
+  const closeLineQr = useCallback(() => setLineQr(false), []);
   const bottom = useRef<HTMLDivElement>(null);
   const input = useRef<HTMLTextAreaElement | HTMLInputElement>(null);
   const qc = useQueryClient();
   const location = useLocation();
   const navigate = useNavigate();
+  const profile = useProfile(sessionId);
+  const hasMemory = !!profile.data && profile.data.places.length + profile.data.facts.length > 0;
 
   // Block bodies: effects must return nothing (newer Chromium's scrollIntoView returns a Promise,
   // which React would then call as a cleanup).
@@ -83,7 +93,10 @@ export default function ChatPage() {
     const message = value.trim();
     if (!message || pending) return;
     setText("");
-    void send({ message }, message);
+    const parsed = parseCommand(message);
+    if (!parsed) void send({ message }, message);
+    else if ("command" in parsed) run(parsed.command);
+    else setNotice(copy.chat.unknownCommand(parsed.unknown));
   };
 
   const sendLocation = async () => {
@@ -131,14 +144,67 @@ export default function ChatPage() {
     setItems([]);
     setSessionId(newId());
     setNotice(null);
+    setForgetAsking(false);
   };
+
+  // The remembered-info panel: a drawer on phones, an always-visible column on desktop (focused instead).
+  const showMemory = () => {
+    if (window.matchMedia(DESKTOP).matches) document.getElementById("profile-panel")?.focus();
+    else setDrawer(true);
+  };
+
+  const run = (command: Command) => {
+    setNotice(null);
+    switch (command.name) {
+      case "help":
+        return setNotice(COMMANDS.map((c) => `/${c.name} · ${copy.chat.commands[c.name]}`).join("\n"));
+      case "clear":
+        return reset();
+      case "location":
+        return void sendLocation();
+      case "memory":
+        return showMemory();
+      case "forget":
+        if (!hasMemory) return setNotice(copy.chat.nothingToForget);
+        showMemory();
+        return setForgetAsking(true);
+      // Start the sentence for the person to finish, like the panel's "บอกในแชท" and the starter chips.
+      case "home":
+        return fill(`${copy.profile.start.place} `);
+      case "family":
+        return fill(`${copy.profile.start.household} `);
+      case "house":
+        return fill(`${copy.profile.start.house} `);
+      case "shelter":
+        return fill(`${copy.chat.commandText.shelter} `);
+      case "sos":
+        return sendText(copy.chat.commandText.sos);
+      case "map":
+        return navigate("/map");
+      case "flood":
+        return navigate("/flood");
+      case "account":
+        return navigate("/account");
+      case "line":
+        if (!LINE_OA_URL) return setNotice(copy.chat.lineUnavailable);
+        return setLineQr(true);
+    }
+  };
+  const suggestions = pending ? [] : suggestCommands(text);
 
   const last = items[items.length - 1];
   const quickReplies = last?.role === "assistant" && !pending ? last.response.quick_replies : [];
 
   return (
     <div className="flex h-full flex-col lg:flex-row">
-      <ProfilePanel chatSession={sessionId} onAsk={(start) => fill(`${start} `)} drawerOpen={drawer} onCloseDrawer={closeDrawer} />
+      {LINE_OA_URL && <LineQrDialog url={LINE_OA_URL} open={lineQr} onClose={closeLineQr} />}
+      <ProfilePanel
+        chatSession={sessionId}
+        onAsk={(start) => fill(`${start} `)}
+        drawerOpen={drawer}
+        onCloseDrawer={closeDrawer}
+        forget={{ asking: forgetAsking, setAsking: setForgetAsking }}
+      />
 
       <section aria-label={copy.chat.title} className="flex min-h-0 min-w-0 flex-1 flex-col">
         <div className="flex items-center border-b border-line px-2 lg:hidden">
@@ -202,7 +268,30 @@ export default function ChatPage() {
 
         <div className="mx-auto w-full max-w-3xl px-4 pb-3 sm:px-6">
           <QuickReplies items={quickReplies} disabled={pending} onPick={pick} />
-          {notice && <p className="m-0 pb-1 text-caption text-ink-muted">{notice}</p>}
+          {suggestions.length > 0 && (
+            // A short list above the composer: with every command showing it scrolls instead of pushing the chat away.
+            <div
+              className="mb-2 flex max-h-64 flex-col overflow-y-auto rounded-md border border-line bg-surface-raised py-1 shadow-float"
+              role="group"
+              aria-label={copy.chat.commands.label}
+            >
+              {suggestions.map((c) => (
+                <button
+                  key={c.name}
+                  type="button"
+                  onClick={() => {
+                    setText("");
+                    run(c);
+                  }}
+                  className="flex min-h-11 items-baseline gap-3 px-3 text-left text-label hover:bg-surface-sunken"
+                >
+                  <span className="w-20 shrink-0 font-mono font-semibold text-river">/{c.name}</span>
+                  <span className="min-w-0 text-ink-muted">{copy.chat.commands[c.name]}</span>
+                </button>
+              ))}
+            </div>
+          )}
+          {notice && <p className="m-0 whitespace-pre-line pb-1 text-caption text-ink-muted">{notice}</p>}
           <Composer
             compact
             value={text}

@@ -38,6 +38,8 @@ jobs:
           VITE_DEMO_LOGIN: "1"
           # Google Sign-In OAuth client (public; origin https://110.238.115.73.sslip.io).
           VITE_GOOGLE_CLIENT_ID: 937445394459-ai0lmgclpod66nnine51k9ihvpelamrq.apps.googleusercontent.com
+          # NamMa LINE OA add-friend link (public): shows the LINE buttons and the /line QR.
+          VITE_LINE_OA_URL: https://line.me/R/ti/p/@753kmkri
         run: npm run build
       - name: SSH key
         env:

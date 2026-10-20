@@ -74,9 +74,11 @@ function DeleteButton({ label, onClick, disabled }: { label: string; onClick: ()
   );
 }
 
-/** ลบข้อมูลทั้งหมด, with the same ask-first step and a plain warning that it cannot be undone. */
-function DeleteAll({ onConfirm, disabled }: { onConfirm: () => void; disabled: boolean }) {
-  const [asking, setAsking] = useState(false);
+/**
+ * ลบข้อมูลทั้งหมด, with the same ask-first step and a plain warning that it cannot be undone. The asking state
+ * lives in ChatPage, so the /forget command can open this step too.
+ */
+function DeleteAll({ onConfirm, disabled, asking, setAsking }: { onConfirm: () => void; disabled: boolean } & ForgetAsk) {
   const cancelBtn = useRef<HTMLButtonElement>(null);
   useEffect(() => {
     if (asking) cancelBtn.current?.focus();
@@ -213,7 +215,19 @@ function TellButton({ onClick }: { onClick: () => void }) {
 }
 
 /** The four rows and the footer: the same content in the desktop column and the phone drawer. */
-function PanelBody({ profile: p, chatSession, onAsk }: { profile: Profile; chatSession: string; onAsk: (start: string) => void }) {
+type ForgetAsk = { asking: boolean; setAsking: (asking: boolean) => void };
+
+function PanelBody({
+  profile: p,
+  chatSession,
+  onAsk,
+  forget,
+}: {
+  profile: Profile;
+  chatSession: string;
+  onAsk: (start: string) => void;
+  forget: ForgetAsk;
+}) {
   const del = useDeleteFromProfile(chatSession);
   const session = useSession();
   const ids = useId();
@@ -344,7 +358,7 @@ function PanelBody({ profile: p, chatSession, onAsk }: { profile: Profile; chatS
             {copy.profile.deleteFailed}
           </p>
         )}
-        {anything && <DeleteAll disabled={del.isPending} onConfirm={() => del.mutate({ facts: "all" })} />}
+        {anything && <DeleteAll disabled={del.isPending} onConfirm={() => del.mutate({ facts: "all" })} {...forget} />}
       </div>
     </>
   );
@@ -434,12 +448,15 @@ export function ProfilePanel({
   onAsk,
   drawerOpen,
   onCloseDrawer,
+  forget,
 }: {
   chatSession: string;
   /** Start a sentence in the composer (an empty row's "บอกในแชท"). */
   onAsk: (start: string) => void;
   drawerOpen: boolean;
   onCloseDrawer: () => void;
+  /** The ลบข้อมูลทั้งหมด confirm step, open or not. */
+  forget: ForgetAsk;
 }) {
   const profile = useProfile(chatSession);
   const [width, setWidth] = useColumnWidth();
@@ -471,11 +488,11 @@ export function ProfilePanel({
   return (
     <>
       <div className="relative hidden shrink-0 lg:flex" style={{ width }}>
-        <aside aria-labelledby={`${headingId}-col`} className="flex w-full flex-col overflow-y-auto border-r border-line bg-surface-sunken py-4">
+        <aside id="profile-panel" tabIndex={-1} aria-labelledby={`${headingId}-col`} className="flex w-full flex-col overflow-y-auto border-r border-line bg-surface-sunken py-4">
           <h2 id={`${headingId}-col`} className="m-0 mb-2 px-4 text-heading font-semibold">
             {copy.profile.title}
           </h2>
-          <PanelBody profile={p} chatSession={chatSession} onAsk={ask} />
+          <PanelBody profile={p} chatSession={chatSession} onAsk={ask} forget={forget} />
         </aside>
         <ResizeHandle width={width} onResize={setWidth} label={copy.profile.resize} />
       </div>
@@ -504,7 +521,7 @@ export function ProfilePanel({
                 <CloseIcon className="text-[22px]" />
               </button>
             </div>
-            <PanelBody profile={p} chatSession={chatSession} onAsk={ask} />
+            <PanelBody profile={p} chatSession={chatSession} onAsk={ask} forget={forget} />
           </div>
         )}
       </dialog>

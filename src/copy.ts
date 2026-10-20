@@ -414,6 +414,38 @@ export const copy = {
     ] as Starter[],
     newChat: "เริ่มคุยใหม่",
     sourcesLabel: "ที่มา",
+    // Slash commands (lib/commands.ts): what each one does, shown in the menu that opens on "/" and by /help.
+    commands: {
+      label: "คำสั่ง",
+      help: "ดูคำสั่งทั้งหมด",
+      clear: "เริ่มคุยใหม่ ล้างข้อความบนหน้านี้",
+      location: "ส่งตำแหน่งปัจจุบัน",
+      memory: "ดูข้อมูลที่จำไว้",
+      forget: "ลบข้อมูลที่จำไว้ทั้งหมด (ถามก่อนลบ)",
+      home: "บอกที่ตั้งบ้าน",
+      family: "บอกว่าใครอยู่ในบ้าน",
+      house: "บอกเรื่องบ้านและทรัพย์สิน",
+      shelter: "หาศูนย์พักพิง",
+      sos: "ขอความช่วยเหลือ น้ำเข้าบ้านแล้ว",
+      map: "ไปหน้าแผนที่สถานี",
+      flood: "ไปหน้าน้ำท่วม",
+      line: "เพิ่มเพื่อน LINE รับแจ้งเตือน",
+      account: "ไปหน้าบัญชี",
+    },
+    // What /shelter starts in the composer and what /sos sends (the same words as the starter chips).
+    commandText: { shelter: "ศูนย์พักพิงแถว", sos: "น้ำเข้าบ้านแล้ว ช่วยด้วย" },
+    unknownCommand: (word: string) => `ไม่รู้จักคำสั่ง /${word} พิมพ์ / เพื่อดูคำสั่งที่ใช้ได้`,
+    nothingToForget: "ยังไม่มีข้อมูลที่จำไว้ค่ะ",
+    lineUnavailable: "ยังเปิด LINE จากหน้านี้ไม่ได้ค่ะ",
+  },
+
+  // /line popup (LineQrDialog): scan from a desktop, or tap the button on the phone itself.
+  lineQr: {
+    title: "รับแจ้งเตือนทาง LINE",
+    scan: "สแกนด้วยกล้องมือถือหรือแอป LINE เพื่อเพิ่มน้ำมาเป็นเพื่อน แล้วเราจะแจ้งเมื่อน้ำใกล้บ้านสูงขึ้นค่ะ",
+    qrAlt: "QR code เพิ่มเพื่อนน้ำมาใน LINE",
+    add: "เพิ่มเพื่อนใน LINE",
+    close: "ปิด",
   },
 
   errors: {
