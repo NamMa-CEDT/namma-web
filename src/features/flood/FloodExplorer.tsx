@@ -818,7 +818,6 @@ function AreaCard({
       </CardHead>
 
       <div className="flex items-center gap-2">
-        <Swatch cls={cls} />
         <p className="m-0 text-reading-lg font-semibold">
           {copy.flood.clsLong[cls]}
           {period === "30days" && cls !== "none" && <span className="text-body font-normal text-ink-muted"> {copy.flood.inMonth}</span>}
