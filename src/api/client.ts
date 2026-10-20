@@ -15,6 +15,7 @@ import type {
   LoginResponse,
   Provider,
   NearbyStation,
+  PlaceFactKind,
   Profile,
   River,
   SessionUser,
@@ -142,6 +143,9 @@ export const api = {
     request<Profile>("DELETE", `/api/profile/facts/${kind}`, { headers: { "X-Chat-Session": chatSession } }),
   renamePlace: (chatSession: string, id: number, label: string) =>
     request<Profile>("PATCH", `/api/profile/places/${id}`, { body: { label }, headers: { "X-Chat-Session": chatSession } }),
-  renameName: (chatSession: string, r: { list: NameList; from: string; to: string }) =>
+  deletePlaceFacts: (chatSession: string, id: number, kind: PlaceFactKind) =>
+    request<Profile>("DELETE", `/api/profile/places/${id}/facts/${kind}`, { headers: { "X-Chat-Session": chatSession } }),
+  /** place: rename in that place's facts (SavedPlace.facts), else in the general ones. */
+  renameName: (chatSession: string, r: { list: NameList; from: string; to: string; place?: number }) =>
     request<Profile>("PATCH", "/api/profile/names", { body: r, headers: { "X-Chat-Session": chatSession } }),
 };

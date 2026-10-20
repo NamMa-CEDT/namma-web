@@ -201,6 +201,7 @@ function profileOf(c: ChatSessionState | undefined, s: MockState, lineLinked: bo
       const n = data.nearestStations(p.lat, p.lon, 1, s.tierOverrides)[0];
       return {
         ...p,
+        facts: [], // the mock chat keeps household facts for the person only
         nearest: n
           ? {
               station_id: n.id,
@@ -273,6 +274,17 @@ route("PATCH", "/api/profile/names", (ctx) => {
   const b = ctx.body as { list?: string; from?: string } | null;
   if (!["immobile", "pets", "past_floods"].includes(b?.list ?? "")) return fail(400, "bad_request", `unknown list: ${b?.list}`);
   return fail(404, "not_found", `${b?.list} has no ${b?.from}`);
+});
+
+route("DELETE", "/api/profile/places/:id/facts/:kind", (ctx) => {
+  if (!["household", "house", "assets", "history"].includes(ctx.params.kind)) {
+    return fail(400, "bad_request", `unknown kind: ${ctx.params.kind}`);
+  }
+  const s = loadState();
+  const c = chatFor(ctx, s);
+  const id = Number(ctx.params.id);
+  if (!c?.places?.some((p) => p.id === id)) return fail(404, "not_found", `place ${id} not found`);
+  return { data: profileOf(c, s, !!userFor(ctx.token, s)) }; // no place facts in the mock: nothing to delete
 });
 
 route("DELETE", "/api/profile/facts/:kind", (ctx) => {
