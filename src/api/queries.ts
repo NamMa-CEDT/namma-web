@@ -25,27 +25,45 @@ export const keys = {
   tambonShapes: (provinceCode: string) => ["shapes", "tambons", provinceCode] as const,
   floodNear: (period: FloodPeriod, lat: number, lon: number) => ["flood-near", period, lat, lon] as const,
   floodHistory: (level: "province" | "tambon", province: string | null) => ["flood-history", level, province] as const,
+  floodTambon: (code: string) => ["flood-tambon", code] as const,
 };
 
 /** Flooded area per province, or per amphoe / tambon inside one (drill-down in the flood tab). */
-export function useFloodAreas(period: FloodPeriod, province: string | null = null, amphoe: string | null = null) {
+export function useFloodAreas(
+  period: FloodPeriod,
+  province: string | null = null,
+  amphoe: string | null = null,
+  enabled = true,
+) {
   const level: FloodLevel = amphoe ? "tambon" : province ? "amphoe" : "province";
   return useQuery({
     queryKey: keys.floodAreas(period, level, province, amphoe),
     queryFn: () => api.floodAreas({ period, level, province: province ?? undefined, amphoe: amphoe ?? undefined }),
     refetchInterval: FLOOD_REFRESH_MS,
     placeholderData: keepPreviousData,
+    enabled,
   });
 }
 
 /** Flooded area per tambon in each of these provinces (the tambons the map shades). */
-export function useFloodTambons(period: FloodPeriod, provinces: string[]) {
+export function useFloodTambons(period: FloodPeriod, provinces: string[], enabled = true) {
   return useQueries({
     queries: provinces.map((province) => ({
       queryKey: keys.floodAreas(period, "tambon", province, null),
       queryFn: () => api.floodAreas({ period, level: "tambon", province, limit: 1000 }),
       refetchInterval: FLOOD_REFRESH_MS,
+      enabled,
     })),
+  });
+}
+
+/** One tambon's flood story (the tambon card): this season's layers, our daily record, 2011–. null = none picked. */
+export function useFloodTambon(code: string | null) {
+  return useQuery({
+    queryKey: keys.floodTambon(code ?? ""),
+    queryFn: () => api.floodTambon({ code: code! }),
+    enabled: code != null && /^\d{6}$/.test(code),
+    refetchInterval: FLOOD_REFRESH_MS,
   });
 }
 

@@ -10,6 +10,7 @@ import type {
   FloodHistory,
   FloodLevel,
   FloodNear,
+  FloodTambon,
   FloodPeriod,
   LoginResponse,
   Provider,
@@ -119,6 +120,8 @@ export const api = {
     request<FloodHistory>("GET", "/api/flood/history", { query: q }),
   floodNear: (q: { period: FloodPeriod; lat: number; lon: number }) =>
     request<FloodNear>("GET", "/api/flood/near", { query: q }),
+  /** One tambon's flood story, by GISTDA tb_idn (the outlines' code). */
+  floodTambon: (q: { code: string }) => request<FloodTambon>("GET", "/api/flood/tambon", { query: q }),
   chat: (req: ChatRequest) => request<ChatResponse>("POST", "/api/chat", { body: req }),
   /** chat_session: the anonymous web chat to fold into the account on sign-in. */
   login: (id_token: string, chat_session?: string, provider: Provider = "line") =>

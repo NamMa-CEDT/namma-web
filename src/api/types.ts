@@ -139,7 +139,8 @@ export interface Shelter {
 
 // --- flood (GISTDA satellite) -----------------------------------------------
 
-export type FloodPeriod = "3days" | "7days";
+/** GISTDA's layers, shortest first: each one's cells were seen under water within that many days. */
+export type FloodPeriod = "3days" | "7days" | "30days";
 export type FloodLevel = "province" | "amphoe" | "tambon";
 
 /** The stored GISTDA layer. All null before the first download: say "no data yet", never "no flooding". */
@@ -147,7 +148,7 @@ export interface FloodLayer {
   period: FloodPeriod;
   /** When the backend downloaded the layer. */
   fetched_at: string | null;
-  /** Range of the dates GISTDA gives its cells. */
+  /** Span of GISTDA's satellite scenes in the layer (30 days: about a month). */
   observed_from: string | null;
   observed_to: string | null;
 }
@@ -183,6 +184,11 @@ export interface FloodCell {
   area_km2: number;
   /** Flooded part of the cell, 0–1. */
   share: number;
+  /**
+   * How lately water was seen there: the shortest layer that also holds the cell (a parent: its freshest cell). With
+   * period 30days, "30days" = seen only 8–30 days ago. Absent from older backends.
+   */
+  seen?: FloodPeriod;
   /** res 9 only. */
   province?: string | null;
   amphoe?: string | null;
@@ -210,6 +216,35 @@ export interface FloodCells extends FloodLayer {
   /** More cells in view than the limit: the largest are sent. */
   truncated: boolean;
   cells: FloodCell[];
+  /** The layer and every shorter one, shortest first (their dates label the legend). Absent from older backends. */
+  windows?: FloodLayer[];
+}
+
+/** One layer's flooding in one tambon. */
+export interface FloodTambonWindow extends FloodLayer {
+  cells: number;
+  area_km2: number;
+  area_rai: number;
+  buildings: number | null;
+  population: number | null;
+}
+
+/** Everything we hold on one tambon (/api/flood/tambon): this season, our own record, and 2011–. */
+export interface FloodTambon {
+  /** GISTDA tb_idn, the same as the map outlines' code. */
+  code: string;
+  province: string | null;
+  amphoe: string | null;
+  tambon: string | null;
+  /** One per layer, shortest first. */
+  windows: FloodTambonWindow[];
+  /** The shortest layer with water in the tambon; null = none in any stored layer. */
+  last_seen: FloodPeriod | null;
+  /** Our daily copy of the layers there, oldest first; it starts the day we started keeping it. */
+  record: { day: string; period: FloodPeriod; cells: number; area_km2: number; area_rai: number }[];
+  /** Its 2011– record; years [] = never flooded; null = its province is not copied yet. */
+  history: { years_covered: number[]; years: number[]; rai_by_year: Record<string, number> } | null;
+  source: "GISTDA";
 }
 
 /** One area's flood history (our copy of GISTDA's 2011– record, /api/flood/history). */

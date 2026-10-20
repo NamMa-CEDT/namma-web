@@ -1,8 +1,30 @@
 // Flood tab helpers: how flooded an area is (its shade and words) and how areas are named.
 // Every number shown comes from /api/flood (GISTDA's cells); nothing here estimates.
-import type { FloodArea, FloodHistoryArea, FloodLevel } from "../api/types";
+import type { FloodArea, FloodHistoryArea, FloodLevel, FloodPeriod } from "../api/types";
 
 export type FloodClass = "many" | "some" | "few" | "none";
+/** A map shade: the flood classes, plus "earlier" (the 30-day layer: water seen only 8–30 days ago). */
+export type MapClass = FloodClass | "earlier";
+
+/** GISTDA's layers, shortest first. */
+export const PERIODS: FloodPeriod[] = ["3days", "7days", "30days"];
+
+/**
+ * How lately water was seen in an area: the shortest layer that has water there (`inLayer` says which do). The layers
+ * nest, so this is all GISTDA lets us say: it gives no date per cell. null = none of them.
+ */
+export function lastSeen(inLayer: (period: FloodPeriod) => boolean): FloodPeriod | null {
+  return PERIODS.find(inLayer) ?? null;
+}
+
+/**
+ * The 30-day map's shade: water seen this week → stripes, only 8–30 days ago → the pale "earlier" fill. The 3-day
+ * layer is not told apart from the 7-day one here: it holds only a few satellite passes (1,570 cells against 88,972
+ * on 20 Oct 2026), so "not in the last 3 days" mostly means "no pass yet", not "the water went down".
+ */
+export function seasonClass(seen: FloodPeriod | null): MapClass {
+  return seen === "3days" || seen === "7days" ? "many" : seen === "30days" ? "earlier" : "none";
+}
 
 /** From about a quarter of the area under water, it is "ท่วมมาก". */
 export const MANY_SHARE = 0.25;
