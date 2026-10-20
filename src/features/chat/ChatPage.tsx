@@ -15,6 +15,7 @@ import { floodMapLink, stationMapLink } from "../../lib/floodLink";
 import { looksLikeEmergency } from "../../lib/danger";
 import { getCurrentPosition } from "../../lib/geolocation";
 import { LINE_OA_URL } from "../../lib/line";
+import { ConsentDialog, isConsentAsk } from "./ConsentDialog";
 import { EmergencyCard, QuickReplies, ReplyText, Sources, TypingBubble } from "./parts";
 import { ProfilePanel } from "./ProfilePanel";
 import { ShelterCard, hasShelterDetail, type ShelterSource } from "./ShelterCard";
@@ -194,6 +195,7 @@ export default function ChatPage() {
 
   const last = items[items.length - 1];
   const quickReplies = last?.role === "assistant" && !pending ? last.response.quick_replies : [];
+  const consentAsk = isConsentAsk(quickReplies);
 
   return (
     <div className="flex h-full flex-col lg:flex-row">
@@ -266,15 +268,14 @@ export default function ChatPage() {
         </div>
 
         <div className="mx-auto w-full max-w-3xl px-4 pb-3 sm:px-6">
-          {quickReplies.some((q) => q.type === "postback" && q.data.startsWith("consent:")) && (
-            // Asking permission to remember health info: point to the person's rights (PDPA).
-            <p className="m-0 pb-1.5 text-caption text-ink-muted">
-              <Link to="/pdpa" className="underline">
-                {copy.legal.pdpaLink}
-              </Link>
-            </p>
-          )}
-          <QuickReplies items={quickReplies} disabled={pending} onPick={pick} />
+          {/* Asking permission to remember health info: a modal with the person's PDPA rights, not chips. */}
+          <ConsentDialog
+            question={last?.role === "assistant" ? last.response.reply : ""}
+            choices={consentAsk ? quickReplies : []}
+            disabled={pending}
+            onPick={pick}
+          />
+          {!consentAsk && <QuickReplies items={quickReplies} disabled={pending} onPick={pick} />}
           {suggestions.length > 0 && (
             // A short list above the composer: with every command showing it scrolls instead of pushing the chat away.
             <div
