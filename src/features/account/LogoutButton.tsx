@@ -31,7 +31,8 @@ export function LogoutButton({ small = false, block = false, onDone }: { small?:
     <div role="group" aria-label={copy.account.logoutAsk} className="grid gap-2 rounded-md bg-surface-sunken p-3">
       <p className="m-0 text-body font-semibold">{copy.account.logoutAsk}</p>
       <p className="m-0 text-caption text-ink-muted">{copy.account.logoutNote}</p>
-      <div className="grid grid-cols-2 gap-2">
+      {/* Stacked full width: side by side, the narrow menu broke "ออกจากระบบ" over three lines. Confirm shows on top. */}
+      <div className="flex flex-col-reverse gap-2 whitespace-nowrap">
         {/* Cancel takes focus, so a stray Enter keeps the person signed in. */}
         <button type="button" autoFocus className="nm-btn nm-btn--secondary nm-btn--sm" disabled={busy} onClick={() => setAsking(false)}>
           {copy.account.cancel}
