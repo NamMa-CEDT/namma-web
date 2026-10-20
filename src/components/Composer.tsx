@@ -5,7 +5,8 @@ import { ArrowUpIcon, MicIcon, PinIcon } from "./icons";
 
 /**
  * DS Composer: the one place a person types to NamMa on the web. Large on the landing page; `compact`
- * (one line) under an ongoing chat. Sits on `surface` above the bank line, never in a card.
+ * (one line) under an ongoing chat; on a phone the field takes the first line and the buttons a second (index.css).
+ * Sits on `surface` above the bank line, never in a card.
  */
 export function Composer({
   value,

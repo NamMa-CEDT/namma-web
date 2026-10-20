@@ -302,6 +302,10 @@
 .nm-composer__spacer { flex: 1 1 auto; }
 .nm-composer--compact { flex-direction: row; flex-wrap: wrap; align-items: center; padding: var(--space-2); }
 .nm-composer--compact .nm-composer__input { min-height: 44px; }
+/* Send sits at the right end: on one row the field takes the free space so this adds nothing; on a phone's second row
+   it pushes send right, with location and mic on the left. */
+.nm-composer--compact .nm-icon-btn--send { margin-left: auto; }
+@media (max-width: 639px) { .nm-composer--compact .nm-composer__field { flex-basis: 100%; } }
 .nm-icon-btn { display: inline-flex; align-items: center; justify-content: center; gap: var(--space-2); min-width: 44px; min-height: 44px; padding: 0 var(--space-3); box-sizing: border-box; border: 1px solid var(--line-strong); border-radius: var(--radius-md); background: var(--surface-raised); color: var(--ink); font: 600 15px/24px var(--font-body); cursor: pointer; text-decoration: none; }
 .nm-icon-btn:hover { box-shadow: inset 0 0 0 999px rgba(0, 0, 0, 0.06); }
 .nm-icon-btn--send, .nm-icon-btn--send:hover { background: var(--river); border-color: var(--river); color: var(--on-river); }
