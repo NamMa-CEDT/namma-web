@@ -58,14 +58,23 @@ export default function HomePage() {
             <h1 className="m-0 text-[32px] leading-[46px] font-semibold sm:text-[44px] sm:leading-[62px]">{copy.home.title}</h1>
             <p className="mx-auto my-0 max-w-[34em] text-body text-ink-muted sm:text-body-lg">{copy.home.subtitle}</p>
           </div>
-          <Composer
-            value={text}
-            onChange={setText}
-            onSend={(t) => go({ send: t })}
-            onLocation={() => go({ location: true })}
-            label={copy.home.composerLabel}
-            placeholder={copy.home.placeholder}
-          />
+          <div>
+            <Composer
+              value={text}
+              onChange={setText}
+              onSend={(t) => go({ send: t })}
+              onLocation={() => go({ location: true })}
+              label={copy.home.composerLabel}
+              placeholder={copy.home.placeholder}
+            />
+            {/* The same note as under the chat page's box: the answers come from an AI. */}
+            <p className="m-0 pt-1.5 text-center text-caption text-ink-muted">
+              {copy.legal.aiNote} ·{" "}
+              <Link to="/privacy" className="underline">
+                {copy.legal.privacyLink}
+              </Link>
+            </p>
+          </div>
         </div>
       </div>
 
