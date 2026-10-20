@@ -77,7 +77,8 @@ export function RiverSearch({ value, onChange, onPick, label = copy.river.search
           onFocus={() => setOpen(true)}
           onBlur={() => setOpen(false)}
           onKeyDown={onKey}
-          className="nm-input min-h-12 pl-12"
+          // Our own "clear" button stands in for the browser's ✕, which would sit under it.
+          className={`nm-input min-h-12 pl-12 [&::-webkit-search-cancel-button]:appearance-none ${value ? "pr-24" : ""}`}
         />
         {value && (
           <button
