@@ -159,7 +159,7 @@ export default function HomePage() {
             ))}
           </ol>
           <div className="flex flex-wrap items-center gap-4 pt-2">
-            <div className="max-w-[40rem] flex-1">
+            <div className="w-full max-w-[40rem] md:w-auto md:flex-1">
               <HotlineNotice />
             </div>
             {LINE_OA_URL && (
