@@ -27,11 +27,43 @@ const STEP_ROW: Record<Step["key"], RowKey> = { place: "place", household: "hous
 const HOUSEHOLD: FactKind[] = ["household", "needs"];
 const HOUSE: FactKind[] = ["house", "assets", "history"];
 
+/** Trash icon that asks first: one tap swaps it for ลบ / ยกเลิก, so a stray tap never deletes. Focus lands on ยกเลิก. */
 function DeleteButton({ label, onClick, disabled }: { label: string; onClick: () => void; disabled: boolean }) {
+  const [asking, setAsking] = useState(false);
+  const trash = useRef<HTMLButtonElement>(null);
+  const cancelBtn = useRef<HTMLButtonElement>(null);
+  const wasAsking = useRef(false);
+  useEffect(() => {
+    if (asking) cancelBtn.current?.focus();
+    else if (wasAsking.current) trash.current?.focus();
+    wasAsking.current = asking;
+  }, [asking]);
+
+  if (asking) {
+    return (
+      <span role="group" aria-label={copy.profile.confirmLabel(label)} className="inline-flex shrink-0 items-center gap-1" onKeyDown={(e) => e.key === "Escape" && setAsking(false)}>
+        <button
+          type="button"
+          disabled={disabled}
+          onClick={() => {
+            setAsking(false);
+            onClick();
+          }}
+          className="nm-btn nm-btn--danger min-h-11 px-3 text-caption"
+        >
+          {copy.profile.delete}
+        </button>
+        <button ref={cancelBtn} type="button" onClick={() => setAsking(false)} className="nm-btn nm-btn--secondary min-h-11 px-3 text-caption">
+          {copy.profile.cancel}
+        </button>
+      </span>
+    );
+  }
   return (
     <button
+      ref={trash}
       type="button"
-      onClick={onClick}
+      onClick={() => setAsking(true)}
       disabled={disabled}
       aria-label={label}
       title={label}
@@ -39,6 +71,44 @@ function DeleteButton({ label, onClick, disabled }: { label: string; onClick: ()
     >
       <TrashIcon className="text-[20px]" />
     </button>
+  );
+}
+
+/** ลบข้อมูลทั้งหมด, with the same ask-first step and a plain warning that it cannot be undone. */
+function DeleteAll({ onConfirm, disabled }: { onConfirm: () => void; disabled: boolean }) {
+  const [asking, setAsking] = useState(false);
+  const cancelBtn = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    if (asking) cancelBtn.current?.focus();
+  }, [asking]);
+
+  if (!asking) {
+    return (
+      <button type="button" disabled={disabled} onClick={() => setAsking(true)} className="min-h-11 self-start text-caption text-ink-muted underline hover:text-ink">
+        {copy.profile.deleteAll}
+      </button>
+    );
+  }
+  return (
+    <div role="group" aria-label={copy.profile.deleteAll} className="flex flex-col gap-2 py-2" onKeyDown={(e) => e.key === "Escape" && setAsking(false)}>
+      <p className="m-0 text-caption text-ink">{copy.profile.deleteAllConfirm}</p>
+      <div className="flex gap-2">
+        <button
+          type="button"
+          disabled={disabled}
+          onClick={() => {
+            setAsking(false);
+            onConfirm();
+          }}
+          className="nm-btn nm-btn--danger min-h-11 px-4 text-caption"
+        >
+          {copy.profile.deleteAll}
+        </button>
+        <button ref={cancelBtn} type="button" onClick={() => setAsking(false)} className="nm-btn nm-btn--secondary min-h-11 px-4 text-caption">
+          {copy.profile.cancel}
+        </button>
+      </div>
+    </div>
   );
 }
 
@@ -274,16 +344,7 @@ function PanelBody({ profile: p, chatSession, onAsk }: { profile: Profile; chatS
             {copy.profile.deleteFailed}
           </p>
         )}
-        {anything && (
-          <button
-            type="button"
-            disabled={del.isPending}
-            onClick={() => del.mutate({ facts: "all" })}
-            className="min-h-11 self-start text-caption text-ink-muted underline hover:text-ink"
-          >
-            {copy.profile.deleteAll}
-          </button>
-        )}
+        {anything && <DeleteAll disabled={del.isPending} onConfirm={() => del.mutate({ facts: "all" })} />}
       </div>
     </>
   );
