@@ -1,9 +1,10 @@
-import { useEffect, useId, useRef, useState, type ComponentType, type ReactNode } from "react";
+import { useEffect, useId, useRef, useState, type ComponentType, type FormEvent, type MouseEvent, type ReactNode, type Ref } from "react";
 import { Link } from "react-router";
 import { useSession } from "../../auth/session";
-import { useDeleteFromProfile, useProfile } from "../../api/queries";
+import { ApiError } from "../../api/client";
+import { useDeleteFromProfile, useProfile, useRenameInProfile } from "../../api/queries";
 import type { Fact, FactKind, Profile, SavedPlace } from "../../api/types";
-import { BellIcon, BuildingsIcon, CaretRightIcon, CloseIcon, HouseIcon, TrashIcon, UsersIcon } from "../../components/icons";
+import { BellIcon, BuildingsIcon, CaretRightIcon, CloseIcon, HouseIcon, PencilIcon, TrashIcon, UsersIcon } from "../../components/icons";
 import { TierBadge } from "../../components/TierBadge";
 import { copy } from "../../copy";
 import { formatBankGap, formatDate, formatDistance } from "../../lib/format";
@@ -27,109 +28,299 @@ const STEP_ROW: Record<Step["key"], RowKey> = { place: "place", household: "hous
 const HOUSEHOLD: FactKind[] = ["household", "needs"];
 const HOUSE: FactKind[] = ["house", "assets", "history"];
 
-/** Trash icon that asks first: one tap swaps it for ลบ / ยกเลิก, so a stray tap never deletes. Focus lands on ยกเลิก. */
-function DeleteButton({ label, onClick, disabled }: { label: string; onClick: () => void; disabled: boolean }) {
-  const [asking, setAsking] = useState(false);
-  const trash = useRef<HTMLButtonElement>(null);
-  const cancelBtn = useRef<HTMLButtonElement>(null);
-  const wasAsking = useRef(false);
-  useEffect(() => {
-    if (asking) cancelBtn.current?.focus();
-    else if (wasAsking.current) trash.current?.focus();
-    wasAsking.current = asking;
-  }, [asking]);
-
-  if (asking) {
-    return (
-      <span role="group" aria-label={copy.profile.confirmLabel(label)} className="inline-flex shrink-0 items-center gap-1" onKeyDown={(e) => e.key === "Escape" && setAsking(false)}>
-        <button
-          type="button"
-          disabled={disabled}
-          onClick={() => {
-            setAsking(false);
-            onClick();
-          }}
-          className="nm-btn nm-btn--danger min-h-11 px-3 text-caption"
-        >
-          {copy.profile.delete}
-        </button>
-        <button ref={cancelBtn} type="button" onClick={() => setAsking(false)} className="nm-btn nm-btn--secondary min-h-11 px-3 text-caption">
-          {copy.profile.cancel}
-        </button>
-      </span>
-    );
-  }
-  return (
-    <button
-      ref={trash}
-      type="button"
-      onClick={() => setAsking(true)}
-      disabled={disabled}
-      aria-label={label}
-      title={label}
-      className="inline-flex size-11 shrink-0 items-center justify-center rounded-md text-ink-muted hover:bg-surface-raised hover:text-ink"
-    >
-      <TrashIcon className="text-[20px]" />
-    </button>
-  );
-}
-
 /**
- * ลบข้อมูลทั้งหมด, with the same ask-first step and a plain warning that it cannot be undone. The asking state
- * lives in ChatPage, so the /forget command can open this step too.
+ * The ask-first step, as a bar under what it deletes: the question, then ยกเลิก and ลบ (beside it, or under it when
+ * narrow). A stray tap on a trash icon never deletes. Opened from the keyboard, focus lands on ยกเลิก; Esc cancels.
  */
-function DeleteAll({ onConfirm, disabled, asking, setAsking }: { onConfirm: () => void; disabled: boolean } & ForgetAsk) {
+function ConfirmBar({
+  question,
+  confirm,
+  onConfirm,
+  onCancel,
+  disabled,
+  autoFocus,
+  className = "border-t border-line pt-3",
+}: {
+  question: string;
+  confirm: string;
+  onConfirm: () => void;
+  onCancel: () => void;
+  disabled: boolean;
+  /** Only for keyboard use: a script focus after a tap would draw the focus ring on ยกเลิก. */
+  autoFocus: boolean;
+  className?: string;
+}) {
   const cancelBtn = useRef<HTMLButtonElement>(null);
   useEffect(() => {
-    if (asking) cancelBtn.current?.focus();
-  }, [asking]);
-
-  if (!asking) {
-    return (
-      <button type="button" disabled={disabled} onClick={() => setAsking(true)} className="min-h-11 self-start text-caption text-ink-muted underline hover:text-ink">
-        {copy.profile.deleteAll}
-      </button>
-    );
-  }
+    if (autoFocus) cancelBtn.current?.focus();
+  }, [autoFocus]);
   return (
-    <div role="group" aria-label={copy.profile.deleteAll} className="flex flex-col gap-2 py-2" onKeyDown={(e) => e.key === "Escape" && setAsking(false)}>
-      <p className="m-0 text-caption text-ink">{copy.profile.deleteAllConfirm}</p>
-      <div className="flex gap-2">
-        <button
-          type="button"
-          disabled={disabled}
-          onClick={() => {
-            setAsking(false);
-            onConfirm();
-          }}
-          className="nm-btn nm-btn--danger min-h-11 px-4 text-caption"
-        >
-          {copy.profile.deleteAll}
-        </button>
-        <button ref={cancelBtn} type="button" onClick={() => setAsking(false)} className="nm-btn nm-btn--secondary min-h-11 px-4 text-caption">
+    <div
+      role="group"
+      aria-label={question}
+      onKeyDown={(e) => e.key === "Escape" && onCancel()}
+      className={`nm-confirm-in flex flex-wrap items-center gap-x-3 gap-y-2 ${className}`}
+    >
+      <p className="m-0 min-w-0 grow basis-40 text-caption text-ink">{question}</p>
+      <div className="ml-auto flex shrink-0 gap-1.5">
+        <button ref={cancelBtn} type="button" onClick={onCancel} className="nm-btn nm-btn--secondary min-h-9 px-3 py-1 text-caption">
           {copy.profile.cancel}
+        </button>
+        <button type="button" disabled={disabled} onClick={onConfirm} className="nm-btn nm-btn--danger min-h-9 px-3 py-1 text-caption">
+          {confirm}
         </button>
       </div>
     </div>
   );
 }
 
-/** DS SavedPlace: the tier badge belongs to the station, so the station is named next to it. */
-function Place({ place, onDelete, busy }: { place: SavedPlace; onDelete: () => void; busy: boolean }) {
+/**
+ * The rename step, a bar like ConfirmBar: one box per name (a chip can hold several, "ยาย, ตา"), then ยกเลิก and
+ * บันทึก. The first box takes focus with its text selected; Enter saves, Esc cancels. Stays open on an error.
+ */
+function RenameBar({
+  names,
+  maxLength,
+  onSave,
+  onCancel,
+  className = "border-t border-line pt-3",
+}: {
+  names: string[];
+  maxLength: number;
+  /** Rejects with the ApiError to show; resolves once saved (the parent then closes the bar). */
+  onSave: (values: string[]) => Promise<void>;
+  onCancel: () => void;
+  className?: string;
+}) {
+  const [values, setValues] = useState(names);
+  const [error, setError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  const first = useRef<HTMLInputElement>(null);
+  const errorId = useId();
+  useEffect(() => {
+    first.current?.focus();
+    first.current?.select();
+  }, []);
+
+  const submit = async (e: FormEvent) => {
+    e.preventDefault();
+    const clean = values.map((v) => v.trim().replace(/\s+/g, " "));
+    if (clean.some((v) => !v)) {
+      setError(copy.profile.nameEmpty);
+      return;
+    }
+    setSaving(true);
+    setError(null);
+    try {
+      await onSave(clean);
+    } catch (err) {
+      setError(err instanceof ApiError && err.status === 409 ? copy.profile.nameTaken : copy.profile.renameFailed);
+      setSaving(false);
+    }
+  };
+
+  return (
+    <form
+      onSubmit={(e) => void submit(e)}
+      onKeyDown={(e) => {
+        if (e.key !== "Escape") return;
+        e.preventDefault(); // not the phone drawer's Esc too
+        onCancel();
+      }}
+      className={`nm-confirm-in flex flex-col gap-2 ${className}`}
+    >
+      {values.map((v, i) => (
+        <input
+          key={i}
+          ref={i === 0 ? first : undefined}
+          value={v}
+          maxLength={maxLength}
+          onChange={(e) => setValues((vs) => vs.map((x, j) => (j === i ? e.target.value : x)))}
+          aria-label={names.length > 1 ? `${copy.profile.renameField} (${names[i]})` : copy.profile.renameField}
+          aria-invalid={error ? true : undefined}
+          aria-describedby={error ? errorId : undefined}
+          // 16 px: smaller text makes iOS zoom the page on focus.
+          className="min-h-10 w-full min-w-0 rounded-md border border-line-strong bg-surface-raised px-3 text-[16px] text-ink"
+        />
+      ))}
+      {error && (
+        <p id={errorId} role="alert" className="nm-field-error m-0">
+          {error}
+        </p>
+      )}
+      <div className="ml-auto flex shrink-0 gap-1.5">
+        <button type="button" onClick={onCancel} className="nm-btn nm-btn--secondary min-h-9 px-3 py-1 text-caption">
+          {copy.profile.cancel}
+        </button>
+        <button type="submit" disabled={saving} className="nm-btn nm-btn--primary min-h-9 px-3 py-1 text-caption">
+          {copy.profile.save}
+        </button>
+      </div>
+    </form>
+  );
+}
+
+/**
+ * One item's ask-first state. Opened from the keyboard (a key press on a button is a click with detail 0), focus goes
+ * to ยกเลิก and, once the bar closes, back to the trash icon; a tap moves focus nowhere, so no focus ring appears.
+ */
+function useAsk() {
+  const [asking, setAsking] = useState(false);
+  const [byKeyboard, setByKeyboard] = useState(false);
+  const trash = useRef<HTMLButtonElement>(null);
+  const wasAsking = useRef(false);
+  useEffect(() => {
+    if (!asking && wasAsking.current && byKeyboard) trash.current?.focus();
+    wasAsking.current = asking;
+  }, [asking, byKeyboard]);
+  const toggle = (e: MouseEvent) => {
+    setByKeyboard(e.detail === 0);
+    setAsking(!asking);
+  };
+  return { asking, byKeyboard, toggle, close: () => setAsking(false), trash };
+}
+
+/** 44 px to tap, drawn as a 20 px icon; `className` nudges it so the icon, not the box, lines up with the text. */
+function TrashButton({
+  label,
+  onClick,
+  disabled,
+  asking,
+  className = "",
+  ref,
+}: {
+  label: string;
+  onClick: (e: MouseEvent) => void;
+  disabled: boolean;
+  asking: boolean;
+  className?: string;
+  ref: Ref<HTMLButtonElement>;
+}) {
+  return (
+    <button
+      ref={ref}
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      aria-label={label}
+      title={label}
+      aria-expanded={asking}
+      className={`inline-flex size-11 shrink-0 items-center justify-center rounded-md transition-colors hover:bg-surface-raised hover:text-ink disabled:pointer-events-none disabled:opacity-40 ${asking ? "bg-surface-raised text-ink" : "text-ink-muted"} ${className}`}
+    >
+      <TrashIcon className="text-[20px]" />
+    </button>
+  );
+}
+
+/** Deletes a whole row (คนในบ้าน, บ้านและทรัพย์สิน): the trash icon under its chips turns into the confirm bar. */
+function DeleteFacts({ what, onConfirm, disabled }: { what: string; onConfirm: () => void; disabled: boolean }) {
+  const { asking, byKeyboard, toggle, close, trash } = useAsk();
+  if (!asking) {
+    return <TrashButton ref={trash} label={copy.profile.deleteLabel(what)} onClick={toggle} disabled={disabled} asking={false} className="-ml-3 self-start" />;
+  }
+  return (
+    <ConfirmBar
+      question={copy.profile.deleteAsk(what)}
+      confirm={copy.profile.delete}
+      disabled={disabled}
+      autoFocus={byKeyboard}
+      onCancel={close}
+      onConfirm={() => {
+        close();
+        onConfirm();
+      }}
+    />
+  );
+}
+
+/**
+ * ลบข้อมูลทั้งหมด, with the same confirm bar and a plain warning that it cannot be undone. The asking state
+ * lives in ChatPage, so the /forget command can open this step too.
+ */
+function DeleteAll({ onConfirm, disabled, asking, setAsking }: { onConfirm: () => void; disabled: boolean } & ForgetAsk) {
+  if (!asking) {
+    return (
+      <button
+        type="button"
+        disabled={disabled}
+        onClick={() => setAsking(true)}
+        className="min-h-11 self-start text-caption text-ink-muted underline hover:text-ink disabled:pointer-events-none disabled:opacity-40"
+      >
+        {copy.profile.deleteAll}
+      </button>
+    );
+  }
+  // Also opened by typing /forget, so ยกเลิก takes focus as before.
+  return (
+    <ConfirmBar
+      question={copy.profile.deleteAllConfirm}
+      confirm={copy.profile.deleteAll}
+      disabled={disabled}
+      autoFocus
+      className="py-2"
+      onCancel={() => setAsking(false)}
+      onConfirm={() => {
+        setAsking(false);
+        onConfirm();
+      }}
+    />
+  );
+}
+
+/**
+ * DS SavedPlace: the tier badge belongs to the station, so the station is named next to it.
+ * The name is a button (pencil after it) that opens the rename bar; the trash icon stays in the corner. Either bar
+ * opens across the bottom of the card, one at a time.
+ */
+function Place({
+  place,
+  onDelete,
+  onRename,
+  busy,
+}: {
+  place: SavedPlace;
+  onDelete: () => void;
+  onRename: (label: string) => Promise<unknown>;
+  busy: boolean;
+}) {
   const n = place.nearest;
+  const { asking, byKeyboard, toggle, close, trash } = useAsk();
+  const [renaming, setRenaming] = useState(false);
   return (
     <div className="nm-place">
-      <div className="flex items-start justify-between gap-2">
+      <div className="flex min-w-0 items-start justify-between gap-2">
         <div className="min-w-0">
-          <div className="nm-place__label">
-            <span className="nm-house" />
-            {place.label}
-          </div>
+          <button
+            type="button"
+            onClick={() => {
+              close();
+              setRenaming(!renaming);
+            }}
+            aria-label={copy.profile.renameLabel(place.label)}
+            aria-expanded={renaming}
+            title={copy.profile.renameLabel(place.label)}
+            // items-start + nudges: a long name wraps in the narrow column, and the icons stay on its first line.
+            className="nm-place__label group -mx-1 max-w-full items-start rounded-sm px-1 text-left hover:bg-surface-raised/70"
+          >
+            <span className="nm-house mt-1.5" />
+            <span className="min-w-0 break-words">{place.label}</span>
+            <PencilIcon className="mt-[5px] shrink-0 text-[15px] opacity-60 group-hover:opacity-100" />
+          </button>
           {place.where && <div className="nm-place__where">{place.where}</div>}
         </div>
-        <div className="flex shrink-0 items-center gap-1">
+        {/* Pulled up and out so the badge and icon centre on the name's line, not below it. */}
+        <div className="-mt-2.5 -mr-2 flex shrink-0 items-center gap-1">
           {n && <TierBadge tier={n.risk_tier ?? "unknown"} soft />}
-          <DeleteButton label={copy.profile.deleteLabel(place.label)} onClick={onDelete} disabled={busy} />
+          <TrashButton
+            ref={trash}
+            label={copy.profile.deleteLabel(place.label)}
+            onClick={(e) => {
+              setRenaming(false);
+              toggle(e);
+            }}
+            disabled={busy}
+            asking={asking}
+          />
         </div>
       </div>
       {n && (
@@ -139,19 +330,80 @@ function Place({ place, onDelete, busy }: { place: SavedPlace; onDelete: () => v
         </div>
       )}
       {place.approx && <div className="nm-place__where">{copy.profile.approx}</div>}
+      {renaming && (
+        <RenameBar
+          names={[place.label]}
+          maxLength={40}
+          onCancel={() => setRenaming(false)}
+          onSave={async ([label]) => {
+            if (label !== place.label) await onRename(label);
+            setRenaming(false);
+          }}
+        />
+      )}
+      {asking && (
+        <ConfirmBar
+          question={copy.profile.deleteAsk(place.label)}
+          confirm={copy.profile.delete}
+          disabled={busy}
+          autoFocus={byKeyboard}
+          onCancel={close}
+          onConfirm={() => {
+            close();
+            onDelete();
+          }}
+        />
+      )}
     </div>
   );
 }
 
-function Chips({ facts }: { facts: Fact[] }) {
+const factKey = (f: Fact) => `${f.kind}:${f.text}`;
+
+/**
+ * The facts as chips. A chip that holds names the person gave (Fact.names: ยาย, a pet, a past flood) is a button with
+ * a pencil; it opens the rename bar under the chips. Checklist facts (มีรถยนต์) have nothing to rename.
+ */
+function Chips({ facts, onRename }: { facts: Fact[]; onRename: (fact: Fact, names: string[]) => Promise<void> }) {
+  const [editing, setEditing] = useState<string | null>(null);
+  const current = facts.find((f) => factKey(f) === editing);
   return (
-    <div className="nm-row">
-      {facts.map((f) => (
-        <span key={`${f.kind}:${f.text}`} className="nm-chip nm-chip--memory">
-          {f.text}
-        </span>
-      ))}
-    </div>
+    <>
+      <div className="nm-row">
+        {facts.map((f) =>
+          f.list ? (
+            <button
+              key={factKey(f)}
+              type="button"
+              onClick={() => setEditing(editing === factKey(f) ? null : factKey(f))}
+              aria-label={copy.profile.renameLabel(f.text)}
+              aria-expanded={editing === factKey(f)}
+              title={copy.profile.renameLabel(f.text)}
+              className="nm-chip nm-chip--memory group cursor-pointer hover:ring-1 hover:ring-home/40"
+            >
+              {f.text}
+              <PencilIcon className="shrink-0 text-[15px] opacity-60 group-hover:opacity-100" />
+            </button>
+          ) : (
+            <span key={factKey(f)} className="nm-chip nm-chip--memory">
+              {f.text}
+            </span>
+          ),
+        )}
+      </div>
+      {current && (
+        <RenameBar
+          key={factKey(current)}
+          names={current.names}
+          maxLength={60}
+          onCancel={() => setEditing(null)}
+          onSave={async (names) => {
+            await onRename(current, names);
+            setEditing(null);
+          }}
+        />
+      )}
+    </>
   );
 }
 
@@ -229,6 +481,7 @@ function PanelBody({
   forget: ForgetAsk;
 }) {
   const del = useDeleteFromProfile(chatSession);
+  const rename = useRenameInProfile(chatSession);
   const session = useSession();
   const ids = useId();
   // Open the row of the next thing still to tell (all told: the places).
@@ -240,6 +493,12 @@ function PanelBody({
   const anything = p.places.length + p.facts.length > 0;
   const deleteKinds = async (kinds: FactKind[]) => {
     for (const k of kinds) await del.mutateAsync({ facts: k });
+  };
+  // One PATCH per changed name (a chip like "ยาย, ตา" can change both).
+  const renameNames = async (fact: Fact, names: string[]) => {
+    for (const [i, to] of names.entries()) {
+      if (fact.list && to !== fact.names[i]) await rename.mutateAsync({ list: fact.list, from: fact.names[i], to });
+    }
   };
   const first = p.places[0];
   const factsLine = (facts: Fact[]) => facts.map((f) => f.text).join(" · ");
@@ -268,7 +527,15 @@ function PanelBody({
         }
       >
         {p.places.length ? (
-          p.places.map((pl) => <Place key={pl.id} place={pl} busy={del.isPending} onDelete={() => del.mutate({ place: pl.id })} />)
+          p.places.map((pl) => (
+            <Place
+              key={pl.id}
+              place={pl}
+              busy={del.isPending}
+              onDelete={() => del.mutate({ place: pl.id })}
+              onRename={(label) => rename.mutateAsync({ place: pl.id, label })}
+            />
+          ))
         ) : (
           <>
             <span className="text-ink-muted">{copy.profile.placesEmpty}</span>
@@ -288,9 +555,9 @@ function PanelBody({
       >
         {household.length ? (
           <>
-            <Chips facts={household} />
+            <Chips facts={household} onRename={renameNames} />
             {p.consent.granted && p.consent.ts && <span className="nm-memory__note">{copy.profile.consentNote(formatDate(p.consent.ts))}</span>}
-            <DeleteButton label={copy.profile.deleteLabel(copy.profile.household)} onClick={() => void deleteKinds(HOUSEHOLD)} disabled={del.isPending} />
+            <DeleteFacts what={copy.profile.household} onConfirm={() => void deleteKinds(HOUSEHOLD)} disabled={del.isPending} />
           </>
         ) : (
           <>
@@ -312,8 +579,8 @@ function PanelBody({
       >
         {house.length ? (
           <>
-            <Chips facts={house} />
-            <DeleteButton label={copy.profile.deleteLabel(copy.profile.house)} onClick={() => void deleteKinds(HOUSE)} disabled={del.isPending} />
+            <Chips facts={house} onRename={renameNames} />
+            <DeleteFacts what={copy.profile.house} onConfirm={() => void deleteKinds(HOUSE)} disabled={del.isPending} />
           </>
         ) : (
           <>

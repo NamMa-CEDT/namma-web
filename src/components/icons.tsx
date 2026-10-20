@@ -20,6 +20,7 @@ import {
   Minus,
   Moon,
   PaperPlaneRight,
+  PencilSimple,
   SidebarSimple,
   Sun,
   Trash,
@@ -51,6 +52,7 @@ export const ArrowUpIcon = wrap(ArrowUp);
 export const ArrowRightIcon = wrap(ArrowRight);
 export const MicIcon = wrap(Microphone);
 export const TrashIcon = wrap(Trash);
+export const PencilIcon = wrap(PencilSimple);
 export const UserIcon = wrap(UserCircle);
 export const ArrowDownIcon = wrap(ArrowDown);
 export const MinusIcon = wrap(Minus);

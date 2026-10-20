@@ -316,6 +316,20 @@ describe("profile (what the chat remembers)", () => {
     expect((await call("DELETE", "/api/profile/facts/bogus", undefined, undefined, sid)).status).toBe(400);
   });
 
+  it("renames a place, refusing a label another place has", async () => {
+    const sid = "rename-1";
+    await chat(sid, { message: "บ้านแม่อยู่บางบาล อยุธยา น้ำจะถึงไหม" });
+    const id = (await profile(sid)).places[0].id;
+    const r = await call("PATCH", `/api/profile/places/${id}`, { label: "  บ้านคุณแม่ " }, undefined, sid);
+    expect(r.status).toBe(200);
+    expect(r.json.data.places[0].label).toBe("บ้านคุณแม่");
+    expect((await call("PATCH", `/api/profile/places/${id}`, { label: " " }, undefined, sid)).status).toBe(400);
+    expect((await call("PATCH", `/api/profile/places/${id}`, { label: "x" }, undefined, "theirs")).status).toBe(404);
+    const names = { list: "immobile", from: "ยาย", to: "ยายสมศรี" };
+    expect((await call("PATCH", "/api/profile/names", names, undefined, sid)).status).toBe(404);
+    expect((await call("PATCH", "/api/profile/names", { ...names, list: "car" }, undefined, sid)).status).toBe(400);
+  });
+
   it("another session cannot delete my place", async () => {
     await chat("mine", { message: "บ้านแม่อยู่บางบาล อยุธยา น้ำจะถึงไหม" });
     const id = (await profile("mine")).places[0].id;

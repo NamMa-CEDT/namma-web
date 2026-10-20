@@ -357,6 +357,9 @@
 .nm-qr-dialog { margin: auto; padding: 0; border: 1px solid var(--line); border-radius: 12px; width: min(calc(100vw - 32px), 22rem); background: var(--surface-raised); color: var(--ink); box-shadow: var(--shadow-raised); }
 .nm-qr-dialog::backdrop { background: rgb(11 26 46 / 0.45); }
 @keyframes nm-drawer-in { from { transform: translateX(-100%); } to { transform: none; } }
+/* The ask-first bar under a deletable item eases in rather than popping. */
+.nm-confirm-in { animation: nm-confirm-in 160ms cubic-bezier(0.25, 1, 0.5, 1); }
+@keyframes nm-confirm-in { from { opacity: 0; transform: translateY(-4px); } }
 .nm-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 }
 

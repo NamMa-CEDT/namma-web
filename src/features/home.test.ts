@@ -62,7 +62,7 @@ describe("ProfilePanel meter", () => {
     expect(setupSteps(withPlace).map((s) => s.done)).toEqual([true, false, false, false]);
     const consented: Profile = {
       ...withPlace,
-      facts: [{ kind: "household", text: "ยาย", sensitive: true }],
+      facts: [{ kind: "household", text: "ยาย", sensitive: true, list: null, names: [] }],
       consent: { granted: true, ts: "2026-10-18T10:00:00+07:00" },
     };
     expect(setupSteps(consented).map((s) => s.done)).toEqual([true, true, true, false]);

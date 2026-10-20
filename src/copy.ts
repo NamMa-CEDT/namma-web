@@ -193,10 +193,16 @@ export const copy = {
     deleteLabel: (what: string) => `ลบ ${what}`,
     deleteAll: "ลบข้อมูลทั้งหมด",
     deleteAllConfirm: "ลบข้อมูลที่จำไว้ทั้งหมดไหม ลบแล้วกู้คืนไม่ได้",
-    confirmLabel: (what: string) => `ยืนยัน${what}`,
+    deleteAsk: (what: string) => `ลบ “${what}” ไหม`,
     cancel: "ยกเลิก",
     close: "ปิด",
     deleteFailed: "ลบไม่สำเร็จ ลองอีกครั้งค่ะ",
+    renameLabel: (what: string) => `เปลี่ยนชื่อ ${what}`,
+    renameField: "ชื่อใหม่",
+    save: "บันทึก",
+    nameTaken: "มีชื่อนี้อยู่แล้ว ลองชื่ออื่นค่ะ",
+    nameEmpty: "ใส่ชื่อก่อนค่ะ",
+    renameFailed: "เปลี่ยนชื่อไม่สำเร็จ ลองอีกครั้งค่ะ",
   },
 
   footer: {

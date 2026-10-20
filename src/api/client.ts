@@ -23,6 +23,7 @@ import type {
   StationReadings,
   StationSummary,
   FactKind,
+  NameList,
 } from "./types";
 
 export type Transport = (req: Request) => Promise<Response>;
@@ -139,4 +140,8 @@ export const api = {
     request<Profile>("DELETE", `/api/profile/places/${id}`, { headers: { "X-Chat-Session": chatSession } }),
   deleteFacts: (chatSession: string, kind: FactKind | "all") =>
     request<Profile>("DELETE", `/api/profile/facts/${kind}`, { headers: { "X-Chat-Session": chatSession } }),
+  renamePlace: (chatSession: string, id: number, label: string) =>
+    request<Profile>("PATCH", `/api/profile/places/${id}`, { body: { label }, headers: { "X-Chat-Session": chatSession } }),
+  renameName: (chatSession: string, r: { list: NameList; from: string; to: string }) =>
+    request<Profile>("PATCH", "/api/profile/names", { body: r, headers: { "X-Chat-Session": chatSession } }),
 };

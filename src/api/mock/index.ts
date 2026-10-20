@@ -185,7 +185,7 @@ function profileOf(c: ChatSessionState | undefined, s: MockState, lineLinked: bo
   if (!c) return { places: [], facts: [], consent: { granted: false, ts: null }, pending_consent: false, line_linked: lineLinked };
   // Household facts are sensitive: shown (and kept) only with consent, as on the backend.
   const facts: Fact[] = c.consent
-    ? c.household.map((v): Fact => ({ kind: "household", text: copy.vulnerable[v], sensitive: true }))
+    ? c.household.map((v): Fact => ({ kind: "household", text: copy.vulnerable[v], sensitive: true, list: null, names: [] }))
     : [];
   return {
     places: (c.places ?? []).map((p) => {
@@ -235,6 +235,35 @@ route("DELETE", "/api/profile/places/:id", (ctx) => {
     out = { data: profileOf(c, s, !!userFor(ctx.token, s)) };
   });
   return out;
+});
+
+// The mock keeps household facts as categories without names, so only places rename (the names route always 404s).
+route("PATCH", "/api/profile/places/:id", (ctx) => {
+  const label = String((ctx.body as { label?: unknown } | null)?.label ?? "").trim().replace(/\s+/g, " ");
+  if (!label) return fail(400, "bad_request", "name is empty");
+  let out: Result = {};
+  updateState((s) => {
+    const c = chatFor(ctx, s);
+    const id = Number(ctx.params.id);
+    const place = c?.places?.find((p) => p.id === id);
+    if (!c || !place) {
+      out = fail(404, "not_found", `place ${id} not found`);
+      return;
+    }
+    if (c.places?.some((p) => p.id !== id && p.label === label)) {
+      out = fail(409, "label_taken", `another place is already called ${label}`);
+      return;
+    }
+    place.label = label;
+    out = { data: profileOf(c, s, !!userFor(ctx.token, s)) };
+  });
+  return out;
+});
+
+route("PATCH", "/api/profile/names", (ctx) => {
+  const b = ctx.body as { list?: string; from?: string } | null;
+  if (!["immobile", "pets", "past_floods"].includes(b?.list ?? "")) return fail(400, "bad_request", `unknown list: ${b?.list}`);
+  return fail(404, "not_found", `${b?.list} has no ${b?.from}`);
 });
 
 route("DELETE", "/api/profile/facts/:kind", (ctx) => {

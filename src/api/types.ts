@@ -396,11 +396,17 @@ export interface SavedPlace {
 
 export type FactKind = "household" | "needs" | "house" | "assets" | "history";
 
+/** Names the person gave, which can be renamed: who can't walk, pets, past floods (one fact each). */
+export type NameList = "immobile" | "pets" | "past_floods";
+
 export interface Fact {
   kind: FactKind;
   text: string;
   /** Health or vulnerability: saved only with consent (PDPA). */
   sensitive: boolean;
+  /** The name list this line shows; null for checklist facts (มีรถยนต์, บ้าน 2 ชั้น), which have no name. */
+  list: NameList | null;
+  names: string[];
 }
 
 export interface Profile {

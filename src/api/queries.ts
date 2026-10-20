@@ -1,7 +1,7 @@
 import { keepPreviousData, useMutation, useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
 import { fetchProvinces, fetchTambons } from "../lib/boundaries";
 import { api } from "./client";
-import type { FactKind, FloodLevel, FloodPeriod, Profile } from "./types";
+import type { FactKind, FloodLevel, FloodPeriod, NameList, Profile } from "./types";
 
 // ThaiWater updates every 10 min (HII) / hourly (RID); no need to poll faster than a minute.
 const STATION_REFRESH_MS = 60_000;
@@ -201,6 +201,16 @@ export function useDeleteFromProfile(chatSession: string) {
   return useMutation({
     mutationFn: (what: { place: number } | { facts: FactKind | "all" }) =>
       "place" in what ? api.deletePlace(chatSession, what.place) : api.deleteFacts(chatSession, what.facts),
+    onSuccess: (profile: Profile) => qc.setQueryData(keys.profile(chatSession), profile),
+  });
+}
+
+/** Rename a place, or one name the person gave (Fact.names). 409 when the new name is already used. */
+export function useRenameInProfile(chatSession: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (what: { place: number; label: string } | { list: NameList; from: string; to: string }) =>
+      "place" in what ? api.renamePlace(chatSession, what.place, what.label) : api.renameName(chatSession, what),
     onSuccess: (profile: Profile) => qc.setQueryData(keys.profile(chatSession), profile),
   });
 }
