@@ -128,6 +128,11 @@ export const api = {
   /** chat_session: the anonymous web chat to fold into the account on sign-in. */
   login: (id_token: string, chat_session?: string, provider: Provider = "line") =>
     request<LoginResponse>("POST", `/api/auth/${provider}`, { body: { id_token, chat_session } }),
+  /** LINE web login: where to send the browser (sets the backend's state cookie). */
+  lineStart: (intent: "login" | "link", chat_session?: string) =>
+    request<{ authorize_url: string }>("POST", "/api/auth/line/start", { body: { intent, chat_session } }),
+  /** The session for a finished LINE web login (the one-time line_claim LINE's callback put in the URL). */
+  lineClaim: (claim: string) => request<LoginResponse>("POST", "/api/auth/line/claim", { body: { claim } }),
   link: (provider: Provider, id_token: string) =>
     request<SessionUser>("POST", `/api/auth/link/${provider}`, { body: { id_token } }),
   unlink: (provider: Provider) => request<SessionUser>("DELETE", `/api/auth/link/${provider}`),

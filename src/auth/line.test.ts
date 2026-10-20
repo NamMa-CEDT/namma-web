@@ -1,12 +1,11 @@
+// LINE sign-in in a browser: the backend's LINE web login (start → LINE → callback → claim).
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const liff = vi.hoisted(() => ({
   init: vi.fn(async () => undefined),
   isLoggedIn: vi.fn(() => false),
-  getIDToken: vi.fn((): string | null => null),
   isInClient: vi.fn(() => false),
-  getDecodedIDToken: vi.fn((): { exp: number } | null => ({ exp: Date.now() / 1000 + 3600 })),
-  login: vi.fn(),
+  getIDToken: vi.fn((): string | null => null),
   logout: vi.fn(),
 }));
 vi.mock("@line/liff", () => ({ default: liff }));
@@ -14,138 +13,96 @@ vi.mock("@line/liff", () => ({ default: liff }));
 const api = vi.hoisted(() => ({
   login: vi.fn(async () => ({ session_token: "s", user: { display_name: "น้ำ", picture_url: null } })),
   link: vi.fn(async () => ({ display_name: "น้ำ", picture_url: null, identities: { line: true, google: null } })),
+  lineStart: vi.fn(async () => ({ authorize_url: "https://access.line.me/oauth2/v2.1/authorize?state=x" })),
+  lineClaim: vi.fn(async () => ({ session_token: "claimed", user: { display_name: "น้ำ", picture_url: null }, merged_chat: true })),
+  logout: vi.fn(async () => undefined),
 }));
-vi.mock("../api/client", async (orig) => ({ ApiError: (await orig<typeof import("../api/client")>()).ApiError, api, API_MODE: "mock" }));
+vi.mock("../api/client", () => ({ api, API_MODE: "http" }));
 
-const returned = vi.hoisted(() => ({ value: false }));
-vi.mock("../lib/liff", async (orig) => ({ ...(await orig<object>()), returnedFromLine: () => returned.value }));
-
-import { ApiError } from "../api/client";
-import { LineReturnError, loginLine, linkLine, logout, takeLinePending } from "./session";
+const assign = vi.fn();
 
 beforeEach(() => {
   localStorage.clear();
   vi.clearAllMocks();
-  returned.value = false;
-  liff.getDecodedIDToken.mockReturnValue({ exp: Date.now() / 1000 + 3600 });
+  vi.resetModules();
+  vi.stubEnv("VITE_LIFF_ID", "test-liff"); // read by lib/liff when it loads
+  vi.stubGlobal("location", { ...window.location, assign, search: "", hash: "", pathname: "/" });
+  window.history.replaceState(null, "", "/");
 });
 
-describe("LINE login (LIFF)", () => {
-  it("sends the browser to LINE and remembers the sign-in until it returns", async () => {
-    liff.isLoggedIn.mockReturnValue(false);
+const load = () => import("./session");
+
+describe("LINE sign-in in a browser", () => {
+  it("sends the browser to LINE through the backend, with the anonymous chat to fold in", async () => {
+    const { loginLine } = await load();
 
     expect(await loginLine()).toBeNull();
 
-    // The bare page: LINE adds ?code=… and LIFF reads it from the query, so no #/route in it.
-    expect(liff.login).toHaveBeenCalledWith({ redirectUri: window.location.origin + window.location.pathname });
+    expect(api.lineStart).toHaveBeenCalledWith("login", expect.any(String));
+    expect(assign).toHaveBeenCalledWith("https://access.line.me/oauth2/v2.1/authorize?state=x");
     expect(api.login).not.toHaveBeenCalled();
-    expect(takeLinePending()).toBe("login");
-    expect(takeLinePending()).toBeNull();
   });
 
-  it("exchanges the LINE ID token with the backend once LINE is signed in", async () => {
+  it("links through the backend too, without a chat session", async () => {
+    const { linkLine } = await load();
+
+    expect(await linkLine()).toBeNull();
+
+    expect(api.lineStart).toHaveBeenCalledWith("link", undefined);
+  });
+
+  it("back from LINE: exchanges the claim for a session and cleans the address bar", async () => {
+    vi.stubGlobal("location", { ...window.location, assign, search: "?line_claim=abc", hash: "#/account", pathname: "/" });
+    const replace = vi.spyOn(window.history, "replaceState");
+    const session = await load();
+
+    await session.initSession();
+
+    expect(api.lineClaim).toHaveBeenCalledWith("abc");
+    expect(session.getSession()?.token).toBe("claimed");
+    expect(replace).toHaveBeenCalledWith(null, "", "/#/account");
+    expect(session.takeLineResult()).toEqual({ merged: true });
+    expect(session.takeLineResult()).toBeNull();
+  });
+
+  it("back from LINE with an error: no session, the error for the account page", async () => {
+    vi.stubGlobal("location", { ...window.location, assign, search: "?line_error=browser", hash: "#/account", pathname: "/" });
+    const session = await load();
+
+    await session.initSession();
+
+    expect(api.lineClaim).not.toHaveBeenCalled();
+    expect(session.getSession()).toBeNull();
+    expect(session.takeLineResult()).toEqual({ error: "browser" });
+  });
+});
+
+describe("LINE sign-in inside the LINE app", () => {
+  it("uses LIFF's ID token, no trip to LINE", async () => {
+    liff.isInClient.mockReturnValue(true);
     liff.isLoggedIn.mockReturnValue(true);
     liff.getIDToken.mockReturnValue("line-id-token");
+    const { loginLine } = await load();
 
     const res = await loginLine();
 
     expect(api.login).toHaveBeenCalledWith("line-id-token", expect.any(String), "line");
     expect(res?.session_token).toBe("s");
+    expect(api.lineStart).not.toHaveBeenCalled();
   });
 
   it("fails clearly when LINE gives no ID token (the LIFF app needs the openid scope)", async () => {
+    liff.isInClient.mockReturnValue(true);
     liff.isLoggedIn.mockReturnValue(true);
     liff.getIDToken.mockReturnValue(null);
+    const { loginLine } = await load();
 
     await expect(loginLine()).rejects.toThrow("LINE gave no ID token");
-    expect(api.login).not.toHaveBeenCalled();
   });
 
-  it("links LINE to a signed-in account with the same token", async () => {
+  it("signing out forgets LIFF's LINE login too", async () => {
     liff.isLoggedIn.mockReturnValue(true);
-    liff.getIDToken.mockReturnValue("line-id-token");
-
-    await linkLine();
-
-    expect(api.link).toHaveBeenCalledWith("line", "line-id-token");
-  });
-
-  it("goes back to LINE for a new token when LIFF's cached one has expired", async () => {
-    liff.isLoggedIn.mockReturnValueOnce(true).mockReturnValueOnce(true).mockReturnValue(false);
-    liff.getIDToken.mockReturnValue("stale-token");
-    liff.getDecodedIDToken.mockReturnValue({ exp: Date.now() / 1000 - 60 });
-
-    expect(await loginLine()).toBeNull();
-
-    expect(liff.logout).toHaveBeenCalled();
-    expect(liff.login).toHaveBeenCalled();
-    expect(api.login).not.toHaveBeenCalled();
-    expect(takeLinePending()).toBe("login");
-  });
-
-  it("retries once through LINE when the backend rejects the token, then reports the error", async () => {
-    liff.isLoggedIn.mockReturnValue(true);
-    liff.getIDToken.mockReturnValue("line-id-token");
-    const rejected = new ApiError(401, "invalid_token", "LINE rejected the ID token");
-    api.login.mockRejectedValue(rejected);
-
-    expect(await loginLine()).toBeNull();
-    expect(liff.logout).toHaveBeenCalledTimes(1);
-    expect(liff.login).toHaveBeenCalledTimes(1);
-
-    // Back from LINE: a second rejection is shown, not another round trip.
-    expect(takeLinePending()).toBe("login");
-    await expect(loginLine()).rejects.toBe(rejected);
-    expect(liff.login).toHaveBeenCalledTimes(1);
-    api.login.mockReset();
-  });
-
-  it("coming back from LINE without signing in (cancelled, back button) stays on the page", async () => {
-    liff.isLoggedIn.mockReturnValue(false);
-
-    expect(await loginLine(true)).toBeNull();
-    expect(await linkLine(true)).toBeNull();
-
-    expect(liff.login).not.toHaveBeenCalled();
-    expect(api.login).not.toHaveBeenCalled();
-  });
-
-  it("coming back with an expired cached token stays on the page too", async () => {
-    liff.isLoggedIn.mockReturnValueOnce(true).mockReturnValueOnce(true).mockReturnValue(false);
-    liff.getIDToken.mockReturnValue("stale-token");
-    liff.getDecodedIDToken.mockReturnValue({ exp: Date.now() / 1000 - 60 });
-
-    expect(await loginLine(true)).toBeNull();
-
-    expect(liff.login).not.toHaveBeenCalled();
-  });
-
-  it("finishes the sign-in when LINE did sign the person in", async () => {
-    liff.isLoggedIn.mockReturnValue(true);
-    liff.getIDToken.mockReturnValue("line-id-token");
-
-    expect((await loginLine(true))?.session_token).toBe("s");
-  });
-
-  it("says so when LINE sent the browser back but this browser isn't signed in to LINE", async () => {
-    liff.isLoggedIn.mockReturnValue(false);
-    returned.value = true;
-
-    await expect(loginLine(true)).rejects.toBeInstanceOf(LineReturnError);
-    expect(liff.login).not.toHaveBeenCalled();
-  });
-
-  it("keeps the pending sign-in in localStorage, so a new tab from the LINE app can finish it", async () => {
-    liff.isLoggedIn.mockReturnValue(false);
-
-    await loginLine();
-    sessionStorage.clear();
-
-    expect(takeLinePending()).toBe("login");
-  });
-
-  it("signing out forgets LIFF's cached LINE login too", async () => {
-    liff.isLoggedIn.mockReturnValue(true);
+    const { logout } = await load();
 
     await logout();
 

@@ -21,20 +21,13 @@ vi.mock("../api/client", async (orig) => ({
   api,
   API_MODE: "http",
 }));
-const device = vi.hoisted(() => ({ phone: true }));
-vi.mock("../lib/liff", async (orig) => ({
-  ...(await orig<object>()),
-  LIFF_ID: "test-liff",
-  LIFF_APP_URL: "https://liff.line.me/test-liff",
-  onPhone: () => device.phone,
-}));
+vi.mock("../lib/liff", async (orig) => ({ ...(await orig<object>()), LIFF_ID: "test-liff" }));
 
 beforeEach(() => {
   localStorage.clear();
   vi.clearAllMocks();
   liff.isInClient.mockReturnValue(true);
   vi.resetModules();
-  device.phone = true;
   vi.stubEnv("VITE_LIFF_ID", "test-liff"); // read by lib/liff when it loads
 });
 
@@ -70,30 +63,4 @@ describe("LINE sign-in inside the LINE app", () => {
     expect(api.login).not.toHaveBeenCalled();
   });
 
-});
-
-describe("LINE sign-in from a phone browser", () => {
-  it("goes through the LINE app on a phone, LINE's web login elsewhere", async () => {
-    liff.isInClient.mockReturnValue(false);
-    const session = await load();
-    expect(session.lineViaApp()).toBe(true);
-
-    device.phone = false;
-    expect(session.lineViaApp()).toBe(false);
-  });
-
-  it("notices when liff.line.me sent the browser straight back instead of opening the LINE app", async () => {
-    liff.isInClient.mockReturnValue(false);
-    const session = await load();
-
-    session.markLineAppTrip();
-    expect(session.takeLineAppBounce()).toBe(true);
-  });
-
-  it("no bounce without a trip to the LINE app", async () => {
-    liff.isInClient.mockReturnValue(false);
-    const session = await load();
-
-    expect(session.takeLineAppBounce()).toBe(false);
-  });
 });
