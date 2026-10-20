@@ -16,6 +16,7 @@ const ChatPage = lazy(() => import("./features/chat/ChatPage"));
 const MapPage = lazy(() => import("./features/map/MapPage"));
 const FloodPage = lazy(() => import("./features/flood/FloodPage"));
 const AccountPage = lazy(() => import("./features/account/AccountPage"));
+const AboutPage = lazy(() => import("./features/about/AboutPage"));
 const PrivacyPage = lazy(() => import("./features/legal/LegalPage").then((m) => ({ default: m.PrivacyPage })));
 const PdpaPage = lazy(() => import("./features/legal/LegalPage").then((m) => ({ default: m.PdpaPage })));
 
@@ -48,6 +49,7 @@ initSession().then(() => {
               <Route path="/map" element={<MapPage />} />
               <Route path="/flood" element={<FloodPage />} />
               <Route path="/account" element={<AccountPage />} />
+              <Route path="/about" element={<AboutPage />} />
               <Route path="/privacy" element={<PrivacyPage />} />
               <Route path="/pdpa" element={<PdpaPage />} />
               <Route path="*" element={<Navigate to="/" replace />} />
