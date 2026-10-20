@@ -10,16 +10,15 @@ function cell(h3: string, p: Partial<FloodCell> = {}): FloodCell {
 }
 
 it("merges touching cells into one patch and keeps apart the ones that don't touch", () => {
-  const near = gridDisk(BANG_BAN, 1).map((h) => cell(h, { buildings: 2, population: 5 }));
+  const near = gridDisk(BANG_BAN, 1).map((h) => cell(h));
   const patches = waterPatches([...near, cell(FAR, { area_km2: 0.01, tambon: "อื่น" })]);
   expect(patches).toHaveLength(2);
-  const [big, small] = patches;
+  const [big] = patches;
   expect(big.cells).toHaveLength(7);
   expect(big.polygons).toHaveLength(1);                         // one outline for seven hexagons
   expect(big.area_km2).toBeCloseTo(0.35);
   expect(big.area_rai).toBeCloseTo(218.75);
-  expect([big.buildings, big.population, big.tambon]).toEqual([14, 35, "บางหลวงโดด"]);
-  expect(small.buildings).toBeNull();                             // not sent: unknown, not 0
+  expect(big.tambon).toBe("บางหลวงโดด");
 });
 
 it("rounds a ring's corners and keeps it closed", () => {

@@ -91,11 +91,6 @@ export function shareWords(share: number, unit: "ตำบล" | "จังห�
   return hit ? `${hit[1]}${unit}` : `ส่วนน้อยของ${unit}`;
 }
 
-/** "1,120": a whole count of GISTDA's (buildings, people). */
-export function formatCount(n: number): string {
-  return Math.round(n).toLocaleString("en-US");
-}
-
 /** "12,345 ไร่" (rai is how Thai flood reports state area). */
 export function formatRai(rai: number): string {
   return `${Math.round(rai).toLocaleString("en-US")} ไร่`;

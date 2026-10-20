@@ -22,7 +22,6 @@ import type { FloodFocus } from "../../lib/floodLink";
 import {
   areaName,
   floodClass,
-  formatCount,
   formatKm2,
   formatRai,
   historyClass,
@@ -40,7 +39,7 @@ import { formatDate, formatDateTime, formatDistance } from "../../lib/format";
 import { distanceToWaterKm, viewBox, waterPatches, type WaterPatch } from "../../lib/water";
 import type { Map as LeafletMap } from "leaflet";
 import type { Basemap, FlyTarget, MapArea, MapView } from "./FloodMap";
-import { HEAT_GRADIENT, heatColor } from "./heat";
+import { HEAT_GRADIENT } from "./heat";
 import { FloodPatterns, Swatch } from "./patterns";
 import { TambonStory } from "./TambonStory";
 
@@ -572,15 +571,6 @@ function Breadcrumb({ province, amphoe, onGo }: { province: string | null; ampho
   );
 }
 
-/** "อาคาร 1,120 · คน 3,000", only the counts GISTDA sent. */
-function rowStats(a: FloodArea): string | null {
-  const parts = [
-    a.buildings != null && `${copy.flood.rowStats.buildings} ${formatCount(a.buildings)}`,
-    a.population != null && `${copy.flood.rowStats.population} ${formatCount(a.population)}`,
-  ].filter(Boolean);
-  return parts.length ? parts.join(" · ") : null;
-}
-
 function AreaList({ data, busy, onPick }: { data: FloodAreas; busy: boolean; onPick: (a: FloodArea) => void }) {
   if (!data.areas.length) return null;
   const max = data.areas[0].area_km2 || 1;
@@ -590,7 +580,6 @@ function AreaList({ data, busy, onPick }: { data: FloodAreas; busy: boolean; onP
       <h2 className="m-0 text-heading font-semibold">{copy.flood.byLevel[data.level]}</h2>
       <ul className="m-0 mt-1 list-none p-0">
         {data.areas.map((a) => {
-          const stats = rowStats(a);
           return (
             <li key={`${a.province}|${a.amphoe}|${a.tambon}|${a.code}`} className="border-b border-line last:border-b-0">
               <button
@@ -617,7 +606,6 @@ function AreaList({ data, busy, onPick }: { data: FloodAreas; busy: boolean; onP
                     style={{ width: `${Math.max(2, (a.area_km2 / max) * 100)}%`, background: "var(--flood)" }}
                   />
                 </span>
-                {stats && <span className="num col-span-2 mt-1 text-caption text-ink-muted">{stats}</span>}
               </button>
             </li>
           );
@@ -665,11 +653,6 @@ function patchRai(rai: number): string {
   return formatRai(rai < 100 ? rai : Math.round(rai / 10) * 10);
 }
 
-/** How much of its cells is under water, on average: the patch's colour on the heatmap. */
-function meanShare(patch: WaterPatch): number {
-  return patch.cells.reduce((s, c) => s + c.share, 0) / patch.cells.length;
-}
-
 /** A patch of water picked close up (design "3 · ซูมใกล้"): how big, what's in it, how far from home. */
 function WaterCard({
   patch,
@@ -691,10 +674,6 @@ function WaterCard({
   // 30-day map: water seen only weeks ago, which may have gone down.
   const earlier = patch.seen === "30days";
   const head = patch.tambon ? copy.flood.waterIn(parts[0]) : copy.flood.waterTitle;
-  const stats = [
-    patch.buildings != null && `${copy.flood.stats.buildings} ${formatCount(patch.buildings)}`,
-    patch.population != null && `${copy.flood.stats.population} ~${formatCount(patch.population)}`,
-  ].filter(Boolean);
   // The saved place nearest this water, and how far it is.
   const home = places
     .map((p) => ({ p, km: distanceToWaterKm(patch.cells, p.lat, p.lon) }))
@@ -704,11 +683,6 @@ function WaterCard({
     <section aria-labelledby="flood-area-h" className="flex flex-col gap-3 px-4 py-4">
       <CardHead head={head} rest={patch.tambon ? parts.slice(1) : parts} onClose={onClose} />
       <div className="flex items-center gap-2">
-        {earlier ? (
-          <Swatch cls="earlier" />
-        ) : (
-          <span aria-hidden="true" className="block h-4 w-[22px] shrink-0 rounded-[5px]" style={{ background: heatColor(meanShare(patch)) }} />
-        )}
         <p className="num m-0 text-reading-lg font-semibold">
           {(earlier ? copy.flood.waterRaiEarlier : copy.flood.waterRai)(patchRai(patch.area_rai))}
         </p>
@@ -719,14 +693,9 @@ function WaterCard({
           {copy.flood.season.seenLong[patch.seen]}
         </p>
       )}
-      {(stats.length > 0 || home) && (
+      {home && (
         <p className="num m-0 text-body">
-          {[
-            ...stats,
-            home && (home.km === 0 ? copy.flood.homeInWater(home.p.label) : copy.flood.homeAway(home.p.label, formatDistance(home.km) ?? "")),
-          ]
-            .filter(Boolean)
-            .join(" · ")}
+          {home.km === 0 ? copy.flood.homeInWater(home.p.label) : copy.flood.homeAway(home.p.label, formatDistance(home.km) ?? "")}
         </p>
       )}
       {(patch.observed_at ?? observed) && (
@@ -800,12 +769,6 @@ function AreaCard({
   const share = row && shape ? Math.min(1, row.area_km2 / shape.properties.area_km2) : null;
   const cls: FloodClass = row ? (share != null ? floodClass(share) : "some") : "none";
   const home = shape ? places.find((p) => containsPoint(shape, p.lat, p.lon)) : undefined;
-  const stats = row
-    ? [
-        row.buildings != null && `${copy.flood.stats.buildings} ${formatCount(row.buildings)}`,
-        row.population != null && `${copy.flood.stats.population} ~${formatCount(row.population)}`,
-      ].filter(Boolean)
-    : [];
   return (
     <section aria-labelledby="flood-area-h" className="flex flex-col gap-3 px-4 py-4">
       <CardHead head={head} rest={rest} onClose={onClose}>
@@ -828,11 +791,6 @@ function AreaCard({
           ? [formatRai(row.area_rai), share != null && shareWords(share, "ตำบล")].filter(Boolean).join(" · ")
           : copy.flood.noneInArea}
       </p>
-      {stats.length > 0 && (
-        <p className="num m-0 text-caption text-ink-muted">
-          {copy.flood.inFlooded} {stats.join(" · ")}
-        </p>
-      )}
       {observed && (
         <p className="m-0 text-caption text-ink-muted">
           {copy.flood.imageDate} {formatDate(observed)}

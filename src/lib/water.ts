@@ -15,9 +15,6 @@ export interface WaterPatch {
   polygons: number[][][][];
   area_km2: number;
   area_rai: number;
-  /** null when no cell carried the count (unknown, not 0). */
-  buildings: number | null;
-  population: number | null;
   /** Where most of its flooded area is. */
   province: string | null;
   amphoe: string | null;
@@ -69,11 +66,6 @@ function components(cells: FloodCell[]): FloodCell[][] {
   return groups;
 }
 
-function sumOrNull(cells: FloodCell[], key: "buildings" | "population"): number | null {
-  const known = cells.filter((c) => c[key] != null);
-  return known.length ? known.reduce((s, c) => s + c[key]!, 0) : null;
-}
-
 /** The place most of the patch's flooded area lies in. */
 function dominant(cells: FloodCell[]): Pick<WaterPatch, "province" | "amphoe" | "tambon"> {
   const byPlace = new Map<string, { km2: number; c: FloodCell }>();
@@ -106,8 +98,6 @@ export function waterPatches(cells: FloodCell[]): WaterPatch[] {
         polygons,
         area_km2: km2,
         area_rai: km2 * RAI_PER_KM2,
-        buildings: sumOrNull(group, "buildings"),
-        population: sumOrNull(group, "population"),
         ...dominant(group),
         observed_at: dates.length ? dates.reduce((a, b) => (Date.parse(b) > Date.parse(a) ? b : a)) : null,
         seen: PERIODS.find((p) => group.some((c) => c.seen === p)) ?? null,
