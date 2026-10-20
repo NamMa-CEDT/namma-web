@@ -1,5 +1,5 @@
 import type { Map as LeafletMap } from "leaflet";
-import { useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { flushSync } from "react-dom";
 import { copy } from "../copy";
 import { BASEMAP_THUMB, type Basemap } from "../lib/basemaps";
@@ -20,6 +20,50 @@ export function saveHintSeen(key: string): void {
   } catch {
     // Private mode or blocked storage: the hint comes back next visit.
   }
+}
+
+/** How long a map tip stays before it fades, and how long the fade takes. */
+const TIP_MS = 6000;
+const FADE_MS = 500;
+
+/**
+ * A map tip that fades out by itself after a few seconds, then calls onGone (which remembers it). Hovering or
+ * focusing it holds it while someone reads; a tap closes it at once. With reduced motion it just goes.
+ */
+export function FadingTip({ className, onGone, children }: { className: string; onGone: () => void; children: ReactNode }) {
+  const [fading, setFading] = useState(false);
+  const [held, setHeld] = useState(false);
+  const gone = useRef(onGone);
+  gone.current = onGone;
+  useEffect(() => {
+    if (held || fading) return;
+    const t = setTimeout(() => setFading(true), TIP_MS);
+    return () => clearTimeout(t);
+  }, [held, fading]);
+  // Not transitionend: with reduced motion there is no transition to end.
+  useEffect(() => {
+    if (!fading) return;
+    const t = setTimeout(() => gone.current(), FADE_MS);
+    return () => clearTimeout(t);
+  }, [fading]);
+  const hold = () => {
+    setHeld(true);
+    setFading(false);
+  };
+  return (
+    <button
+      type="button"
+      onClick={() => gone.current()}
+      onMouseEnter={hold}
+      onMouseLeave={() => setHeld(false)}
+      onFocus={hold}
+      onBlur={() => setHeld(false)}
+      className={`${className} transition-opacity duration-500 motion-reduce:transition-none ${fading ? "opacity-0" : "opacity-100"}`}
+    >
+      {children}
+      <span className="sr-only">{copy.flood.close}</span>
+    </button>
+  );
 }
 
 export function HudIcon({ d, className = "", weight = 2 }: { d: string; className?: string; weight?: number }) {
@@ -118,23 +162,14 @@ export function MapHud({
             <HudIcon d={HUD_ICON.layers} className="size-[22px]" />
           </button>
           {hint && !open && (
-            // The whole bubble closes it: a tap anywhere on the tip, not only on the small X.
-            <button
-              type="button"
-              onClick={hideHint}
-              className="group pointer-events-auto absolute top-1/2 left-full ml-3 flex w-56 -translate-y-1/2 items-start gap-1 rounded-md bg-river py-1.5 pr-1 pl-3 text-left text-on-river shadow-float"
+            <FadingTip
+              onGone={hideHint}
+              className="pointer-events-auto absolute top-1/2 left-full ml-3 w-56 -translate-y-1/2 rounded-md bg-river px-3 py-2 text-left text-on-river shadow-float"
             >
               {/* The arrow: a turned square tucked under the bubble's left edge, pointing at the button. */}
               <span aria-hidden="true" className="absolute top-1/2 -left-1.5 size-3 -translate-y-1/2 rotate-45 bg-river" />
-              <span className="relative flex-1 text-caption font-semibold">{hintText}</span>
-              <span className="sr-only">{copy.flood.close}</span>
-              <span
-                aria-hidden="true"
-                className="relative flex size-8 shrink-0 items-center justify-center rounded-sm group-hover:bg-[rgba(255,255,255,0.15)]"
-              >
-                <HudIcon d={HUD_ICON.close} className="size-4" />
-              </span>
-            </button>
+              <span className="relative block text-caption font-semibold">{hintText}</span>
+            </FadingTip>
           )}
         </div>
       </div>

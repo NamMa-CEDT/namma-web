@@ -13,7 +13,7 @@ import {
   useTambonShapes,
 } from "../../api/queries";
 import type { FloodArea, FloodAreas, FloodHistory, FloodHistoryArea, FloodLevel, FloodPeriod, SavedPlace } from "../../api/types";
-import { BasemapPicker, HUD_ICON, HudIcon, MapHud, readHintSeen, saveHintSeen } from "../../components/MapHud";
+import { BasemapPicker, FadingTip, MapHud, readHintSeen, saveHintSeen } from "../../components/MapHud";
 import { ErrorState, Loading } from "../../components/States";
 import { copy, DDPM } from "../../copy";
 import { containsPoint, joinAreas, nameKey, provincesInView, type AreaShape } from "../../lib/boundaries";
@@ -845,7 +845,7 @@ export function FloodExplorer({
   const [basemap, setBasemap] = useState<Basemap>("satellite");
   const [flyTo, setFlyTo] = useState<FlyTarget | null>(null);
   const [tilesFailed, setTilesFailed] = useState(false);
-  // The two how-to tips (tap a province, zoom in for water) close on a tap and stay closed in this browser.
+  // The two how-to tips (tap a province, zoom in for water) fade after a few seconds, once per browser.
   const [tipsSeen, setTipsSeen] = useState(() => ({ tambons: readHintSeen(TIP_KEY.tambons), water: readHintSeen(TIP_KEY.water) }));
   const closeTip = (tip: keyof typeof TIP_KEY) => {
     saveHintSeen(TIP_KEY[tip]);
@@ -1101,18 +1101,15 @@ export function FloodExplorer({
         <Legend text={legend} stage={stage} />
       </div>
       {tip ? (
-        // A tip, not a problem: a tap anywhere on it closes it. Errors and loading notes below stay until resolved.
-        <button
-          type="button"
-          onClick={() => closeTip(tip)}
-          className="group pointer-events-auto absolute right-2 bottom-6 z-[500] flex max-w-[15rem] items-start gap-1 rounded-md border border-line-strong bg-surface-raised py-1 pr-1 pl-3 text-left text-caption text-ink shadow-float"
+        // A tip, not a problem: it fades by itself (keyed, so the next tip gets its own few seconds). Errors and
+        // loading notes below stay until resolved.
+        <FadingTip
+          key={tip}
+          onGone={() => closeTip(tip)}
+          className="pointer-events-auto absolute right-2 bottom-6 z-[500] max-w-[15rem] rounded-md border border-line-strong bg-surface-raised px-3 py-2 text-left text-caption text-ink shadow-float"
         >
-          <span className="flex-1 py-1">{status}</span>
-          <span className="sr-only">{copy.flood.close}</span>
-          <span aria-hidden="true" className="flex size-7 shrink-0 items-center justify-center rounded-sm text-ink-muted group-hover:bg-surface-sunken">
-            <HudIcon d={HUD_ICON.close} className="size-4" />
-          </span>
-        </button>
+          {status}
+        </FadingTip>
       ) : (
         status && (
           <p
