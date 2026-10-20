@@ -1,7 +1,7 @@
 import { keepPreviousData, useMutation, useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
 import { fetchProvinces, fetchTambons } from "../lib/boundaries";
 import { api } from "./client";
-import type { FactKind, FloodLevel, FloodPeriod, NameList, Profile } from "./types";
+import type { FactKind, FloodLevel, FloodPeriod, NameList, PlaceFactKind, Profile } from "./types";
 
 // ThaiWater updates every 10 min (HII) / hourly (RID); no need to poll faster than a minute.
 const STATION_REFRESH_MS = 60_000;
@@ -199,8 +199,13 @@ export function useProfile(chatSession: string) {
 export function useDeleteFromProfile(chatSession: string) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (what: { place: number } | { facts: FactKind | "all" }) =>
-      "place" in what ? api.deletePlace(chatSession, what.place) : api.deleteFacts(chatSession, what.facts),
+    // { place, facts }: that place's own facts of one kind; { place }: the place; { facts }: the general facts.
+    mutationFn: (what: { place: number; facts?: PlaceFactKind } | { facts: FactKind | "all" }) =>
+      "place" in what
+        ? what.facts
+          ? api.deletePlaceFacts(chatSession, what.place, what.facts)
+          : api.deletePlace(chatSession, what.place)
+        : api.deleteFacts(chatSession, what.facts),
     onSuccess: (profile: Profile) => qc.setQueryData(keys.profile(chatSession), profile),
   });
 }
@@ -209,8 +214,9 @@ export function useDeleteFromProfile(chatSession: string) {
 export function useRenameInProfile(chatSession: string) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (what: { place: number; label: string } | { list: NameList; from: string; to: string }) =>
-      "place" in what ? api.renamePlace(chatSession, what.place, what.label) : api.renameName(chatSession, what),
+    // { place, label }: rename the place; { list, from, to, place? }: a name in that place's facts or the general ones.
+    mutationFn: (what: { place: number; label: string } | { list: NameList; from: string; to: string; place?: number }) =>
+      "label" in what ? api.renamePlace(chatSession, what.place, what.label) : api.renameName(chatSession, what),
     onSuccess: (profile: Profile) => qc.setQueryData(keys.profile(chatSession), profile),
   });
 }

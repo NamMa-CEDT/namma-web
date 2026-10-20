@@ -184,6 +184,9 @@ export const copy = {
     pendingConsent: "มีข้อมูลสุขภาพรอการอนุญาตในแชท ยังไม่ได้บันทึก",
     consentNote: (date: string) => `จำไว้โดยได้รับอนุญาต ${date}`,
     house: "บ้านและทรัพย์สิน",
+    // Profile.facts are general; a place's own facts show in its card (SavedPlace.facts).
+    everywhere: "ใช้กับทุกสถานที่ ข้อมูลเฉพาะที่อยู่ในการ์ดของสถานที่นั้น",
+    placeFacts: (label: string) => `ข้อมูลของ${label}`,
     houseEmpty: "ยังไม่ได้บอก เช่น บ้านกี่ชั้น หรือมีรถไหม",
     line: "แจ้งเตือนทาง LINE",
     lineLinked: "เชื่อมกับ LINE แล้ว",

@@ -3,7 +3,7 @@ import { Link } from "react-router";
 import { useSession } from "../../auth/session";
 import { ApiError } from "../../api/client";
 import { useDeleteFromProfile, useProfile, useRenameInProfile } from "../../api/queries";
-import type { Fact, FactKind, Profile, SavedPlace } from "../../api/types";
+import type { Fact, FactKind, PlaceFactKind, Profile, SavedPlace } from "../../api/types";
 import { BellIcon, BuildingsIcon, CaretRightIcon, CloseIcon, HouseIcon, PencilIcon, TrashIcon, UsersIcon } from "../../components/icons";
 import { TierBadge } from "../../components/TierBadge";
 import { copy } from "../../copy";
@@ -17,11 +17,14 @@ export function setupSteps(p: Profile): Step[] {
   const decided = p.consent.ts != null;
   return [
     { key: "place", done: p.places.length > 0 },
-    { key: "household", done: p.facts.some((f) => f.kind === "household" || f.kind === "needs") || decided },
+    { key: "household", done: allFacts(p).some((f) => f.kind === "household" || f.kind === "needs") || decided },
     { key: "consent", done: decided },
     { key: "line", done: p.line_linked },
   ];
 }
+
+/** The general facts and every place's own. */
+const allFacts = (p: Profile): Fact[] => [...p.facts, ...p.places.flatMap((pl) => pl.facts ?? [])];
 
 type RowKey = "place" | "household" | "house" | "line";
 const STEP_ROW: Record<Step["key"], RowKey> = { place: "place", household: "household", consent: "household", line: "line" };
@@ -276,14 +279,21 @@ function Place({
   place,
   onDelete,
   onRename,
+  onRenameNames,
+  onDeleteFacts,
   busy,
 }: {
   place: SavedPlace;
   onDelete: () => void;
   onRename: (label: string) => Promise<unknown>;
+  /** A name in this place's own facts (the shop's dog). */
+  onRenameNames: (fact: Fact, names: string[]) => Promise<void>;
+  /** Every one of this place's own facts. */
+  onDeleteFacts: () => void;
   busy: boolean;
 }) {
   const n = place.nearest;
+  const facts = place.facts ?? [];
   const { asking, byKeyboard, toggle, close, trash } = useAsk();
   const [renaming, setRenaming] = useState(false);
   return (
@@ -330,6 +340,12 @@ function Place({
         </div>
       )}
       {place.approx && <div className="nm-place__where">{copy.profile.approx}</div>}
+      {facts.length > 0 && (
+        <div className="mt-2 flex flex-col gap-1">
+          <Chips facts={facts} onRename={onRenameNames} />
+          <DeleteFacts what={copy.profile.placeFacts(place.label)} onConfirm={onDeleteFacts} disabled={busy} />
+        </div>
+      )}
       {renaming && (
         <RenameBar
           names={[place.label]}
@@ -494,12 +510,18 @@ function PanelBody({
   const deleteKinds = async (kinds: FactKind[]) => {
     for (const k of kinds) await del.mutateAsync({ facts: k });
   };
-  // One PATCH per changed name (a chip like "ยาย, ตา" can change both).
-  const renameNames = async (fact: Fact, names: string[]) => {
+  // One PATCH per changed name (a chip like "ยาย, ตา" can change both). place: a name in that place's own facts.
+  const renameNames = async (fact: Fact, names: string[], place?: number) => {
     for (const [i, to] of names.entries()) {
-      if (fact.list && to !== fact.names[i]) await rename.mutateAsync({ list: fact.list, from: fact.names[i], to });
+      if (fact.list && to !== fact.names[i]) await rename.mutateAsync({ list: fact.list, from: fact.names[i], to, place });
     }
   };
+  const deletePlaceFacts = async (pl: SavedPlace) => {
+    const kinds = new Set((pl.facts ?? []).map((f) => f.kind as PlaceFactKind));
+    for (const k of kinds) await del.mutateAsync({ place: pl.id, facts: k });
+  };
+  // Some place has facts of its own: say the general rows hold everywhere.
+  const anyPlaceFacts = p.places.some((pl) => pl.facts?.length);
   const first = p.places[0];
   const factsLine = (facts: Fact[]) => facts.map((f) => f.text).join(" · ");
 
@@ -534,6 +556,8 @@ function PanelBody({
               busy={del.isPending}
               onDelete={() => del.mutate({ place: pl.id })}
               onRename={(label) => rename.mutateAsync({ place: pl.id, label })}
+              onRenameNames={(fact, names) => renameNames(fact, names, pl.id)}
+              onDeleteFacts={() => void deletePlaceFacts(pl)}
             />
           ))
         ) : (
@@ -556,6 +580,7 @@ function PanelBody({
         {household.length ? (
           <>
             <Chips facts={household} onRename={renameNames} />
+            {anyPlaceFacts && <span className="nm-memory__note">{copy.profile.everywhere}</span>}
             {p.consent.granted && p.consent.ts && <span className="nm-memory__note">{copy.profile.consentNote(formatDate(p.consent.ts))}</span>}
             <DeleteFacts what={copy.profile.household} onConfirm={() => void deleteKinds(HOUSEHOLD)} disabled={del.isPending} />
           </>
@@ -580,6 +605,7 @@ function PanelBody({
         {house.length ? (
           <>
             <Chips facts={house} onRename={renameNames} />
+            {anyPlaceFacts && <span className="nm-memory__note">{copy.profile.everywhere}</span>}
             <DeleteFacts what={copy.profile.house} onConfirm={() => void deleteKinds(HOUSE)} disabled={del.isPending} />
           </>
         ) : (

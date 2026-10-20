@@ -383,6 +383,11 @@ export interface SavedPlace {
   approx: boolean;
   /** "อ.บางบาล จ.พระนครศรีอยุธยา" */
   where: string | null;
+  /**
+   * What holds at this place only ("ร้านส้มตำมีหมา": the shop's dog). Never `needs`: those stay with the person.
+   * Profile.facts are the general ones, said without a place. Absent from a backend older than place facts.
+   */
+  facts?: Fact[];
   nearest: {
     station_id: number;
     code: string | null;
@@ -395,6 +400,8 @@ export interface SavedPlace {
 }
 
 export type FactKind = "household" | "needs" | "house" | "assets" | "history";
+/** The kinds a place can have (SavedPlace.facts): all but `needs`. */
+export type PlaceFactKind = Exclude<FactKind, "needs">;
 
 /** Names the person gave, which can be renamed: who can't walk, pets, past floods (one fact each). */
 export type NameList = "immobile" | "pets" | "past_floods";
@@ -411,6 +418,7 @@ export interface Fact {
 
 export interface Profile {
   places: SavedPlace[];
+  /** General facts: said without naming a place, they hold at every place. */
   facts: Fact[];
   /** Latest sensitive_memory decision; ts null = never asked. */
   consent: { granted: boolean; ts: string | null };
