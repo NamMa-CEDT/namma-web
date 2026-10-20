@@ -5,13 +5,35 @@ import liff from "@line/liff";
 
 export const LIFF_ID: string | null = (import.meta.env.VITE_LIFF_ID as string | undefined)?.trim() || null;
 
+// Read before liff.init(), which takes LINE's `code` out of the address bar once it has used it.
+const RETURNED_FROM_LINE = /[?&](code|liffClientId)=/.test(window.location.search);
+
 let ready: Promise<boolean> | null = null;
 
-/** liff.init() once. False when the build has no LIFF id, so LINE login stays off. */
+/** liff.init() until it succeeds. False when the build has no LIFF id, so LINE login stays off. A failure is
+ *  logged and tried again on the next call instead of failing every LINE button press until a reload. */
 export function initLiff(): Promise<boolean> {
   if (!LIFF_ID) return Promise.resolve(false);
-  ready ??= liff.init({ liffId: LIFF_ID }).then(() => true);
+  ready ??= liff
+    .init({ liffId: LIFF_ID })
+    .then(() => true)
+    .catch((e: unknown) => {
+      console.warn("liff.init failed", e);
+      ready = null;
+      throw e;
+    });
   return ready;
+}
+
+/** This page load is LINE sending the browser back after its login page. */
+export function returnedFromLine(): boolean {
+  return RETURNED_FROM_LINE;
+}
+
+/** Where LINE sends the browser back to: this page without its #/route or query. LINE adds `?code=…` to it, and
+ *  LIFF reads the code from the query only, so a `#/account` in it lost the code and with it the login. */
+export function lineReturnUrl(): string {
+  return window.location.origin + window.location.pathname;
 }
 
 /** True once LIFF knows the person is signed in to LINE (already in the LINE app, or after liff.login). */

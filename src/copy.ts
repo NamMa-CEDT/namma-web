@@ -143,6 +143,8 @@ export const copy = {
     demoOpen: "สำหรับทดสอบ",
     lineSoon: "เข้าสู่ระบบด้วย LINE (เร็วๆ นี้)",
     lineSignIn: "เข้าสู่ระบบด้วย LINE",
+    lineReturnFailed:
+      "LINE ยังไม่ได้เข้าสู่ระบบให้ในเบราว์เซอร์นี้ค่ะ กดปุ่ม LINE อีกครั้ง หรือเปิดเว็บนี้ในเบราว์เซอร์เดียวกับที่เริ่มกดค่ะ",
     lineLink: "เชื่อมบัญชี LINE",
     googleSignIn: "เข้าสู่ระบบด้วย Google",
     googleMissing: "ยังไม่ได้ตั้งค่าการเข้าสู่ระบบด้วย Google",

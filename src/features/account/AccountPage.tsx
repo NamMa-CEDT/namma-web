@@ -9,6 +9,7 @@ import {
   deleteAccount,
   link,
   linkLine,
+  LineReturnError,
   loginDemo,
   loginGoogle,
   loginLine,
@@ -19,6 +20,7 @@ import {
 import { CaretRightIcon, ChatIcon, FloodIcon, GoogleIcon, LineIcon, PinIcon, UserIcon, UsersIcon } from "../../components/icons";
 import { copy } from "../../copy";
 import { GOOGLE_CLIENT_ID, renderGoogleButton } from "../../lib/google";
+import { lineSignedIn, returnedFromLine } from "../../lib/liff";
 import { LogoutButton } from "./LogoutButton";
 
 /** Google sign-in in our nm-btn style. Google's own button is drawn invisibly on top of ours and takes the
@@ -53,6 +55,7 @@ function GoogleButton({ onToken, label, fill = false, small = false }: { onToken
 }
 
 function errorText(e: unknown): string {
+  if (e instanceof LineReturnError) return copy.account.lineReturnFailed;
   if (e instanceof ApiError && e.status === 409) return e.message.includes("only way") ? copy.account.lastWay : copy.account.conflict;
   return copy.account.failed;
 }
@@ -72,7 +75,10 @@ function SignIn() {
   // Back from LINE's login page: finish the sign-in that was started there. Never sends the browser to LINE
   // by itself: when LINE didn't sign the person in (cancelled, back button), the button is there to try again.
   useEffect(() => {
-    if (takeLinePending() === "login") void attempt(loginLine(true));
+    // Back from LINE in a tab that lost the note (another browser): still say LINE didn't sign in here.
+    const pending = takeLinePending();
+    if (pending === "login") void attempt(loginLine(true));
+    else if (!pending && returnedFromLine() && !lineSignedIn()) setError(copy.account.lineReturnFailed);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- runs once, on the way back from LINE
   }, []);
 

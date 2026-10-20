@@ -16,12 +16,16 @@ const api = vi.hoisted(() => ({
 }));
 vi.mock("../api/client", async (orig) => ({ ApiError: (await orig<typeof import("../api/client")>()).ApiError, api, API_MODE: "mock" }));
 
+const returned = vi.hoisted(() => ({ value: false }));
+vi.mock("../lib/liff", async (orig) => ({ ...(await orig<object>()), returnedFromLine: () => returned.value }));
+
 import { ApiError } from "../api/client";
-import { loginLine, linkLine, logout, takeLinePending } from "./session";
+import { LineReturnError, loginLine, linkLine, logout, takeLinePending } from "./session";
 
 beforeEach(() => {
-  sessionStorage.clear();
+  localStorage.clear();
   vi.clearAllMocks();
+  returned.value = false;
   liff.getDecodedIDToken.mockReturnValue({ exp: Date.now() / 1000 + 3600 });
 });
 
@@ -31,7 +35,8 @@ describe("LINE login (LIFF)", () => {
 
     expect(await loginLine()).toBeNull();
 
-    expect(liff.login).toHaveBeenCalledWith({ redirectUri: window.location.href });
+    // The bare page: LINE adds ?code=… and LIFF reads it from the query, so no #/route in it.
+    expect(liff.login).toHaveBeenCalledWith({ redirectUri: window.location.origin + window.location.pathname });
     expect(api.login).not.toHaveBeenCalled();
     expect(takeLinePending()).toBe("login");
     expect(takeLinePending()).toBeNull();
@@ -119,6 +124,23 @@ describe("LINE login (LIFF)", () => {
     liff.getIDToken.mockReturnValue("line-id-token");
 
     expect((await loginLine(true))?.session_token).toBe("s");
+  });
+
+  it("says so when LINE sent the browser back but this browser isn't signed in to LINE", async () => {
+    liff.isLoggedIn.mockReturnValue(false);
+    returned.value = true;
+
+    await expect(loginLine(true)).rejects.toBeInstanceOf(LineReturnError);
+    expect(liff.login).not.toHaveBeenCalled();
+  });
+
+  it("keeps the pending sign-in in localStorage, so a new tab from the LINE app can finish it", async () => {
+    liff.isLoggedIn.mockReturnValue(false);
+
+    await loginLine();
+    sessionStorage.clear();
+
+    expect(takeLinePending()).toBe("login");
   });
 
   it("signing out forgets LIFF's cached LINE login too", async () => {

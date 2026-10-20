@@ -5,7 +5,17 @@ import { useSyncExternalStore } from "react";
 import { api, ApiError, API_MODE } from "../api/client";
 import type { LoginResponse, Provider, SessionUser } from "../api/types";
 import { loadSessionId } from "../lib/chatSession";
-import { initLiff, LIFF_ID, lineIdToken, lineIdTokenFresh, lineLogout, lineSignedIn, startLineLogin } from "../lib/liff";
+import {
+  initLiff,
+  LIFF_ID,
+  lineIdToken,
+  lineIdTokenFresh,
+  lineLogout,
+  lineReturnUrl,
+  lineSignedIn,
+  returnedFromLine,
+  startLineLogin,
+} from "../lib/liff";
 import { readStoredSession, setToken, writeStoredSession, type StoredSession } from "./token";
 
 let current: StoredSession | null = null;
@@ -23,6 +33,10 @@ export async function initSession(): Promise<void> {
   await initLiff().catch(() => false);
   current = readStoredSession();
   setToken(current?.token ?? null);
+  // LINE sends the browser back to the bare page (see lineReturnUrl): the account page finishes the sign-in.
+  if (LIFF_ID && (returnedFromLine() || peekFlag(LINE_PENDING_KEY)) && !window.location.hash.startsWith("#/account")) {
+    window.history.replaceState(null, "", "#/account");
+  }
 }
 
 export function getSession(): StoredSession | null {
@@ -69,13 +83,34 @@ export type LinePending = "login" | "link";
 // shows an error instead of going round again.
 const LINE_RETRIED_KEY = "namma.line.retried";
 
-function takeFlag(key: string): string | null {
+// In localStorage, not sessionStorage: on a phone the LINE app often sends the browser back in a new tab.
+// Stale after 15 minutes, so a trip abandoned yesterday finishes nothing today.
+const FLAG_TTL_MS = 15 * 60_000;
+
+function peekFlag(key: string): string | null {
   try {
-    const v = sessionStorage.getItem(key);
-    sessionStorage.removeItem(key);
-    return v;
+    const { v, at } = JSON.parse(localStorage.getItem(key) ?? "null") ?? {};
+    return typeof v === "string" && typeof at === "number" && Date.now() - at < FLAG_TTL_MS ? v : null;
   } catch {
     return null;
+  }
+}
+
+function takeFlag(key: string): string | null {
+  const v = peekFlag(key);
+  try {
+    localStorage.removeItem(key);
+  } catch {
+    // blocked storage: nothing was stored
+  }
+  return v;
+}
+
+function putFlag(key: string, v: string): void {
+  try {
+    localStorage.setItem(key, JSON.stringify({ v, at: Date.now() }));
+  } catch {
+    // Blocked storage: the person presses the button again after coming back.
   }
 }
 
@@ -86,14 +121,19 @@ export function takeLinePending(): LinePending | null {
 }
 
 function toLine(intent: LinePending, retried = false): null {
-  try {
-    sessionStorage.setItem(LINE_PENDING_KEY, intent);
-    if (retried) sessionStorage.setItem(LINE_RETRIED_KEY, "1");
-  } catch {
-    // Blocked storage: the person presses the button again after coming back.
-  }
-  startLineLogin(window.location.href);
+  putFlag(LINE_PENDING_KEY, intent);
+  if (retried) putFlag(LINE_RETRIED_KEY, "1");
+  startLineLogin(lineReturnUrl());
   return null;
+}
+
+/** LINE sent the browser back, but LIFF isn't signed in: LINE's login was finished in another browser (the LINE
+ *  app opened the link elsewhere) or LINE refused the code. Shown, so the person isn't left wondering. */
+export class LineReturnError extends Error {
+  constructor() {
+    super("LINE sent the browser back without a login");
+    this.name = "LineReturnError";
+  }
 }
 
 /** The LINE ID token, or null after sending the browser to LINE (the page is leaving). LIFF keeps the last
@@ -102,7 +142,11 @@ function toLine(intent: LinePending, retried = false): null {
 async function lineToken(intent: LinePending, resume: boolean): Promise<string | null> {
   await initLiff();
   if (lineSignedIn() && lineIdToken() && !lineIdTokenFresh()) lineLogout();
-  if (!lineSignedIn()) return resume ? null : toLine(intent);
+  if (!lineSignedIn()) {
+    if (!resume) return toLine(intent);
+    if (returnedFromLine()) throw new LineReturnError();
+    return null;
+  }
   const token = lineIdToken();
   if (!token) throw new Error("LINE gave no ID token");
   return token;
