@@ -38,10 +38,10 @@ export function onPhone(): boolean {
 
 /** Opens this site inside the LINE app, already signed in to LINE. On phones, liff.login() hands the login to the
  *  LINE app and back to the browser, and that handoff fails in the LINE app ("unknown error"); this is the way
- *  LINE expects phone users to sign in. The session then lives in LINE's browser, not the one the person was in. */
-export function openInLineApp(): void {
-  window.location.href = `https://liff.line.me/${LIFF_ID}`;
-}
+ *  LINE expects phone users to sign in. The session then lives in LINE's browser, not the one the person was in.
+ *  Must be the href of a link the person taps: phones open the LINE app only for a tapped link. Set from script,
+ *  or with no LINE app, liff.line.me just sends the browser back to this site (the endpoint URL). */
+export const LIFF_APP_URL = LIFF_ID ? `https://liff.line.me/${LIFF_ID}` : null;
 
 /** This page load is LINE sending the browser back after its login page. */
 export function returnedFromLine(): boolean {

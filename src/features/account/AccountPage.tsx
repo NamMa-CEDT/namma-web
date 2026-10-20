@@ -13,6 +13,9 @@ import {
   loginDemo,
   loginGoogle,
   loginLine,
+  lineViaApp,
+  markLineAppTrip,
+  takeLineAppBounce,
   takeLinePending,
   unlink,
   useSession,
@@ -20,7 +23,7 @@ import {
 import { CaretRightIcon, ChatIcon, FloodIcon, GoogleIcon, LineIcon, PinIcon, UserIcon, UsersIcon } from "../../components/icons";
 import { copy } from "../../copy";
 import { GOOGLE_CLIENT_ID, renderGoogleButton } from "../../lib/google";
-import { lineSignedIn, returnedFromLine } from "../../lib/liff";
+import { LIFF_APP_URL, lineSignedIn, returnedFromLine } from "../../lib/liff";
 import { LogoutButton } from "./LogoutButton";
 
 /** Google sign-in in our nm-btn style. Google's own button is drawn invisibly on top of ours and takes the
@@ -65,6 +68,9 @@ function SignIn() {
   const [note, setNote] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [demoName, setDemoName] = useState("");
+  // On a phone the LINE button is a link into the LINE app. If that sent us straight back, use LINE's web login.
+  const [bounced] = useState(takeLineAppBounce);
+  const viaApp = lineViaApp() && !bounced;
   const done = (merged?: boolean) => {
     setNote(merged ? copy.account.merged : null);
     void qc.invalidateQueries({ queryKey: ["profile"] });
@@ -79,6 +85,7 @@ function SignIn() {
     const pending = takeLinePending();
     if (pending === "login") void attempt(loginLine(true));
     else if (!pending && returnedFromLine() && !lineSignedIn()) setError(copy.account.lineReturnFailed);
+    else if (bounced) setError(copy.account.lineAppBounced);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- runs once, on the way back from LINE
   }, []);
 
@@ -110,7 +117,12 @@ function SignIn() {
         </ul>
 
         <div className="grid gap-3">
-          {canLineLogin ? (
+          {canLineLogin && viaApp && LIFF_APP_URL ? (
+            <a href={LIFF_APP_URL} className="nm-btn nm-btn--line nm-btn--block" onClick={markLineAppTrip}>
+              <LineIcon className="text-[22px]" />
+              {copy.account.lineSignIn}
+            </a>
+          ) : canLineLogin ? (
             <button type="button" className="nm-btn nm-btn--line nm-btn--block" onClick={() => void attempt(loginLine())}>
               <LineIcon className="text-[22px]" />
               {copy.account.lineSignIn}

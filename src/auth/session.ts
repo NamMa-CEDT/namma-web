@@ -8,6 +8,7 @@ import { loadSessionId } from "../lib/chatSession";
 import {
   initLiff,
   inLineApp,
+  LIFF_APP_URL,
   LIFF_ID,
   lineIdToken,
   lineIdTokenFresh,
@@ -15,7 +16,6 @@ import {
   lineReturnUrl,
   lineSignedIn,
   onPhone,
-  openInLineApp,
   returnedFromLine,
   startLineLogin,
 } from "../lib/liff";
@@ -37,7 +37,8 @@ export async function initSession(): Promise<void> {
   current = readStoredSession();
   setToken(current?.token ?? null);
   // LINE sends the browser back to the bare page (see lineReturnUrl): the account page finishes the sign-in.
-  if (LIFF_ID && (returnedFromLine() || peekFlag(LINE_PENDING_KEY)) && !window.location.hash.startsWith("#/account")) {
+  const back = returnedFromLine() || peekFlag(LINE_PENDING_KEY) || peekFlag(LINE_APP_TRIP_KEY, LINE_APP_BOUNCE_MS);
+  if (LIFF_ID && back && !window.location.hash.startsWith("#/account")) {
     window.history.replaceState(null, "", "#/account");
   }
 }
@@ -63,7 +64,7 @@ function autoOff(): boolean {
   }
 }
 
-/** Opened inside the LINE app (the phone sign-in, see openInLineApp) and not signed in to NamMa: sign in with the
+/** Opened inside the LINE app (the phone sign-in, see LIFF_APP_URL) and not signed in to NamMa: sign in with the
  *  LINE login LIFF already has, without a button. Runs after the first render; a failure leaves the button.
  *  True when it signed in. */
 export async function autoLineSignIn(): Promise<boolean> {
@@ -126,17 +127,17 @@ const LINE_RETRIED_KEY = "namma.line.retried";
 // Stale after 15 minutes, so a trip abandoned yesterday finishes nothing today.
 const FLAG_TTL_MS = 15 * 60_000;
 
-function peekFlag(key: string): string | null {
+function peekFlag(key: string, ttl = FLAG_TTL_MS): string | null {
   try {
     const { v, at } = JSON.parse(localStorage.getItem(key) ?? "null") ?? {};
-    return typeof v === "string" && typeof at === "number" && Date.now() - at < FLAG_TTL_MS ? v : null;
+    return typeof v === "string" && typeof at === "number" && Date.now() - at < ttl ? v : null;
   } catch {
     return null;
   }
 }
 
-function takeFlag(key: string): string | null {
-  const v = peekFlag(key);
+function takeFlag(key: string, ttl = FLAG_TTL_MS): string | null {
+  const v = peekFlag(key, ttl);
   try {
     localStorage.removeItem(key);
   } catch {
@@ -160,16 +161,35 @@ export function takeLinePending(): LinePending | null {
 }
 
 function toLine(intent: LinePending, retried = false): null {
-  // Sign-in on a phone browser goes through the LINE app, which signs in there by itself (autoLineSignIn). Linking
-  // stays here: the LINE app's browser doesn't have this browser's session, so it would sign in, not link.
-  if (intent === "login" && onPhone() && !inLineApp()) {
-    openInLineApp();
-    return null;
-  }
   putFlag(LINE_PENDING_KEY, intent);
   if (retried) putFlag(LINE_RETRIED_KEY, "1");
   startLineLogin(lineReturnUrl());
   return null;
+}
+
+// Set when the person taps the link to the LINE app. Seen again in a browser within a minute: the phone didn't open
+// the LINE app (none installed, or iOS set to open liff.line.me in Safari) and liff.line.me sent the browser back.
+const LINE_APP_TRIP_KEY = "namma.line.app";
+const LINE_APP_BOUNCE_MS = 60_000;
+
+/** Sign in on a phone browser through the LINE app (a link to LIFF_APP_URL), where the app signs in by itself
+ *  (autoLineSignIn). Not for linking: the LINE app's browser doesn't have this browser's session. */
+export function lineViaApp(): boolean {
+  return canLineLogin && LIFF_APP_URL !== null && onPhone() && !inLineApp();
+}
+
+/** Call from the link's click; the link itself does the navigation. */
+export function markLineAppTrip(): void {
+  putFlag(LINE_APP_TRIP_KEY, "1");
+}
+
+let bounce: boolean | null = null;
+
+/** liff.line.me just sent this browser back instead of opening the LINE app. Read once per page load (the same
+ *  answer for every caller, so StrictMode's double render doesn't lose it). */
+export function takeLineAppBounce(): boolean {
+  bounce ??= takeFlag(LINE_APP_TRIP_KEY, LINE_APP_BOUNCE_MS) === "1" && !inLineApp();
+  return bounce;
 }
 
 /** LINE sent the browser back, but LIFF isn't signed in: LINE's login was finished in another browser (the LINE
