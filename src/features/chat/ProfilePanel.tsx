@@ -55,7 +55,7 @@ function Place({ place, onDelete, busy }: { place: SavedPlace; onDelete: () => v
           </div>
           {place.where && <div className="nm-place__where">{place.where}</div>}
         </div>
-        <div className="flex items-center gap-1">
+        <div className="flex shrink-0 items-center gap-1">
           {n && <TierBadge tier={n.risk_tier ?? "unknown"} soft />}
           <DeleteButton label={copy.profile.deleteLabel(place.label)} onClick={onDelete} disabled={busy} />
         </div>
@@ -293,9 +293,9 @@ const DESKTOP = "(min-width: 64rem)"; // Tailwind lg: the column shows, the draw
 
 // Desktop column width, dragged by its right edge and remembered per browser.
 const WIDTH_KEY = "namma.profile.width";
-const MIN_W = 224;
-const MAX_W = 480;
-const DEFAULT_W = 288;
+const MIN_W = 288;
+const MAX_W = 520;
+const DEFAULT_W = 344;
 const clampWidth = (w: number) => Math.round(Math.min(MAX_W, Math.max(MIN_W, w)));
 
 function useColumnWidth() {

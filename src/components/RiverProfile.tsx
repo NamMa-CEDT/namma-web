@@ -142,7 +142,7 @@ function saveRiverView(v: RiverView): void {
 
 function ViewToggle({ view, onChange }: { view: RiverView; onChange: (v: RiverView) => void }) {
   return (
-    <div role="group" aria-label={copy.river.views.label} className="flex rounded-md border border-line-strong p-0.5 sm:inline-flex sm:self-start">
+    <div role="group" aria-label={copy.river.views.label} className="flex rounded-md border border-line-strong p-0.5 sm:inline-flex sm:justify-self-start">
       {RIVER_VIEWS.map((v) => (
         <button
           key={v}
