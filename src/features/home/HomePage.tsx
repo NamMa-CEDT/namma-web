@@ -3,6 +3,8 @@ import { Link, useNavigate } from "react-router";
 import { useProfile, useRivers } from "../../api/queries";
 import { Composer } from "../../components/Composer";
 import { HotlineNotice } from "../../components/HotlineNotice";
+import { LineIcon } from "../../components/icons";
+import { LineQrDialog } from "../../components/LineQrDialog";
 import { RiverProfile } from "../../components/RiverProfile";
 import { RiverSearch } from "../../components/RiverSearch";
 import { ErrorState, Loading } from "../../components/States";
@@ -41,6 +43,7 @@ export default function HomePage() {
   const place = useProfile(loadSessionId()).data?.places[0];
   const rivers = useRivers(place ? { lat: place.lat, lon: place.lon } : null, riverQuery);
   const go = (handoff: ChatHandoff) => navigate("/chat", { state: handoff });
+  const [lineQr, setLineQr] = useState(false);
   // ARIA tabs: arrows move between the two tabs and open the one they land on.
   const onTabKey = (e: KeyboardEvent<HTMLButtonElement>) => {
     if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
@@ -75,6 +78,30 @@ export default function HomePage() {
               </Link>
             </p>
           </div>
+          {LINE_OA_URL && (
+            <div className="flex flex-col items-center gap-3 rounded-md border border-line bg-surface p-4 text-center sm:flex-row sm:text-left">
+              <LineIcon className="hidden shrink-0 text-[40px] text-line-green sm:block" />
+              <div className="flex flex-1 flex-col gap-0.5">
+                <span className="text-body-lg font-semibold">{copy.home.line.title}</span>
+                <span className="text-body text-ink-muted">{copy.home.line.text}</span>
+              </div>
+              {/* A phone opens LINE straight away; a mouse gets the QR to scan with the phone instead. */}
+              <a
+                className="nm-btn nm-btn--line shrink-0 no-underline"
+                href={LINE_OA_URL}
+                target="_blank"
+                rel="noreferrer"
+                onClick={(e) => {
+                  if (!window.matchMedia("(hover: hover) and (pointer: fine)").matches) return;
+                  e.preventDefault();
+                  setLineQr(true);
+                }}
+              >
+                {copy.line.addFriend}
+              </a>
+              <LineQrDialog url={LINE_OA_URL} open={lineQr} onClose={() => setLineQr(false)} />
+            </div>
+          )}
         </div>
       </div>
 

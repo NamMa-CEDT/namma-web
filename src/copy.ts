@@ -73,6 +73,11 @@ export const copy = {
       },
     ],
     footerLead: "น้ำเข้าบ้านแล้ว หรือติดอยู่? สายด่วน ปภ.",
+    // Under the home composer: the LINE bot is the main way in, so it is said up top, not only at the bottom.
+    line: {
+      title: "น้ำมาอยู่ใน LINE ด้วย",
+      text: "ถามเรื่องน้ำได้ในแชท LINE และรับแจ้งเตือนเมื่อน้ำใกล้บ้านสูงขึ้น",
+    },
   },
 
   river: {
