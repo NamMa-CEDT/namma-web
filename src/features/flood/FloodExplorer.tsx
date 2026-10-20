@@ -58,7 +58,7 @@ const WATER_ZOOM = 13;
 type Stage = "province" | "tambon" | "water";
 const MAX_PROVINCES = 6;
 const CLASSES: FloodClass[] = ["many", "some", "few", "none"];
-const SEASON_CLASSES: MapClass[] = ["many", "some", "earlier", "none"];
+const SEASON_CLASSES: MapClass[] = ["many", "earlier", "none"];
 const TOTAL_PROVINCES = 77;
 export interface FloodScope {
   period: FloodPeriod;

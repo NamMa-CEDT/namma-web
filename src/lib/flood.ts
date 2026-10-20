@@ -17,9 +17,13 @@ export function lastSeen(inLayer: (period: FloodPeriod) => boolean): FloodPeriod
   return PERIODS.find(inLayer) ?? null;
 }
 
-/** The 30-day map's shade: last 3 days → stripes, 4–7 days → dots, 8–30 days → the pale "earlier" fill. */
+/**
+ * The 30-day map's shade: water seen this week → stripes, only 8–30 days ago → the pale "earlier" fill. The 3-day
+ * layer is not told apart from the 7-day one here: it holds only a few satellite passes (1,570 cells against 88,972
+ * on 20 Oct 2026), so "not in the last 3 days" mostly means "no pass yet", not "the water went down".
+ */
 export function seasonClass(seen: FloodPeriod | null): MapClass {
-  return seen === "3days" ? "many" : seen === "7days" ? "some" : seen === "30days" ? "earlier" : "none";
+  return seen === "3days" || seen === "7days" ? "many" : seen === "30days" ? "earlier" : "none";
 }
 
 /** From about a quarter of the area under water, it is "ท่วมมาก". */

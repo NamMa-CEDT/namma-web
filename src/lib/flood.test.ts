@@ -67,5 +67,5 @@ it("says how lately water was seen from which layers hold it", () => {
   expect(lastSeen(holds("7days", "30days"))).toBe("7days");
   expect(lastSeen(holds("30days"))).toBe("30days");
   expect(lastSeen(holds())).toBeNull();
-  expect(["3days", "7days", "30days", null].map((p) => seasonClass(p as never))).toEqual(["many", "some", "earlier", "none"]);
+  expect(["3days", "7days", "30days", null].map((p) => seasonClass(p as never))).toEqual(["many", "many", "earlier", "none"]);
 });
