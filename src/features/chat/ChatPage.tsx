@@ -1,5 +1,5 @@
 import { useQueryClient } from "@tanstack/react-query";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { Link, useLocation, useNavigate } from "react-router";
 import { api } from "../../api/client";
 import { useSession } from "../../auth/session";
@@ -27,6 +27,17 @@ type Item =
   | { id: string; role: "assistant"; response: ChatResponse };
 
 const DESKTOP = "(min-width: 64rem)"; // Tailwind lg: where ProfilePanel is a column, not a drawer
+
+function useDesktop(): boolean {
+  return useSyncExternalStore(
+    (onChange) => {
+      const mq = window.matchMedia?.(DESKTOP);
+      mq?.addEventListener("change", onChange);
+      return () => mq?.removeEventListener("change", onChange);
+    },
+    () => window.matchMedia?.(DESKTOP).matches ?? false,
+  );
+}
 
 /** One 1784 card per emergency exchange, not one per reply. */
 function previousWasEmergency(items: Item[], index: number): boolean {
@@ -58,6 +69,8 @@ export default function ChatPage() {
   const location = useLocation();
   const navigate = useNavigate();
   const profile = useProfile(sessionId);
+  const desktop = useDesktop();
+  const empty = items.length === 0;
   const hasMemory = !!profile.data && profile.data.places.length + profile.data.facts.length > 0;
 
   // Signed out (here or in another tab): the transcript and the anonymous chat go with the account.
@@ -233,8 +246,11 @@ export default function ChatPage() {
             {copy.profile.openDrawer}
           </button>
         </div>
-        <div className="min-h-0 flex-1 overflow-y-auto" aria-live="polite">
-          <div className="mx-auto flex max-w-3xl flex-col gap-8 px-4 pt-6 pb-4 sm:px-6">
+        {/* Phones: the turns fill the space left over, so the chat box starts at the bottom of the screen, not under the
+            intro; once the chat is longer than the screen it scrolls with it as before. Desktop: a new chat has the
+            intro and a large box in the middle, like the home page. */}
+        <div className={`flex min-h-0 flex-1 flex-col overflow-y-auto ${empty ? "lg:justify-center" : ""}`} aria-live="polite">
+          <div className="mx-auto flex w-full max-w-3xl flex-col gap-8 px-4 pt-6 pb-4 max-lg:flex-1 sm:px-6">
             <div className="flex items-start justify-between gap-3">
               <div className="nm-msg">{copy.chat.intro}</div>
               {items.length > 0 && (
@@ -279,7 +295,7 @@ export default function ChatPage() {
 
           {/* In the scroll, after the last turn. Phones: not pinned, so a long answer gets the whole small screen.
               Desktop: sticky, so the box stays in view as before. */}
-          <div className="mx-auto w-full max-w-3xl bg-surface px-4 pb-3 sm:px-6 lg:sticky lg:bottom-0">
+          <div className="mx-auto w-full max-w-3xl shrink-0 bg-surface px-4 pb-3 sm:px-6 lg:sticky lg:bottom-0">
             {consentAsk ? (
               // Asking permission to remember health info: the consent card takes the chat box's place until answered.
               <ConsentCard choices={quickReplies} disabled={pending} onPick={pick} />
@@ -311,7 +327,7 @@ export default function ChatPage() {
                 )}
                 {notice && <p className="m-0 whitespace-pre-line pb-1 text-caption text-ink-muted">{notice}</p>}
                 <Composer
-                  compact
+                  compact={!(empty && desktop)}
                   value={text}
                   onChange={setText}
                   onSend={sendText}
