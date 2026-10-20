@@ -402,12 +402,17 @@ export const copy = {
   },
 
   map: {
-    title: "ระดับน้ำลุ่มเจ้าพระยา",
-    subtitle: "นครสวรรค์ → ชัยนาท → อยุธยา → กรุงเทพฯ",
+    title: "ระดับน้ำทั่วประเทศ",
+    subtitle: (n: number) => `สถานีวัดระดับน้ำ ${n.toLocaleString("th-TH")} แห่ง จาก ThaiWater`,
     legend: "ระดับเสี่ยงที่สถานี",
     estimated: "ประเมินโดยน้ำมา",
-    corridor: "สถานีตามลำน้ำ (ต้นน้ำ → ปลายน้ำ)",
-    branches: "แม่น้ำสาขา",
+    riversTitle: "แม่น้ำที่ควรติดตาม",
+    riversHint: "แตะแม่น้ำเพื่อดูสถานีตามลำน้ำบนแผนที่",
+    riversLargest: "ยังไม่มีแม่น้ำที่ถึงเกณฑ์เฝ้าระวัง แม่น้ำสายหลัก:",
+    riverStations: (name: string) => `สถานีตาม${name}`,
+    riverBack: "กลับไปรายการแม่น้ำ",
+    riverHidden: (n: number) => `ซ่อนสถานี สสน. ${n} แห่ง เปิดได้ในตัวเลือกแผนที่`,
+    showMoreStations: (n: number) => `แสดงอีก ${n} สถานี`,
     myLocation: "ตำแหน่งของฉัน",
     locating: "กำลังหาตำแหน่ง…",
     locationFailed: "เปิดตำแหน่งไม่ได้ แตะบนแผนที่เพื่อเลือกจุดแทน",
@@ -419,7 +424,6 @@ export const copy = {
     tilesFailed: "โหลดแผนที่ไม่ได้ ดูรายการสถานีด้านล่างแทน",
     close: "ปิด",
     back: "กลับไปรายการสถานี",
-    corridorHint: "แตะสถานีเพื่อดูรายละเอียด",
     optionsHint: "แตะเพื่อเปลี่ยนพื้นหลังแผนที่ หรือแสดงสถานี สสน.",
     stationsLabel: "สถานีที่แสดง",
     nearPlace: (label: string) => `สถานีใกล้${label}`,
@@ -711,6 +715,8 @@ export function agencyName(agency: string | null): string {
       return "สถาบันสารสนเทศทรัพยากรน้ำ (สสน.)";
     case "EGAT":
       return "การไฟฟ้าฝ่ายผลิตแห่งประเทศไทย (กฟผ.)";
+    case "FOP":
+      return "มูลนิธิอาสาเพื่อนพึ่ง (ภาฯ) ยามยาก สภากาชาดไทย";
     case null:
     case undefined:
       return "ไม่ระบุหน่วยงาน";

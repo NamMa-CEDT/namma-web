@@ -2,7 +2,7 @@ import type { Map as LeafletMap } from "leaflet";
 import { lazy, Suspense, useCallback, useMemo, useState } from "react";
 import { useSearchParams } from "react-router";
 import { API_MODE } from "../../api/client";
-import { useNearest, useProfile, useStations } from "../../api/queries";
+import { useNearest, useProfile, useRivers, useStations } from "../../api/queries";
 import type { LatLon, River, SavedPlace, StationSummary } from "../../api/types";
 import { HouseIcon, LocateIcon } from "../../components/icons";
 import { BasemapPicker, MapHud } from "../../components/MapHud";
@@ -16,11 +16,13 @@ import { readFloodFocus } from "../../lib/floodLink";
 import { formatBankGap, formatDistance } from "../../lib/format";
 import { getCurrentPosition } from "../../lib/geolocation";
 import { stationTier, TIER_ORDER, tierInfo, type TierKey } from "../../lib/tiers";
-import { CorridorStrip } from "./CorridorStrip";
+import { RiverList, RiverStrip, StripRow } from "./RiverStrip";
 import { StationName, StationSheet } from "./StationSheet";
 
 const StationMap = lazy(() => import("./StationMap"));
 const MAX_PLACES = 3;
+/** Stations listed per page when a level filter is on: across the country that can be hundreds. */
+const FILTER_PAGE = 20;
 
 /** Every tier as word + shape; tiers are NamMa's estimate, so the legend says so. */
 function Legend() {
@@ -172,13 +174,19 @@ function Summary({
   onTier: (t: TierKey | null) => void;
   onSelect: (id: number) => void;
 }) {
+  const [limit, setLimit] = useState(FILTER_PAGE);
+  const [limitFor, setLimitFor] = useState(tier);
+  if (limitFor !== tier) {
+    setLimitFor(tier);
+    setLimit(FILTER_PAGE);
+  }
   const counts = new Map<TierKey, number>();
   for (const s of stations) counts.set(stationTier(s), (counts.get(stationTier(s)) ?? 0) + 1);
   const rank = (s: StationSummary) => tierInfo(stationTier(s)).rank;
-  const worrying = stations
-    .filter((s) => rank(s) >= tierInfo("watch").rank)
-    .sort((a, b) => rank(b) - rank(a) || (b.latest?.diff_wl_bank ?? -99) - (a.latest?.diff_wl_bank ?? -99))
-    .slice(0, 5);
+  const byConcern = (a: StationSummary, b: StationSummary) =>
+    rank(b) - rank(a) || (b.latest?.diff_wl_bank ?? -99) - (a.latest?.diff_wl_bank ?? -99);
+  const worrying = stations.filter((s) => rank(s) >= tierInfo("watch").rank).sort(byConcern).slice(0, 5);
+  const inTier = tier ? stations.filter((s) => stationTier(s) === tier).sort(byConcern) : [];
   return (
     <section className="border-b border-line px-4 py-3">
       <h2 className="m-0 text-heading font-semibold">{copy.map.summaryTitle}</h2>
@@ -207,6 +215,24 @@ function Summary({
             {copy.map.filterClear}
           </button>
         </p>
+      ) : null}
+      {tier ? (
+        <>
+          <ol className="m-0 mt-1 list-none p-0">
+            {inTier.slice(0, limit).map((s) => (
+              <StripRow key={s.id} s={s} onSelect={onSelect} standalone />
+            ))}
+          </ol>
+          {inTier.length > limit && (
+            <button
+              type="button"
+              onClick={() => setLimit(limit + FILTER_PAGE)}
+              className="mt-1 min-h-9 text-caption font-semibold text-river underline"
+            >
+              {copy.map.showMoreStations(Math.min(FILTER_PAGE, inTier.length - limit))}
+            </button>
+          )}
+        </>
       ) : worrying.length ? (
         <>
           <h3 className="m-0 mt-3 text-caption font-semibold text-ink-muted">{copy.map.worrying}</h3>
@@ -239,7 +265,7 @@ function Summary({
   );
 }
 
-function Notes() {
+function Notes({ agencies }: { agencies: string[] }) {
   return (
     <div className="grid gap-2 border-t border-line px-4 pt-3 pb-4 text-caption text-ink-muted">
       <p className="m-0">{copy.station.stationNotHouse}</p>
@@ -250,7 +276,7 @@ function Notes() {
         </a>
       </p>
       <p className="m-0">
-        {copy.footer.dataCredit} · {agencyName("RID")}
+        {copy.footer.dataCredit} · {agencies.map(agencyName).join(", ")}
       </p>
     </div>
   );
@@ -324,6 +350,14 @@ export default function MapPage() {
     setParams(next, { replace: true });
   };
 
+  // The rivers list: at-risk rivers, then the one by the point in use (a GPS fix, a chat place, the first saved place).
+  const riverNear = nearFrom?.point ?? (focus ? { lat: focus.lat, lon: focus.lon } : null) ?? places[0] ?? null;
+  const rivers = useRivers(riverNear ? { lat: riverNear.lat, lon: riverNear.lon } : null);
+  const pickRiver = (r: River | null) => {
+    setRiver(r);
+    setRiverText(r?.name_th ?? "");
+  };
+
   const onTilesFailed = useCallback(() => setTilesFailed(true), []);
   const onMap = useCallback((m: LeafletMap) => {
     setLeaflet(m);
@@ -334,10 +368,18 @@ export default function MapPage() {
   if (stations.isError) return <ErrorState className="h-full" error={stations.error} onRetry={() => stations.refetch()} />;
 
   const all = stations.data;
+  const live = new Map(all.map((s) => [s.id, s]));
+  // Data credit: the agencies behind the stations, most stations first.
+  const perAgency = new Map<string, number>();
+  for (const s of all) if (s.agency) perAgency.set(s.agency, (perAgency.get(s.agency) ?? 0) + 1);
+  const agencies = [...perAgency].sort((a, b) => b[1] - a[1]).map(([a]) => a);
   const selected = all.find((s) => s.id === selectedId) ?? null;
   // RID stations are the primary sources (CLAUDE.md §4); HII 10-min stations are opt-in.
   // Some share a site with an RID station but use a different bank reference.
-  const shown = all.filter((s: StationSummary) => showHii || s.agency !== "HII" || s.id === selectedId);
+  // A second agency's gauge at the same spot is drawn and counted once, as the one it duplicates.
+  const shown = all.filter(
+    (s: StationSummary) => s.id === selectedId || ((showHii || s.agency !== "HII") && s.same_place_as == null),
+  );
   const visible = tier ? shown.filter((s) => stationTier(s) === tier || s.id === selectedId) : shown;
   const from: NearFrom | null =
     nearFrom ?? (focus ? { point: { lat: focus.lat, lon: focus.lon }, label: focus.label || null, placeId: null } : null);
@@ -419,7 +461,7 @@ export default function MapPage() {
           <>
             <header className="border-b border-line px-4 py-4">
               <h1 className="m-0 text-title font-semibold">{copy.map.title}</h1>
-              <p className="m-0 text-body text-ink-muted">{copy.map.subtitle}</p>
+              <p className="m-0 text-body text-ink-muted">{copy.map.subtitle(all.filter((s) => s.same_place_as == null).length)}</p>
               {API_MODE === "mock" && <p className="nm-stale m-0 mt-3">{copy.map.sample}</p>}
             </header>
             {from && <NearPanel from={from} onSelect={select} />}
@@ -432,10 +474,7 @@ export default function MapPage() {
                   setRiverText(v);
                   if (!v) setRiver(null);
                 }}
-                onPick={(r) => {
-                  setRiver(r);
-                  setRiverText(r.name_th);
-                }}
+                onPick={pickRiver}
                 className="max-w-md"
               />
               {river && (
@@ -444,8 +483,12 @@ export default function MapPage() {
                 </p>
               )}
             </div>
-            <CorridorStrip stations={visible} onSelect={select} />
-            <Notes />
+            {river ? (
+              <RiverStrip river={river} live={live} showHii={showHii} onSelect={select} onBack={() => pickRiver(null)} />
+            ) : (
+              <RiverList rivers={rivers.data ?? []} onPick={pickRiver} />
+            )}
+            <Notes agencies={agencies} />
           </>
         )}
       </aside>

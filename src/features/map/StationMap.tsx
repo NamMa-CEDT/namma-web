@@ -9,9 +9,14 @@ import { BasemapTiles, MapHandle, PlacePins, type MapPlace } from "../../compone
 import { copy } from "../../copy";
 import type { Basemap } from "../../lib/basemaps";
 import { PIN_SIZE, pinIcon } from "../../lib/pins";
-import { stationTier, tierInfo } from "../../lib/tiers";
+import { stationTier, tierInfo, type TierKey } from "../../lib/tiers";
 
 const LABEL_ALL_ZOOM = 10;
+/** The demo corridor's main stem keeps its codes from here in, before every RID station gets one. */
+const LABEL_MAIN_ZOOM = 9;
+/** Zoomed out to the whole country, calm pins shrink so the raised ones stand out among ~500. */
+const COUNTRY_ZOOM = 7;
+const CALM: TierKey[] = ["normal", "unknown"];
 const CREDIT = "ข้อมูลน้ำ: ThaiWater (สสน.)";
 
 interface Props {
@@ -35,10 +40,12 @@ interface Props {
 }
 
 function MapEvents({ onZoom, onClick }: { onZoom: (z: number) => void; onClick?: (p: LatLon) => void }) {
-  useMapEvents({
+  const map = useMapEvents({
     zoomend: (e) => onZoom(e.target.getZoom()),
     click: (e) => onClick?.({ lat: e.latlng.lat, lon: e.latlng.lng }),
   });
+  // The zoom the bounds fit picked (the whole country is ~6), before any zoomend.
+  useEffect(() => onZoom(map.getZoom()), [map, onZoom]);
   return null;
 }
 
@@ -114,8 +121,8 @@ export default function StationMap({
     <MapContainer
       bounds={bounds}
       boundsOptions={{ padding: [24, 24] }}
-      center={bounds ? undefined : [14.6, 100.4]}
-      zoom={bounds ? undefined : 8}
+      center={bounds ? undefined : [13.0, 101.0]}
+      zoom={bounds ? undefined : 6}
       className={`h-full w-full ${picking ? "cursor-crosshair" : ""}`}
       scrollWheelZoom
       zoomControl={false}
@@ -131,8 +138,11 @@ export default function StationMap({
         const tier = stationTier(s);
         const t = tierInfo(tier);
         const isSelected = s.id === selectedId;
-        const size = PIN_SIZE[tier] - (s.agency === "HII" ? 4 : 0) + (isSelected ? 4 : 0);
-        const permanent = s.agency === "RID" && (zoom >= LABEL_ALL_ZOOM || s.role === "main" || s.id === 2611);
+        const shrink = (s.agency === "HII" ? 4 : 0) + (zoom <= COUNTRY_ZOOM && CALM.includes(tier) ? 4 : 0);
+        const size = Math.max(8, PIN_SIZE[tier] - shrink) + (isSelected ? 4 : 0);
+        const permanent =
+          s.agency === "RID" &&
+          (zoom >= LABEL_ALL_ZOOM || (zoom >= LABEL_MAIN_ZOOM && (s.role === "main" || s.id === 2611)));
         const side = s.role === "branch" ? -1 : 1;
         return (
           <Marker
@@ -144,7 +154,10 @@ export default function StationMap({
             zIndexOffset={t.rank * 100 + (isSelected ? 1000 : 0)}
             eventHandlers={{ click: () => onSelect(s.id) }}
           >
+            {/* react-leaflet reads `permanent` only when the tooltip is made: a new key remakes it as the zoom crosses
+                a label threshold. */}
             <Tooltip
+              key={permanent ? "label" : "hover"}
               permanent={permanent}
               direction={side < 0 ? "left" : "right"}
               offset={[side * (size / 2 + 4), 0]}

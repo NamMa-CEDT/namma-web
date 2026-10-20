@@ -60,6 +60,9 @@ export interface StationSummary {
   /** Position along the demo corridor, upstream → downstream. Null off the main stem. */
   stem_order: number | null;
   role: "main" | "branch" | "tributary" | null;
+  /** The gauge this one duplicates (another agency at the same spot): the map draws and counts only that one.
+   * Absent from older backends and the fixtures. */
+  same_place_as?: number | null;
   latest: LatestReading | null;
   risk: StationRisk | null;
 }

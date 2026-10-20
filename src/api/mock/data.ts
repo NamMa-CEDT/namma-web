@@ -60,14 +60,26 @@ function toSummary(s: FixtureStation, offset: number, overrides: Record<string, 
   return { ...summary, latest, risk };
 }
 
+/** As the backend's whole network: the corridor fixtures (with banks, edges and readings), then every other station
+ * the rivers fixture knows, by id. */
 export function listStations(overrides: Record<string, RiskTier>): StationSummary[] {
   const offset = offsetNow();
-  return FX_STATIONS.map((s) => toSummary(s, offset, overrides));
+  const corridor = FX_STATIONS.map((s) => toSummary(s, offset, overrides));
+  const known = new Set(corridor.map((s) => s.id));
+  const rest = new Map<number, StationSummary>();
+  for (const r of liveRivers(overrides)) for (const s of r.stations) if (!known.has(s.id)) rest.set(s.id, s);
+  return [...corridor, ...[...rest.values()].sort((a, b) => a.id - b.id)];
 }
 
 export function stationDetail(id: number, overrides: Record<string, RiskTier>): StationDetail | null {
   const fx = FX_STATIONS.find((s) => s.id === id);
-  if (!fx) return null;
+  if (!fx) {
+    // A station only the rivers fixture has: no banks or links on record, as the backend for a station without them.
+    const s = listStations(overrides).find((x) => x.id === id);
+    if (!s) return null;
+    const none = { left_bank: null, right_bank: null, min_bank: null, ground_level: null, critical_level_msl: null };
+    return { ...s, ...none, upstream: [], downstream: [] };
+  }
   const offset = offsetNow();
   const byId = new Map(FX_STATIONS.map((s) => [s.id, s]));
   const link = (otherId: number, hours: number | null): StationLink[] => {
@@ -87,7 +99,7 @@ export function stationDetail(id: number, overrides: Record<string, RiskTier>): 
 }
 
 export async function stationReadings(id: number, hours: number): Promise<Reading[] | null> {
-  if (!FX_STATIONS.some((s) => s.id === id)) return null;
+  if (!FX_STATIONS.some((s) => s.id === id) && !listStations({}).some((s) => s.id === id)) return null;
   const fx = (await import("./fixtures/readings.json")).default as unknown as {
     readings: Record<string, [string, number, number | null, number | null][]>;
   };

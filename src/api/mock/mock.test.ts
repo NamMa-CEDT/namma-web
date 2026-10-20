@@ -32,10 +32,13 @@ beforeEach(() => {
 });
 
 describe("stations", () => {
-  it("lists the corridor with envelope meta", async () => {
+  it("lists the whole network, corridor first, with envelope meta", async () => {
     const { status, json } = await call("GET", "/api/stations");
     expect(status).toBe(200);
-    expect(json.data.length).toBe(22);
+    expect(json.data.length).toBeGreaterThan(100);
+    expect(new Set(json.data.map((s: { id: number }) => s.id)).size).toBe(json.data.length);
+    expect(json.data[0].stem_order).not.toBeNull();
+    expect(json.data.some((s: { river: string }) => s.river === "แม่น้ำชี")).toBe(true);
     expect(json.meta.ingested_at).toMatch(/\+07:00$/);
     const c35 = json.data.find((s: { oldcode: string }) => s.oldcode === "C.35");
     expect(c35.latest.diff_wl_bank).not.toBeNull();
@@ -53,6 +56,16 @@ describe("stations", () => {
     expect(json.data).toHaveLength(2);
     expect(json.data[0].oldcode).toBe("C.37");
     expect(json.data[0].distance_km).toBeGreaterThan(0);
+  });
+
+  it("returns detail for a station off the corridor, with no banks or links", async () => {
+    const list = (await call("GET", "/api/stations")).json.data as { id: number; stem_order: number | null; role: string | null }[];
+    const far = list.find((s) => s.stem_order == null && s.role == null)!;
+    const { status, json } = await call("GET", `/api/stations/${far.id}`);
+    expect(status).toBe(200);
+    expect(json.data.min_bank).toBeNull();
+    expect(json.data.upstream).toEqual([]);
+    expect((await call("GET", `/api/stations/${far.id}/readings?hours=72`)).status).toBe(200);
   });
 
   it("returns detail with upstream links and readings", async () => {
