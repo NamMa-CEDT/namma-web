@@ -46,7 +46,8 @@ export function Shell() {
   const demo = useDemoMode();
   const [theme, cycleTheme] = useTheme();
   const ThemeIcon = THEME_ICON[theme];
-  const pageTitle = PAGE_TITLE[useLocation().pathname] ?? null;
+  const { pathname } = useLocation();
+  const pageTitle = PAGE_TITLE[pathname] ?? null;
   return (
     <div className="flex h-dvh flex-col bg-surface text-ink">
       {/* Design C: a slim 52 px bar. Mark + wordmark, the three sections, then theme and profile. */}
@@ -97,7 +98,8 @@ export function Shell() {
       {/* Pages scroll inside themselves: nothing in one may make the window scroll (a second scrollbar, a gap under
           the footer), not even an absolutely placed screen-reader label. */}
       <main className="relative min-h-0 flex-1 overflow-hidden">
-        <ErrorBoundary>
+        {/* Keyed by page so one page's crash doesn't stick to every page after it. */}
+        <ErrorBoundary key={pathname}>
           <Suspense fallback={<Loading className="h-full" />}>
             <Outlet />
           </Suspense>
