@@ -19,9 +19,21 @@ export function lineSignedIn(): boolean {
   return liff.isLoggedIn();
 }
 
-/** The LINE ID token, or null when the LIFF app has no `openid` scope. */
+/** The LINE ID token, or null when the LIFF app has no `openid` scope. LIFF caches it in localStorage and never
+ *  renews it: isLoggedIn() stays true long after the token's `exp` (about an hour), see lineIdTokenFresh(). */
 export function lineIdToken(): string | null {
   return liff.getIDToken();
+}
+
+/** False when the cached ID token is expired or expires within a minute, so LINE would reject it. */
+export function lineIdTokenFresh(): boolean {
+  const exp = liff.getDecodedIDToken()?.exp;
+  return typeof exp === "number" && exp * 1000 > Date.now() + 60_000;
+}
+
+/** Forgets LIFF's cached LINE login (tokens in localStorage). The next sign-in goes to LINE again. */
+export function lineLogout(): void {
+  if (liff.isLoggedIn()) liff.logout();
 }
 
 /** Sends the browser to LINE's login page; it comes back to `redirectUri`. */

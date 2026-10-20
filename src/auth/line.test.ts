@@ -4,7 +4,9 @@ const liff = vi.hoisted(() => ({
   init: vi.fn(async () => undefined),
   isLoggedIn: vi.fn(() => false),
   getIDToken: vi.fn((): string | null => null),
+  getDecodedIDToken: vi.fn((): { exp: number } | null => ({ exp: Date.now() / 1000 + 3600 })),
   login: vi.fn(),
+  logout: vi.fn(),
 }));
 vi.mock("@line/liff", () => ({ default: liff }));
 
@@ -12,13 +14,15 @@ const api = vi.hoisted(() => ({
   login: vi.fn(async () => ({ session_token: "s", user: { display_name: "น้ำ", picture_url: null } })),
   link: vi.fn(async () => ({ display_name: "น้ำ", picture_url: null, identities: { line: true, google: null } })),
 }));
-vi.mock("../api/client", () => ({ api, API_MODE: "mock" }));
+vi.mock("../api/client", async (orig) => ({ ApiError: (await orig<typeof import("../api/client")>()).ApiError, api, API_MODE: "mock" }));
 
-import { loginLine, linkLine, takeLinePending } from "./session";
+import { ApiError } from "../api/client";
+import { loginLine, linkLine, logout, takeLinePending } from "./session";
 
 beforeEach(() => {
   sessionStorage.clear();
   vi.clearAllMocks();
+  liff.getDecodedIDToken.mockReturnValue({ exp: Date.now() / 1000 + 3600 });
 });
 
 describe("LINE login (LIFF)", () => {
@@ -58,5 +62,43 @@ describe("LINE login (LIFF)", () => {
     await linkLine();
 
     expect(api.link).toHaveBeenCalledWith("line", "line-id-token");
+  });
+
+  it("goes back to LINE for a new token when LIFF's cached one has expired", async () => {
+    liff.isLoggedIn.mockReturnValueOnce(true).mockReturnValueOnce(true).mockReturnValue(false);
+    liff.getIDToken.mockReturnValue("stale-token");
+    liff.getDecodedIDToken.mockReturnValue({ exp: Date.now() / 1000 - 60 });
+
+    expect(await loginLine()).toBeNull();
+
+    expect(liff.logout).toHaveBeenCalled();
+    expect(liff.login).toHaveBeenCalled();
+    expect(api.login).not.toHaveBeenCalled();
+    expect(takeLinePending()).toBe("login");
+  });
+
+  it("retries once through LINE when the backend rejects the token, then reports the error", async () => {
+    liff.isLoggedIn.mockReturnValue(true);
+    liff.getIDToken.mockReturnValue("line-id-token");
+    const rejected = new ApiError(401, "invalid_token", "LINE rejected the ID token");
+    api.login.mockRejectedValue(rejected);
+
+    expect(await loginLine()).toBeNull();
+    expect(liff.logout).toHaveBeenCalledTimes(1);
+    expect(liff.login).toHaveBeenCalledTimes(1);
+
+    // Back from LINE: a second rejection is shown, not another round trip.
+    expect(takeLinePending()).toBe("login");
+    await expect(loginLine()).rejects.toBe(rejected);
+    expect(liff.login).toHaveBeenCalledTimes(1);
+    api.login.mockReset();
+  });
+
+  it("signing out forgets LIFF's cached LINE login too", async () => {
+    liff.isLoggedIn.mockReturnValue(true);
+
+    await logout();
+
+    expect(liff.logout).toHaveBeenCalled();
   });
 });

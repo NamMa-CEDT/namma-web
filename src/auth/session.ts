@@ -2,10 +2,10 @@
 // see lib/liff.ts). Signing in sends this browser's anonymous chat session, so what the person already told
 // NamMa joins their account.
 import { useSyncExternalStore } from "react";
-import { api, API_MODE } from "../api/client";
+import { api, ApiError, API_MODE } from "../api/client";
 import type { LoginResponse, Provider, SessionUser } from "../api/types";
 import { loadSessionId } from "../lib/chatSession";
-import { initLiff, LIFF_ID, lineIdToken, lineSignedIn, startLineLogin } from "../lib/liff";
+import { initLiff, LIFF_ID, lineIdToken, lineIdTokenFresh, lineLogout, lineSignedIn, startLineLogin } from "../lib/liff";
 import { readStoredSession, setToken, writeStoredSession, type StoredSession } from "./token";
 
 let current: StoredSession | null = null;
@@ -65,46 +65,71 @@ export const canLineLogin = API_MODE === "http" && LIFF_ID !== null;
 const LINE_PENDING_KEY = "namma.line.pending";
 export type LinePending = "login" | "link";
 
-/** What the account page should finish after a LINE round trip, once. */
-export function takeLinePending(): LinePending | null {
+// Set while coming back from a trip to LINE that renewed a token the backend rejected, so a second rejection
+// shows an error instead of going round again.
+const LINE_RETRIED_KEY = "namma.line.retried";
+
+function takeFlag(key: string): string | null {
   try {
-    const v = sessionStorage.getItem(LINE_PENDING_KEY);
-    sessionStorage.removeItem(LINE_PENDING_KEY);
-    return v === "login" || v === "link" ? v : null;
+    const v = sessionStorage.getItem(key);
+    sessionStorage.removeItem(key);
+    return v;
   } catch {
     return null;
   }
 }
 
-/** The LINE ID token, or null after sending the browser to LINE (the page is leaving). */
+/** What the account page should finish after a LINE round trip, once. */
+export function takeLinePending(): LinePending | null {
+  const v = takeFlag(LINE_PENDING_KEY);
+  return v === "login" || v === "link" ? v : null;
+}
+
+function toLine(intent: LinePending, retried = false): null {
+  try {
+    sessionStorage.setItem(LINE_PENDING_KEY, intent);
+    if (retried) sessionStorage.setItem(LINE_RETRIED_KEY, "1");
+  } catch {
+    // Blocked storage: the person presses the button again after coming back.
+  }
+  startLineLogin(window.location.href);
+  return null;
+}
+
+/** The LINE ID token, or null after sending the browser to LINE (the page is leaving). LIFF keeps the last
+ *  ID token after it expires, so an old one sends the person through LINE again for a new one. */
 async function lineToken(intent: LinePending): Promise<string | null> {
   await initLiff();
-  if (!lineSignedIn()) {
-    try {
-      sessionStorage.setItem(LINE_PENDING_KEY, intent);
-    } catch {
-      // Blocked storage: the person presses the button again after coming back.
-    }
-    startLineLogin(window.location.href);
-    return null;
-  }
+  if (lineSignedIn() && lineIdToken() && !lineIdTokenFresh()) lineLogout();
+  if (!lineSignedIn()) return toLine(intent);
   const token = lineIdToken();
   if (!token) throw new Error("LINE gave no ID token");
   return token;
 }
 
+/** Runs `use` with a LINE ID token. When the backend rejects the token (expired by its clock, or from another
+ *  LINE account cached in this browser), forgets it and goes to LINE once for a new one. */
+async function withLineToken<T>(intent: LinePending, use: (token: string) => Promise<T>): Promise<T | null> {
+  const token = await lineToken(intent);
+  if (!token) return null;
+  const retried = takeFlag(LINE_RETRIED_KEY) === "1";
+  try {
+    return await use(token);
+  } catch (e) {
+    if (retried || !(e instanceof ApiError && e.status === 401 && e.code === "invalid_token")) throw e;
+    lineLogout();
+    return toLine(intent, true);
+  }
+}
+
 /** Sign in with LINE. Resolves null when the browser is leaving for LINE. */
 export async function loginLine(): Promise<LoginResponse | null> {
-  const token = await lineToken("login");
-  if (!token) return null;
-  return signedIn(await api.login(token, loadSessionId(), "line"));
+  return withLineToken("login", async (token) => signedIn(await api.login(token, loadSessionId(), "line")));
 }
 
 /** Add LINE to the signed-in account. Resolves null when the browser is leaving for LINE. */
 export async function linkLine(): Promise<SessionUser | null> {
-  const token = await lineToken("link");
-  if (!token) return null;
-  return link("line", token);
+  return withLineToken("link", (token) => link("line", token));
 }
 
 /** Add a second way to sign in to the signed-in account. */
@@ -127,11 +152,22 @@ export async function logout(): Promise<void> {
   } catch {
     // expired or offline: forgetting the token is what matters
   }
+  signOutEverywhere();
+}
+
+/** Forgets our session and LIFF's cached LINE login, so the next "sign in with LINE" doesn't come back as the
+ *  last person who used this browser. */
+function signOutEverywhere() {
+  try {
+    lineLogout();
+  } catch {
+    // LIFF never initialised (no LIFF id, or init failed): nothing cached to forget.
+  }
   set(null);
 }
 
 /** PDPA erasure of the whole account (DELETE /api/me), then sign out. */
 export async function deleteAccount(): Promise<void> {
   await api.deleteMe();
-  set(null);
+  signOutEverywhere();
 }
