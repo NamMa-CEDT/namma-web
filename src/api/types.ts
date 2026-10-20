@@ -359,6 +359,16 @@ export interface ChatResponse {
   quick_replies: QuickReply[];
   /** True when the user signalled danger. The UI then shows the DDPM 1784 card first. */
   emergency: boolean;
+  /** The point a risk or shelter answer is about: the reply links to the flood map there. Optional: older backends. */
+  place?: ChatPlace | null;
+}
+
+export interface ChatPlace {
+  label: string;
+  lat: number;
+  lon: number;
+  /** Found from a place name (a district centre), not a GPS share. */
+  approx: boolean;
 }
 
 // --- profile ----------------------------------------------------------------

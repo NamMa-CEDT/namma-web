@@ -5,12 +5,13 @@ import { api } from "../../api/client";
 import { keys, useProfile } from "../../api/queries";
 import type { ChatRequest, ChatResponse, QuickReply, Source } from "../../api/types";
 import { Composer } from "../../components/Composer";
-import { SidebarIcon } from "../../components/icons";
+import { MapIcon, SidebarIcon } from "../../components/icons";
 import { HotlineNotice } from "../../components/HotlineNotice";
 import { LineQrDialog } from "../../components/LineQrDialog";
 import { copy } from "../../copy";
 import { load, loadSessionId, newId, save, saveSessionId, type ChatHandoff } from "../../lib/chatSession";
 import { COMMANDS, parseCommand, suggestCommands, type Command } from "../../lib/commands";
+import { floodMapLink } from "../../lib/floodLink";
 import { looksLikeEmergency } from "../../lib/danger";
 import { getCurrentPosition } from "../../lib/geolocation";
 import { LINE_OA_URL } from "../../lib/line";
@@ -310,8 +311,9 @@ export default function ChatPage() {
 type StationSource = Extract<Source, { type: "station" }>;
 
 /**
- * One NamMa turn: the reply text (DS nm-msg), the station cards behind it (the backend sends the worse station first),
- * the shelter card, other sources, then the hotline. GISTDA lines stay in the text, so they aren't repeated as sources.
+ * One NamMa turn: the reply text (DS nm-msg), a button to the flood map at the place the answer is about, the station
+ * cards behind it (the backend sends the worse station first), the shelter card, other sources, then the hotline.
+ * GISTDA lines stay in the text, so they aren't repeated as sources.
  */
 function Answer({ response: r, firstEmergency }: { response: ChatResponse; firstEmergency: boolean }) {
   const cards = r.sources.filter((s): s is StationSource => s.type === "station" && hasReading(s));
@@ -327,6 +329,13 @@ function Answer({ response: r, firstEmergency }: { response: ChatResponse; first
         </div>
       )}
       <ReplyText text={r.reply} />
+      {/* Right under the text that names the place, before the cards about it. */}
+      {r.place && (
+        <Link to={floodMapLink(r.place)} className="nm-btn nm-btn--secondary nm-btn--sm">
+          <MapIcon className="shrink-0 text-[20px] text-river" />
+          {copy.chat.openFloodMap}
+        </Link>
+      )}
       {cards.map((s) => (
         <StationCard key={s.station_id} source={s} />
       ))}

@@ -4,12 +4,14 @@
 import { copy } from "../../copy";
 import { formatBankGap, formatDistance, formatHoursToBank, formatTime, formatTrend } from "../../lib/format";
 import { stationTier, tierInfo, type TierKey } from "../../lib/tiers";
-import type { ChatRequest, ChatResponse, NearbyStation, QuickReply, Shelter, Source, Vulnerable } from "../types";
+import type { ChatPlace, ChatRequest, ChatResponse, NearbyStation, QuickReply, Shelter, Source, Vulnerable } from "../types";
 
 export interface Place {
   label: string;
   lat: number;
   lon: number;
+  /** False for a GPS share; a named place (a district centre) is approximate. */
+  approx?: boolean;
 }
 
 /** A place the user named or shared, as the backend's user_locations keeps it. */
@@ -178,6 +180,11 @@ function advice(tier: TierKey, household: Vulnerable[]): string {
   }
 }
 
+/** The answer's point, as the backend's `place`: the web links it to the flood map. */
+function chatPlace(place: Place): ChatPlace {
+  return { label: place.label, lat: place.lat, lon: place.lon, approx: place.approx ?? true };
+}
+
 function riskAnswer(place: Place, s: ChatSessionState, deps: ChatDeps): ChatResponse {
   const near = deps.nearest(place.lat, place.lon, 4);
   if (!near.length) return reply("ไม่พบสถานีวัดน้ำใกล้ตำแหน่งนี้", { quick_replies: ASK_LOCATION });
@@ -207,6 +214,7 @@ function riskAnswer(place: Place, s: ChatSessionState, deps: ChatDeps): ChatResp
   const sources = worst.id !== primary.id ? [stationSource(worst), stationSource(primary)] : [stationSource(primary)];
   return reply(lines.join("\n"), {
     sources,
+    place: chatPlace(place),
     quick_replies: askHousehold
       ? HOUSEHOLD_QR
       : [{ type: "message", label: "ศูนย์พักพิงใกล้บ้าน", text: "ศูนย์พักพิงใกล้บ้านมีที่ไหนบ้าง" }],
@@ -223,7 +231,7 @@ function shelterAnswer(place: Place | null, s: ChatSessionState, deps: ChatDeps)
     `ศูนย์พักพิงใกล้ ${place.label}` + (needsCare ? " เรียงให้ศูนย์ที่รับผู้ป่วยติดเตียงขึ้นก่อน" : ""),
     "ถ้ามีคำสั่งอพยพจากทางการ ให้ไปตามจุดที่ทางการกำหนด",
   ];
-  return reply(lines.join("\n"), { sources: list.map((sh) => shelterSource(sh, needsCare)) });
+  return reply(lines.join("\n"), { sources: list.map((sh) => shelterSource(sh, needsCare)), place: chatPlace(place) });
 }
 
 /** A shelter Source with the ShelterCard details, as the backend's _shelter_source. */
@@ -308,7 +316,7 @@ export function respond(req: ChatRequest, s: ChatSessionState, deps: ChatDeps): 
   if (req.postback) return handlePostback(req.postback, s, deps);
 
   if (req.location) {
-    const place = { label: "ตำแหน่งที่ส่งมา", ...req.location };
+    const place = { label: "ตำแหน่งที่ส่งมา", ...req.location, approx: false };
     s.place = place;
     savePlace(s, { label: s.places?.length ? "ตำแหน่งที่แชร์" : "บ้าน", ...req.location, approx: false, where: null });
     return riskAnswer(place, s, deps);

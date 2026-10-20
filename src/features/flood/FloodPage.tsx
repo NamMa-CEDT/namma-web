@@ -1,16 +1,19 @@
 import { useSearchParams } from "react-router";
 import { PERIODS } from "../../lib/flood";
+import { readFloodFocus } from "../../lib/floodLink";
 import { FloodExplorer, type FloodScope } from "./FloodExplorer";
 
 /**
  * The flood tab full screen. Period, layer, year and drill-down live in the URL, so a link opens the same view:
  * ?period=7days, ?period=30days, ?layer=history&year=2011. Defaults (3 days, the live layer, all years) are left out.
+ * A chat answer links here with ?lat=…&lon=…&place=… to open the map on the place it was about.
  */
 export default function FloodPage() {
   const [params, setParams] = useSearchParams();
   const province = params.get("province");
   const year = Number(params.get("year"));
   const period = PERIODS.find((p) => p === params.get("period")) ?? "3days";
+  const focus = readFloodFocus(params);
   const scope: FloodScope = {
     period,
     province,
@@ -33,5 +36,5 @@ export default function FloodPage() {
     setParams(next, { replace: true });
   };
 
-  return <FloodExplorer scope={scope} onScope={onScope} />;
+  return <FloodExplorer scope={scope} onScope={onScope} focus={focus} />;
 }

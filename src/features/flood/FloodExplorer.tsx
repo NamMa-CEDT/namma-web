@@ -18,6 +18,7 @@ import { ErrorState, Loading } from "../../components/States";
 import { copy, DDPM } from "../../copy";
 import { containsPoint, joinAreas, nameKey, provincesInView, type AreaShape } from "../../lib/boundaries";
 import { loadSessionId, type ChatHandoff } from "../../lib/chatSession";
+import type { FloodFocus } from "../../lib/floodLink";
 import {
   areaName,
   floodClass,
@@ -1068,10 +1069,13 @@ export function FloodExplorer({
   scope,
   onScope,
   embedded = false,
+  focus = null,
 }: {
   scope: FloodScope;
   onScope: (changes: Partial<FloodScope>) => void;
   embedded?: boolean;
+  /** Opened from a chat answer: fly to this point and pin it. */
+  focus?: FloodFocus | null;
 }) {
   const { period, province, amphoe } = scope;
   const history = scope.history ?? false;
@@ -1087,7 +1091,17 @@ export function FloodExplorer({
   const provinceShapes = useProvinceShapes();
   const profile = useProfile(loadSessionId());
   const places = useMemo(() => profile.data?.places.slice(0, MAX_PLACES) ?? [], [profile.data]);
-  const mapPlaces = useMemo(() => places.map((p) => ({ lat: p.lat, lon: p.lon, label: p.label })), [places]);
+  // The chat answer's place is pinned too, unless it is one of the saved places already shown.
+  const focusLat = focus?.lat;
+  const focusLon = focus?.lon;
+  const focusLabel = focus?.label;
+  const mapPlaces = useMemo(() => {
+    const pins = places.map((p) => ({ lat: p.lat, lon: p.lon, label: p.label }));
+    const near = (p: { lat: number; lon: number }) => Math.abs(p.lat - focusLat!) < 1e-4 && Math.abs(p.lon - focusLon!) < 1e-4;
+    if (focusLat != null && focusLon != null && !pins.some(near))
+      pins.push({ lat: focusLat, lon: focusLon, label: focusLabel ?? "" });
+    return pins;
+  }, [places, focusLat, focusLon, focusLabel]);
 
   const [view, setView] = useState<MapView | null>(null);
   const [basemap, setBasemap] = useState<Basemap>("satellite");
@@ -1182,6 +1196,12 @@ export function FloodExplorer({
   }, [history, season, year, hist.data, zoomedIn, tambons, provinceShapes.data, provinceRows.data, provinceRows3.data, provinceRows7.data]);
 
   const onView = useCallback((v: MapView) => setView(v), []);
+  // From a chat answer: a GPS point close enough to see the water cells, a district centre (approx) at amphoe level.
+  const focusApprox = focus?.approx ?? false;
+  useEffect(() => {
+    if (focusLat == null || focusLon == null) return;
+    setFlyTo({ lat: focusLat, lon: focusLon, zoom: focusApprox ? FLY_ZOOM.amphoe : WATER_ZOOM });
+  }, [focusLat, focusLon, focusApprox]);
   const onTilesFailed = useCallback(() => setTilesFailed(true), []);
   // Another period is another layer: the picked tambon's numbers change.
   useEffect(() => {

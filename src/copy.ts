@@ -458,6 +458,7 @@ export const copy = {
     emergencyTitle: "ถ้าอยู่ในอันตรายตอนนี้ โทรขอความช่วยเหลือก่อนค่ะ",
     newChat: "เริ่มคุยใหม่",
     sourcesLabel: "ที่มา",
+    openFloodMap: "ดูบนแผนที่น้ำท่วม",
     // Slash commands (lib/commands.ts): what each one does, shown in the menu that opens on "/" and by /help.
     commands: {
       label: "คำสั่ง",
