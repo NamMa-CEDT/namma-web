@@ -18,7 +18,7 @@ const PROFILE: Profile = {
       lon: 99.84,
       approx: true,
       where: "อ.เมืองเชียงราย จ.เชียงราย",
-      facts: [{ kind: "household", text: "สัตว์เลี้ยง: หมา", sensitive: true, list: "pets", names: ["หมา"] }],
+      facts: [{ kind: "household", text: "สัตว์เลี้ยง: หมา", sensitive: false, list: "pets", names: ["หมา"] }],
       nearest: null,
     },
   ],
