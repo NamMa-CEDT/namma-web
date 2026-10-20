@@ -35,7 +35,12 @@ export function loadSessionId(): string {
   } catch {
     // fall through
   }
-  return load(SESSION_KEY, "") || newId();
+  const fallback = load(SESSION_KEY, "");
+  if (fallback) return fallback;
+  // Keep the new id: pages call this on every render, and a fresh id each time is a fresh profile query each time.
+  const id = newId();
+  saveSessionId(id);
+  return id;
 }
 
 export function saveSessionId(id: string): void {
