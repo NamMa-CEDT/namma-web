@@ -120,7 +120,10 @@ export default function StationMap({
   return (
     <MapContainer
       bounds={bounds}
-      boundsOptions={{ padding: [24, 24] }}
+      boundsOptions={{ padding: [12, 12] }}
+      // Quarter steps: on a phone the map is short and wide, and whole steps leave the country at zoom 4, small
+      // among its neighbours.
+      zoomSnap={0.25}
       center={bounds ? undefined : [13.0, 101.0]}
       zoom={bounds ? undefined : 6}
       className={`h-full w-full ${picking ? "cursor-crosshair" : ""}`}

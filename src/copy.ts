@@ -413,6 +413,7 @@ export const copy = {
     riverBack: "กลับไปรายการแม่น้ำ",
     riverHidden: (n: number) => `ซ่อนสถานี สสน. ${n} แห่ง เปิดได้ในตัวเลือกแผนที่`,
     showMoreStations: (n: number) => `แสดงอีก ${n} สถานี`,
+    stationsBy: (agencies: string) => `สถานีวัดของ${agencies}`,
     myLocation: "ตำแหน่งของฉัน",
     locating: "กำลังหาตำแหน่ง…",
     locationFailed: "เปิดตำแหน่งไม่ได้ แตะบนแผนที่เพื่อเลือกจุดแทน",

@@ -21,6 +21,8 @@ import { StationName, StationSheet } from "./StationSheet";
 
 const StationMap = lazy(() => import("./StationMap"));
 const MAX_PLACES = 3;
+const AGENCY_ORDER = ["RID", "HII", "EGAT", "FOP"];
+const agencyRank = (a: string) => (AGENCY_ORDER.includes(a) ? AGENCY_ORDER.indexOf(a) : AGENCY_ORDER.length);
 /** Stations listed per page when a level filter is on: across the country that can be hundreds. */
 const FILTER_PAGE = 20;
 
@@ -276,7 +278,7 @@ function Notes({ agencies }: { agencies: string[] }) {
         </a>
       </p>
       <p className="m-0">
-        {copy.footer.dataCredit} · {agencies.map(agencyName).join(", ")}
+        {copy.footer.dataCredit} · {copy.map.stationsBy(agencies.map(agencyName).join(", "))}
       </p>
     </div>
   );
@@ -369,10 +371,10 @@ export default function MapPage() {
 
   const all = stations.data;
   const live = new Map(all.map((s) => [s.id, s]));
-  // Data credit: the agencies behind the stations, most stations first.
-  const perAgency = new Map<string, number>();
-  for (const s of all) if (s.agency) perAgency.set(s.agency, (perAgency.get(s.agency) ?? 0) + 1);
-  const agencies = [...perAgency].sort((a, b) => b[1] - a[1]).map(([a]) => a);
+  // Data credit: the agencies behind the stations, the primary source (RID, CLAUDE.md §4) first.
+  const agencies = [...new Set(all.map((s) => s.agency).filter((a): a is string => !!a))].sort(
+    (a, b) => agencyRank(a) - agencyRank(b) || a.localeCompare(b),
+  );
   const selected = all.find((s) => s.id === selectedId) ?? null;
   // RID stations are the primary sources (CLAUDE.md §4); HII 10-min stations are opt-in.
   // Some share a site with an RID station but use a different bank reference.

@@ -139,14 +139,14 @@ export function MapHud({
 
       {open && (
         <>
-          <div aria-hidden="true" onClick={close} className="absolute inset-0 z-[600] bg-[rgba(4,12,24,0.3)] sm:hidden" />
+          <div aria-hidden="true" onClick={close} className="absolute inset-0 z-[1000] bg-[rgba(4,12,24,0.3)] sm:hidden" />
           {/* Phone: a sheet along the map's bottom edge. Larger: a card beside the 44px column (10px + 44px + 8px in). */}
           <section
             id="map-options"
             role="dialog"
             aria-label={copy.flood.mapControls}
             onKeyDown={(e) => e.key === "Escape" && close()}
-            className="absolute z-[600] flex flex-col gap-2 overflow-y-auto border-line-strong bg-surface-raised shadow-float max-sm:inset-x-0 max-sm:bottom-0 max-sm:max-h-[85%] max-sm:rounded-t-lg max-sm:border-t max-sm:px-4 max-sm:pt-1.5 max-sm:pb-4 sm:top-2.5 sm:left-[3.875rem] sm:max-h-[calc(100%-1.25rem)] sm:w-72 sm:max-w-[calc(100%-4.5rem)] sm:rounded-lg sm:border sm:p-3 sm:pt-2"
+            className="absolute z-[1000] flex flex-col gap-2 overflow-y-auto border-line-strong bg-surface-raised shadow-float max-sm:inset-x-0 max-sm:bottom-0 max-sm:max-h-[85%] max-sm:rounded-t-lg max-sm:border-t max-sm:px-4 max-sm:pt-1.5 max-sm:pb-4 sm:top-2.5 sm:left-[3.875rem] sm:max-h-[calc(100%-1.25rem)] sm:w-72 sm:max-w-[calc(100%-4.5rem)] sm:rounded-lg sm:border sm:p-3 sm:pt-2"
           >
             <span aria-hidden="true" className="mx-auto h-1 w-9 shrink-0 rounded-pill bg-line-strong sm:hidden" />
             <div className="-mr-1.5 flex items-center justify-between gap-2">
