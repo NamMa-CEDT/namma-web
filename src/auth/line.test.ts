@@ -17,7 +17,7 @@ const api = vi.hoisted(() => ({
   lineClaim: vi.fn(async () => ({ session_token: "claimed", user: { display_name: "น้ำ", picture_url: null }, merged_chat: true })),
   logout: vi.fn(async () => undefined),
 }));
-vi.mock("../api/client", () => ({ api, API_MODE: "http" }));
+vi.mock("../api/client", () => ({ api, API_MODE: "http", onInvalidToken: () => {} }));
 
 const assign = vi.fn();
 

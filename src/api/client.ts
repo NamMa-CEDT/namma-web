@@ -59,6 +59,13 @@ export class ApiError extends Error {
   }
 }
 
+let invalidToken: (token: string) => void = () => {};
+
+/** Runs `fn` when the server rejects the stored token as expired or unknown (session.ts signs out). */
+export function onInvalidToken(fn: (token: string) => void): void {
+  invalidToken = fn;
+}
+
 type Query = Record<string, string | number | boolean | null | undefined>;
 
 async function request<T>(
@@ -92,6 +99,7 @@ async function request<T>(
   const json = (await res.json().catch(() => null)) as Envelope<T> | ApiErrorBody | null;
   if (!res.ok) {
     const err = json && "error" in json ? json.error : null;
+    if (token && err?.code === "invalid_token") invalidToken(token);
     throw new ApiError(res.status, err?.code ?? "http_error", err?.message ?? res.statusText);
   }
   const env = json as Envelope<T>;

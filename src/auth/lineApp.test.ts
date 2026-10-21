@@ -20,6 +20,7 @@ vi.mock("../api/client", async (orig) => ({
   ApiError: (await orig<typeof import("../api/client")>()).ApiError,
   api,
   API_MODE: "http",
+  onInvalidToken: () => {},
 }));
 vi.mock("../lib/liff", async (orig) => ({ ...(await orig<object>()), LIFF_ID: "test-liff" }));
 

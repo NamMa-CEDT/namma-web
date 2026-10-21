@@ -2,7 +2,7 @@
 // in a browser, LIFF's ID token inside the LINE app, see lib/liff.ts). Signing in sends this browser's anonymous chat session, so what the person already told
 // NamMa joins their account.
 import { useSyncExternalStore } from "react";
-import { api, API_MODE } from "../api/client";
+import { api, API_MODE, onInvalidToken } from "../api/client";
 import type { LoginResponse, Provider, SessionUser } from "../api/types";
 import { forgetChat, loadSessionId } from "../lib/chatSession";
 import { initLiff, inLineApp, LIFF_ID, lineIdToken, lineLogout, lineSignedIn } from "../lib/liff";
@@ -26,6 +26,12 @@ window.addEventListener("storage", (e) => {
   current = next;
   setToken(next?.token ?? null);
   listeners.forEach((fn) => fn());
+});
+
+// Expired or unknown on the server: drop it so the next request goes out anonymous. The chat stays.
+// Only the token still in use: a late reply must not sign out a sign-in that came after it.
+onInvalidToken((token) => {
+  if (current?.token === token) set(null);
 });
 
 /** Runs `fn` whenever the session changes (sign-in, sign-out, here or in another tab). Returns the unsubscribe. */

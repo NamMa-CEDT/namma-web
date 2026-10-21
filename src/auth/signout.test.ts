@@ -7,7 +7,7 @@ const api = vi.hoisted(() => ({
   logout: vi.fn(async () => undefined),
   deleteMe: vi.fn(async () => undefined),
 }));
-vi.mock("../api/client", () => ({ api, API_MODE: "mock" }));
+vi.mock("../api/client", () => ({ api, API_MODE: "mock", onInvalidToken: () => {} }));
 
 import { CHAT_ITEMS_KEY, loadSessionId } from "../lib/chatSession";
 import { deleteAccount, getSession, loginDemo, logout } from "./session";
